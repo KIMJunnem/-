@@ -38,7 +38,7 @@
   "notIncluded": ["모션그래픽", "3D", "더빙", "촬영·방문", "광고 영상 연출"],
   "experienceLine": "33분 분량 영상의 번역 자막을 실제로 제작해 납품했습니다.",
   "quoteMessageVersion": "v1",
-  "autoQuote": { "enabled": true, "dailyMaxSends": 15, "messageVersion": "auto-v2", "_note": "decisions 7-10(9/24 준희 \"숨고 견적 내가 허락한다고\") · 개발방 지시 24: 규칙 기반 자동 견적(지시 19 전 임시판). 켜기·끄기는 video-quote-on.bat / video-quote-off.bat(scripts/video-quote-switch.cjs)만 바꾼다. 원본 길이(구간이면 최댓값)가 있고 작업 기간이 정해진 요청만, 하루 10건까지. 모션그래픽·3D·더빙·촬영·방문이 들어 있으면 보내지 않고 준희 알림" },
+  "autoQuote": { "enabled": true, "dailyMaxSends": 30, "messageVersion": "auto-v2", "_note": "decisions 7-10(9/24 준희 \"숨고 견적 내가 허락한다고\") · 개발방 지시 24: 규칙 기반 자동 견적(지시 19 전 임시판). 켜기·끄기는 video-quote-on.bat / video-quote-off.bat(scripts/video-quote-switch.cjs)만 바꾼다. 원본 길이(구간이면 최댓값)가 있고 작업 기간이 정해진 요청만, 하루 10건까지. 모션그래픽·3D·더빙·촬영·방문이 들어 있으면 보내지 않고 준희 알림" },
   "quoteCopy": {
     "_note": "v1 초안(지시 16). 첫 2주는 준희가 골라서 수동으로만 보낸다(자동 발송 없음). 추가금·제외 조건은 처음부터 나열하지 않는다",
     "workLine": "말하는 영상에서 필요 없는 부분을 잘라 내고, 한국어 자막을 입혀 MP4로 보내드립니다.",
