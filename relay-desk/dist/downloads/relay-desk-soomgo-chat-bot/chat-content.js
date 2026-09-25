@@ -499,6 +499,14 @@
       await chrome.storage.local.set({ [RESET_V3_KEY]: { at: Date.now(), version: '0.3.0' }, [STORAGE_KEY]: { ...DEFAULTS, enabled: true, autoSend: true, autoReply: true } });
     }
     Object.assign(chatInspections, stored[CHAT_INSPECTED_KEY] || {});
+    // 9/25 저장 공간 초과(kQuotaBytes) 뒤: 채팅방 확인 기록은 지우는 곳이 없어 방마다 계속 쌓였다.
+    // 최근에 본 500개 방만 남긴다(오래된 방은 다음에 목록에 보이면 새로 기록된다).
+    const inspectionKeys = Object.keys(chatInspections);
+    if (inspectionKeys.length > 500) {
+      const lastSeen = key => Math.max(Number(chatInspections[key]?.at || 0), Number(chatInspections[key]?.hireCheckAt || 0), Number(chatInspections[key]?.globalUnreadAt || 0));
+      for (const key of inspectionKeys.sort((a, b) => lastSeen(b) - lastSeen(a)).slice(500)) delete chatInspections[key];
+      try { await chrome.storage.local.set({ [CHAT_INSPECTED_KEY]: chatInspections }); } catch (_) {}
+    }
     const storedSettings = stored[STORAGE_KEY] || {};
     state.settings = { ...DEFAULTS, ...storedSettings };
     if (SYSTEM_TEST_MODE) {
@@ -1161,11 +1169,12 @@
   }
 
   // 2-4-3: 고객에게 나가는 고정 문구는 서버 messages.json에서만 받는다. 서버가 답하지 않으면 보내지 않는다.
-  async function serverMessage(id, values = {}) {
+  // 0.3.26(9/25): serviceId를 같이 보내면 서버가 서비스별 안내(영상 편집 고용 인사의 자료 공유 안내 등)를 붙인다
+  async function serverMessage(id, values = {}, serviceId = '') {
     try {
       const response = await fetch(MESSAGE_TEXT_ENDPOINT, {
         method: 'POST', headers: { 'content-type': 'application/json', 'x-relay-bot': 'soomgo-extension' },
-        body: JSON.stringify({ id, values }), signal: AbortSignal.timeout(8000)
+        body: JSON.stringify({ id, values, ...(serviceId ? { serviceId } : {}) }), signal: AbortSignal.timeout(8000)
       });
       const data = await response.json();
       if (!response.ok || !data?.text) return null;
@@ -3025,7 +3034,7 @@
     }
     const days = clean(workflow.quote?.days || '당일~1일');
     const sampleOrder = String(workflow.orderType || workflow.order?.kind || '') === 'sample';
-    const server = await serverMessage(sampleOrder ? 'common.sample_hire_greeting.v1' : 'common.hire_greeting.v1', { days, sampleScope: clean(workflow.quote?.sampleScope || '핵심 일부') });
+    const server = await serverMessage(sampleOrder ? 'common.sample_hire_greeting.v1' : 'common.hire_greeting.v1', { days, sampleScope: clean(workflow.quote?.sampleScope || '핵심 일부') }, String(workflow.quote?.serviceId || ''));
     if (!server) { renderStatus('고용 인사 대기', '서버 문구를 받지 못해 보내지 않았습니다. 다음 확인 때 다시 시도합니다.'); return false; }
     const message = server.text;
     setBusy(true);

@@ -1,14 +1,14 @@
 # Astra 운영 기준 (생성물)
 
 > **이 파일은 생성물 — 직접 고치지 말 것.** 값을 바꾸려면 services/*.json을 준희 승인으로 고친 뒤 `node scripts/build-astra-brief.cjs`로 다시 만든다.
-> 생성 시각: 2026-09-24 23:07 KST · 만든 것: scripts/build-astra-brief.cjs · 금액·기간·수정 횟수는 서버 견적 함수(buildSoomgoQuote, server/pricing-table.js) 계산값
+> 생성 시각: 2026-09-26 00:10 KST · 만든 것: scripts/build-astra-brief.cjs · 금액·기간·수정 횟수는 서버 견적 함수(buildSoomgoQuote, server/pricing-table.js) 계산값
 > 원본 파일:
-> - services/subtitle.json · quoteMessageVersion v8 · 수정 2026-09-24 17:31 KST · sha256 bac1c083e75d
-> - services/document_writing.json · quoteMessageVersion v8 · 수정 2026-09-24 22:01 KST · sha256 3d7c6a683b10
-> - services/presentation.json · quoteMessageVersion v6 · 수정 2026-09-24 22:01 KST · sha256 c5eb6f4cfe88
-> - services/translation_en.json · quoteMessageVersion 없음 · 수정 2026-09-22 03:25 KST · sha256 f8337214a993
-> - services/video_edit.json · quoteMessageVersion v1 · 수정 2026-09-24 23:01 KST · sha256 4f7875181ec8
-> - docs/decisions.md (1·2·3·7-1절 읽기만) · 수정 2026-09-24 22:00 KST · sha256 0c2f455fe44b
+> - services/subtitle.json · quoteMessageVersion v8 · 수정 2026-09-25 15:49 KST · sha256 bac1c083e75d
+> - services/document_writing.json · quoteMessageVersion v8 · 수정 2026-09-25 15:49 KST · sha256 3d7c6a683b10
+> - services/presentation.json · quoteMessageVersion v6 · 수정 2026-09-25 15:49 KST · sha256 c5eb6f4cfe88
+> - services/translation_en.json · quoteMessageVersion 없음 · 수정 2026-09-25 15:49 KST · sha256 f8337214a993
+> - services/video_edit.json · quoteMessageVersion v1 · 수정 2026-09-26 00:06 KST · sha256 614cdb170849
+> - docs/decisions.md (1·2·3·7-1절 읽기만) · 수정 2026-09-25 15:49 KST · sha256 e61bfdfaedfe
 
 ## 쓰는 법 (내부 규칙)
 
@@ -120,8 +120,8 @@
 
 ## 영상 편집 (`video_edit`)
 
-- 판매: 숨고 판매(2026-09-24~). 자동 견적(decisions 7-10, 지시 24): 스위치 autoQuote.enabled가 켜져 있으면(지금 켜짐) 원본 길이가 있고 작업 기간이 정해진 요청에 하루 10건까지 요청봇이 자동 발송. 꺼져 있거나 길이 모름·모션그래픽·3D·더빙·촬영·방문이 섞이면 준희 확인 알림.
-- 범위: 말하는 영상(강의·인터뷰·유튜브 토크·행사 발언) 컷편집 + 한국어 자막 입히기(번역 자막 가능), 결과물 MP4, 수정 2회
+- 판매: 숨고 판매(2026-09-24~). 자동 견적(decisions 7-10, 지시 24): 스위치 autoQuote.enabled가 켜져 있으면(지금 켜짐) 원본 길이가 있고 작업 기간이 정해진 요청에 하루 30건까지 요청봇이 자동 발송. 꺼져 있거나 길이 모름·모션그래픽·3D·더빙·촬영·방문이 섞이면 준희 확인 알림.
+- 범위: 컷편집·자막(말하는 영상: 강의·인터뷰·유튜브 토크·행사 발언, 한국어 자막·번역 자막), 식전·성장(돌잔치) 사진 영상, 쇼츠·릴스, 행사·강의 영상 편집 등 결과물 MP4, 수정 2회. 촬영·3D·모션그래픽은 하지 않음
 - 안 하는 것: 모션그래픽·3D·더빙·촬영·방문·광고 영상 연출
 
 ### 고객에게 말하는 값 (고객 안내용)

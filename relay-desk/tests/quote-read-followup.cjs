@@ -2,7 +2,10 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const { soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, buildSoomgoAiReplyPrompt } = require('../server/relay-server');
+const { soomgoQuoteReadFollowupReply: followupReplyRaw, soomgoConversationIdFromUrl, buildSoomgoAiReplyPrompt } = require('../server/relay-server');
+// 9/25 준희: 안부 멘트는 정책 quoteReadFollowup.enabled(기본 false)로 꺼져 있다. 아래 시험은 스위치를 켠 상태의 문장 규칙을 본다.
+const soomgoQuoteReadFollowupReply = (state, body) => followupReplyRaw(state, body, { policy: { quoteReadFollowup: { enabled: true } } });
+assert.equal(followupReplyRaw({ soomgoLeads: [], soomgoWorkflows: [] }, { conversationId: 'off-1', quoteReadFollowup: true, quoteReadEvidence: true, quote: { serviceId: 'video_edit', amount: 69000 } }, { policy: { quoteReadFollowup: { enabled: false } } }).templateKey, 'quote_read_followup_off');
 
 const lead = {
   conversationId: 'chat-12345',

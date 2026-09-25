@@ -214,6 +214,12 @@ function createAstraRoomBridge(options = {}) {
         event.honorificHold = { reason: holdReason(honorific), problems: honorific.problems.slice(0, 5) };
       }
     }
+    // 9/25 시뮬 10: 처리 중에 더 새 답장이 바로 나갔거나 고용으로 넘어간 방이면 이 답은 내보내지 않는다
+    if (event.superseded && event.deliveryStatus === 'ready') {
+      event.deliveryStatus = 'skipped';
+      event.deliveryEvidence = { reason: event.superseded.reason, at: event.superseded.at };
+      event.deliveryUpdatedAt = now();
+    }
     event.completedAt = now();
     event.updatedAt = event.completedAt;
     current.updatedAt = event.updatedAt;
@@ -271,6 +277,45 @@ function createAstraRoomBridge(options = {}) {
     return cancelled;
   }
 
+  // 9/25 시뮬 10: 같은 방에 더 새 답장이 바로 나갔거나(고용 요청 등) 고용 뒤 단계로 넘어가면, 그보다 먼저 들어와
+  // 아직 안 나간 고객 답장(대기·실패·처리 중·보낼 준비)은 내보내지 않는다. 옛 질문에 대한 늦은 답이 고용 뒤에 나가는 것을 막는다.
+  // options.before: 이 시각보다 먼저 만든 사건만, options.exceptMessageId: 지금 메시지의 사건은 제외
+  function supersedeConversation(conversationId, reason = 'superseded', options = {}) {
+    const at = typeof options.at === 'number' ? options.at : Date.now();
+    const before = typeof options.before === 'number' ? options.before : at;
+    const exceptMessageId = String(options.exceptMessageId || '');
+    const stamp = new Date(at).toISOString();
+    const current = state();
+    const affected = [];
+    for (const event of current.events) {
+      if (event.eventType !== 'customer_message') continue;
+      if (String(event.payload?.conversationId || '') !== String(conversationId || '')) continue;
+      if (exceptMessageId && String(event.payload?.messageId || '') === exceptMessageId) continue;
+      const createdAt = Date.parse(event.createdAt || '') || 0;
+      if (createdAt > before) continue;
+      if (event.status === 'pending' || event.status === 'failed') {
+        event.status = 'completed';
+        event.response = { mode: 'CUSTOMER_REPLY', decision: 'WAIT', reply: '', fields: { DECISION: 'WAIT', REASON: reason }, raw: '' };
+        event.deliveryStatus = 'skipped';
+      } else if (event.status === 'dispatched') {
+        event.superseded = { reason, at: stamp };
+        affected.push(event.eventId);
+        continue;
+      } else if (event.status === 'completed' && event.deliveryStatus === 'ready') {
+        event.deliveryStatus = 'skipped';
+      } else {
+        continue;
+      }
+      event.superseded = { reason, at: stamp };
+      event.deliveryEvidence = { reason, at: stamp };
+      event.deliveryUpdatedAt = stamp;
+      event.updatedAt = stamp;
+      affected.push(event.eventId);
+    }
+    if (affected.length) { current.updatedAt = now(); writeJson(dataFile, current); }
+    return affected;
+  }
+
   function markDelivery(eventId, status, evidence = {}) {
     const allowed = new Set(['sent', 'skipped', 'uncertain']);
     if (!allowed.has(status)) throw new Error('astra_room_delivery_status_invalid');
@@ -325,7 +370,7 @@ function createAstraRoomBridge(options = {}) {
     return { config: cfg, counts, total: current.events.length, dataFile, configFile };
   }
 
-  return { config, summary, enqueue, list, get, claim, complete, outbox, markDelivery, fail, link, parseFields, cancelScheduled };
+  return { config, summary, enqueue, list, get, claim, complete, outbox, markDelivery, fail, link, parseFields, cancelScheduled, supersedeConversation };
 }
 
 module.exports = { createAstraRoomBridge, parseFields };

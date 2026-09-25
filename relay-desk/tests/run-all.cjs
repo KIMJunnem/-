@@ -97,7 +97,8 @@ const suites = [
   ['영상 편집 견적 말투(준희 예시)·31~69분·섞인 편집·끝이 열린 길이 (지시 25)', 'tests/video-auto-quote-25.cjs'],
   ['견적 판단(Claude, 스위치 기본 꺼짐)·합성 5건·한도 (지시 19)', 'tests/quote-judge-19.cjs'],
   ['고객 첨부 판단(Claude, 스위치 기본 꺼짐)·합성 첨부 5건·영상은 길이만 (지시 20)', 'tests/attachment-judge-20.cjs'],
-  ['Claude 사용 단가 = 정책 claudeQuote', 'tests/claude-usage-rate.cjs']
+  ['Claude 사용 단가 = 정책 claudeQuote', 'tests/claude-usage-rate.cjs'],
+  ['9/25 고객 여정 시뮬 수정(영상 고용·할인 금액·쇼츠 개수·전액 결제·안부 멘트 끔·상한 추가)', 'tests/sim-fixes-0925.cjs']
 ];
 
 const results = [];

@@ -2337,7 +2337,7 @@ function contextualizeSoomgoReplyBody(state, body = {}) {
     quoteSent: Boolean(body.quoteSent === true || linkedLead?.quoteEvidence?.status === 'sent'),
     priorTemplateKeys: Array.isArray(body.priorTemplateKeys) ? body.priorTemplateKeys : priorTemplateKeys,
     request: body.request && typeof body.request === 'object' ? body.request : (linkedLead?.request || null),
-    quote: body.quote && typeof body.quote === 'object' ? body.quote : (linkedLead?.quote || null),
+    quote: mergeSoomgoCardQuote(body.quote, linkedLead?.quote),
     hiredConversation: Boolean(body.hiredConversation || workflow || hiredByLead || isHiredSoomgoConversation(`${history}\n${message}`)),
     workflowStage: String(workflow?.stage || body.workflowStage || ''),
     sampleCredit: sampleMatch.link ? {
@@ -2347,6 +2347,22 @@ function contextualizeSoomgoReplyBody(state, body = {}) {
       fullAmount: Math.max(0, Number(body.quote?.amount || 0))
     } : null
   };
+}
+
+// 9/25 시뮬 3: 채팅봇이 채팅방 견적 카드에서 읽은 {amount}만으로 서버 견적(기간·서비스·"부터")을 덮어쓰지 않는다.
+// 서버에 저장된 견적이 있으면 그 값을 쓰고, 서버에 없는 칸만 카드 값으로 채운다. 카드 금액이 다르면 cardAmount로 남긴다.
+function mergeSoomgoCardQuote(cardQuote, leadQuote) {
+  const card = cardQuote && typeof cardQuote === 'object' ? cardQuote : null;
+  const lead = leadQuote && typeof leadQuote === 'object' ? leadQuote : null;
+  if (!lead) return card;
+  if (!card) return lead;
+  const merged = { ...card };
+  for (const [key, value] of Object.entries(lead)) {
+    if (value === undefined || value === null || value === '') continue;
+    merged[key] = value;
+  }
+  if (Number(card.amount || 0) > 0 && Number(lead.amount || 0) > 0 && Number(card.amount) !== Number(lead.amount)) merged.cardAmount = Number(card.amount);
+  return merged;
 }
 
 // 숨고 요청서에 바로 답할 때 쓰는 빠른 견적 엔진이다. 외부 AI 호출을
@@ -3409,6 +3425,13 @@ function soomgoProject(current) {
   return { project, added: true };
 }
 
+// 9/25 시뮬: 영상 편집 업무는 요청 글만으로 서비스를 못 정해 업무 조회(/api/soomgo/workflow)가 500이 됐다 → 견적의 서비스 ID로 채운다
+function workflowRequestWithService(workflow = {}) {
+  const request = workflow?.request || {};
+  const serviceId = String(request.serviceId || workflow?.quote?.serviceId || '').trim();
+  return serviceId && !request.serviceId ? { ...request, serviceId } : request;
+}
+
 function requestedWorkflowFormats(request = {}) {
   const formatDescriptors = {
     docx: { key: 'word', label: 'Word', extension: 'docx', supported: true },
@@ -4054,7 +4077,7 @@ function workflowCustomerName(current, workflow) {
 // AI 결과 파일은 요청한 형식별 본문을 담아 해시·버전과 함께 저장한다.
 function createWorkflowArtifact(current, workflow, resultPost, kind, format = null) {
   const text = redactSoomgoPromptText(format?.content ?? resultPost?.text ?? '').trim();
-  const descriptor = format || requestedWorkflowFormats(workflow.request || {})[0];
+  const descriptor = format || requestedWorkflowFormats(workflowRequestWithService(workflow))[0];
   const formatKey = descriptor?.key || 'text';
   let extension = descriptor?.extension || 'txt';
   let buffer = Buffer.from(text || '결과 내용 없음', 'utf8');
@@ -4146,7 +4169,7 @@ function createWorkflowArtifact(current, workflow, resultPost, kind, format = nu
 }
 
 function createWorkflowArtifacts(current, workflow, resultPost, kind) {
-  const formats = requestedWorkflowFormats(workflow.request || {});
+  const formats = requestedWorkflowFormats(workflowRequestWithService(workflow));
   const artifacts = [];
   for (const format of formats) {
     if (format.key === 'exe') {
@@ -4237,7 +4260,7 @@ function buildArtifactVerification(workflow, resultPost, artifacts) {
       executionCheck: executionRequired ? 'not_verified' : 'not_applicable'
     };
   });
-  const required = requestedWorkflowFormats(workflow.request || {}).filter(item => item.supported && item.key !== 'exe');
+  const required = requestedWorkflowFormats(workflowRequestWithService(workflow)).filter(item => item.supported && item.key !== 'exe');
   const requiredFormatsMatched = required.every(format => customerFiles.some(file => path.extname(String(file.name || file.originalName || '')).toLowerCase() === `.${format.extension}`));
   const quality = buildWorkflowQualityResult(workflow, artifacts);
   const allRequiredArtifactsPresent = requiredFormatsMatched && files.length > 0 && files.every(file => file.openCheck === 'passed' && file.validatedSha256 && file.validatedSha256.toLowerCase() === file.currentSha256.toLowerCase()) && quality.status === 'passed';
@@ -4367,15 +4390,15 @@ function workflowFormatIssue(current, workflow, pendingDelivery = workflow?.pend
   if (workflow?.deliveryHoldReason === 'artifact_rebuild_pending') {
     return {
       code: 'artifact_rebuild_pending', blocked: true,
-      requiredKeys: requestedWorkflowFormats(workflow.request || {}).map(format => format.key),
-      requested: requestedWorkflowFormats(workflow.request || {}).map(format => `${format.label} (.${format.extension})`),
+      requiredKeys: requestedWorkflowFormats(workflowRequestWithService(workflow)).map(format => format.key),
+      requested: requestedWorkflowFormats(workflowRequestWithService(workflow)).map(format => `${format.label} (.${format.extension})`),
       available: workflowAvailableFiles(current, workflow).map(file => String(file.name || file.originalName || '파일명 없음')),
       missing: [],
       message: '기존 검수 기록은 대화형 응답으로 판정되어 무효 처리되었습니다. 고객이 요청한 실제 결과물을 새로 작성하고 로컬 검사와 Astra 최종검수를 통과하기 전까지 전달할 수 없습니다.'
     };
   }
   if (workflow?.deliveryHoldReason === 'quality_extension_pending' && pendingDelivery && !pendingDelivery.deliveredAt) {
-    const required = requestedWorkflowFormats(workflow.request || {});
+    const required = requestedWorkflowFormats(workflowRequestWithService(workflow));
     const available = workflowDeliveryFiles(current, workflow, pendingDelivery);
     const missing = required.filter(format => !available.some(file => path.extname(String(file.name || file.originalName || '')).toLowerCase() === `.${format.extension}`));
     return {
@@ -4408,7 +4431,7 @@ function workflowFormatIssue(current, workflow, pendingDelivery = workflow?.pend
       message: workflow?.manualFinalReview?.reason || '최종 확인 대기'
     };
   }
-  const required = requestedWorkflowFormats(workflow.request || {});
+  const required = requestedWorkflowFormats(workflowRequestWithService(workflow));
   if (!pendingDelivery || pendingDelivery.deliveredAt) {
     if (workflowCanChangeFormatsBeforeFirstDelivery(workflow)) {
       const available = workflowAvailableFiles(current, workflow);
@@ -4580,11 +4603,22 @@ function workflowPaymentAmount(workflow = {}) {
   return Math.max(0, Math.round(base + extras - Math.min(base, sampleCredit)));
 }
 
+// 9/25 준희 "영상이 안 되면 다른 것도 안 되는 거잖아": 모든 서비스를 착수금·잔금으로 나누지 않고 전액 한 번 결제가 기본(정책 paymentSplit.enabled, 기본 false).
+// 숨고페이가 한 거래에 결제 요청을 두 번(착수금·잔금) 받을 수 있는지는 확인되지 않았다. 켜면 예전처럼 5만 원 넘는 작업을 50%로 나눈다(로직은 남겨 둠).
+let paymentSplitTestOverride = null;
+function setPaymentSplitForTest(value) { paymentSplitTestOverride = typeof value === 'boolean' ? value : null; return paymentSplitTestOverride; }
+function workflowPaymentSplitAllowed() {
+  if (paymentSplitTestOverride !== null) return paymentSplitTestOverride;
+  let policy = {};
+  try { policy = readOperatingPolicy(); } catch (_) { policy = {}; }
+  return policy.paymentSplit?.enabled === true;
+}
+
 function workflowPaymentPlan(workflow = {}) {
   const totalAmount = workflowPaymentAmount(workflow);
   const sampleOrder = workflow.sampleOrder === true || String(workflow.orderType || workflow.order?.kind || '') === 'sample';
   const sampleCredit = sampleOrder ? 0 : Math.max(0, Number(workflow.sampleCreditAmount || workflow.sampleCredit?.amount || 0));
-  const splitEligible = !sampleOrder && totalAmount > 50000;
+  const splitEligible = !sampleOrder && totalAmount > 50000 && workflowPaymentSplitAllowed(workflow);
   const depositRate = splitEligible ? 0.5 : 1;
   if (!splitEligible) {
     return { totalAmount, sampleCredit, depositRate, depositAmount: totalAmount, balanceAmount: 0, split: false, round: 1, requestAmount: totalAmount, label: '전액 선결제' };
@@ -4720,6 +4754,17 @@ function isSoomgoWorkflowStatusQuestion(value) {
   return /(?:언제|며칠|몇\s*일|기간|소요일|납기|진행\s*(?:상황|현황|어디까지|어느\s*정도)|작업\s*(?:상황|현황)|1차\s*(?:본|결과).{0,12}(?:언제|나오|받)|결과물.{0,12}(?:언제|나오|받)|어떻게\s*(?:진행|되어가|되)|(?:바로|지금|오늘|내일).{0,10}(?:작업|진행).{0,10}(?:가능|시작|착수)|(?:작업|진행).{0,12}(?:상황|현황|시작|착수|중|가능))/i.test(String(value || ''));
 }
 
+// 9/25 준희: 고객 자료는 이메일이나 고객 클라우드(구글 드라이브 등) 링크로 받는다. 이메일 주소는 정책 contact.materialsEmail에만 둔다
+// (비어 있으면 링크만 부탁한다 — 코드에 주소를 적지 않는다).
+function videoEditMaterialsLine(policy = null) {
+  let email = '';
+  try { email = String((policy || readOperatingPolicy()).contact?.materialsEmail || '').trim(); } catch (_) { email = ''; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) email = '';
+  return email
+    ? `영상·사진 자료는 구글 드라이브 같은 클라우드에 올려 공유 링크를 이 채팅으로 보내주시거나 메일(${email})로 보내주세요.`
+    : '영상·사진 자료는 구글 드라이브 같은 클라우드에 올려 공유 링크를 이 채팅으로 보내주세요.';
+}
+
 function soomgoWorkflowStatusReply(workflow) {
   const days = String(workflow?.quote?.days || '당일~1일');
   switch (String(workflow?.stage || '')) {
@@ -4754,7 +4799,7 @@ function soomgoWorkflowStatusReply(workflow) {
       return `기본 의뢰는 고용 확정에 따라 진행 중이며, 추가 요청은 안내드린 금액 동의를 기다리고 있습니다. 기본 납기는 ${days}입니다.`;
     case 'awaiting_first_result':
     default:
-      return `고용 확정 감사합니다. 작업을 제작 큐에 등록해 진행 중입니다. 예상 소요일은 ${days}이며, 1차 결과물을 먼저 보내드리고 피드백 반영 후 수정본과 최종본을 순서대로 전달하겠습니다.`;
+      return `고용 확정 감사합니다. 작업을 제작 큐에 등록해 진행 중입니다. 예상 소요일은 ${days}이며, 1차 결과물을 먼저 보내드리고 피드백 반영 후 수정본과 최종본을 순서대로 전달하겠습니다.${String(workflow?.quote?.serviceId || '') === 'video_edit' ? ` ${videoEditMaterialsLine()}` : ''}`;
   }
 }
 
@@ -4794,7 +4839,9 @@ function isWorkflowCompletion(value) {
   if (!text || /(?:수정|추가|문제|아직|다시|확인해\s*볼)/i.test(text) && !/(?:수정\s*(?:할\s*)?부분\s*없|문제\s*없)/i.test(text)) return false;
   // "확인해볼게요" 같은 중간 답변을 결제 단계로 넘기지 않는다.
   return /(?:최종본|최종\s*(?:결과|파일)).{0,80}(?:확인했습니다|확인했어요|괜찮습니다|좋습니다|문제\s*없습니다|수정\s*(?:할\s*)?부분\s*없(?:습니다|어요)?|마음에\s*(?:듭니다|들어요))/i.test(text)
-    || /^(?:네[,\s]*)?(?:확인했습니다|확인했어요|괜찮습니다|좋습니다|문제\s*없습니다|수정\s*(?:할\s*)?부분\s*없(?:습니다|어요)?|마음에\s*(?:듭니다|들어요))[.!?\s]*$/i.test(text);
+    || /^(?:네[,\s]*)?(?:확인했습니다|확인했어요|괜찮습니다|좋습니다|문제\s*없습니다|수정\s*(?:할\s*)?부분\s*없(?:습니다|어요)?|마음에\s*(?:듭니다|들어요))[.!?\s]*$/i.test(text)
+    // 9/25 시뮬 6: "감사합니다 잘 받았어요"·"잘 받았습니다"·"확인했어요 좋네요"·"마음에 들어요"도 최종 확인(짧은 말, 질문·수정 요청 없을 때만)
+    || (text.length <= 60 && /(?:잘\s*받았(?:어요|습니다|네요)|마음에\s*(?:듭니다|들어요|드네요|쏙)|만족(?:합니다|해요|스러워요|스럽습니다)|(?:확인했(?:어요|습니다)|받았(?:어요|습니다))[,.!~\s]*(?:좋네요|좋아요|좋습니다|괜찮네요|감사합니다))/i.test(text));
 }
 
 function isWorkflowPaymentDone(value) {
@@ -5755,7 +5802,8 @@ function soomgoReply(body = {}) {
       manualReview: false,
       postHire: true,
       templateKey: 'post_hire_chat',
-      text: `고용 확정 감사합니다. ${statusText}`
+      // 9/25 시뮬 11: 상태 문장이 이미 "고용 확정 감사합니다."로 시작하면 두 번 붙이지 않는다
+      text: /^고용 확정 감사합니다/.test(statusText) ? statusText : `고용 확정 감사합니다. ${statusText}`
     };
   }
   // 우리가 보낸 접수 폼에 대한 답변이면 폼 흐름이 먼저 처리한다. 폼을
@@ -5800,15 +5848,20 @@ function soomgoReply(body = {}) {
   // 봇이 '어떤 결과물이 필요하신지 알려주세요'만 반복해 고용으로 못 넘어갔다(대화 …2101, …9573).
   // 견적 금액이 있는 대화에서 짧은 승낙은 진행 의사로 본다.
   const shortProceed = Number(quote?.amount || 0) > 0 && isSoomgoShortProceed(message);
-  const quoteHasEnoughTerms = Number(quote?.amount || 0) > 0
-    && Boolean(String(quote?.basicScope || '').trim() || /(?:기본\s*범위|포함\s*범위|결과물|A4|페이지|쪽|장|문항)/i.test(conversationText))
+  // 9/25 시뮬 1: 영상 견적 문구는 금액·기간·"수정은 2회까지"를 이미 담고 있다 → 조건이 갖춰진 것으로 본다(접수 양식 대신 고용으로)
+  const videoEditQuote = String(quote?.serviceId || '') === 'video_edit' || quote?.pricing?.type === 'video_edit';
+  const quoteHasEnoughTerms = Number(quote?.amount || 0) > 0 && (videoEditQuote || (
+    Boolean(String(quote?.basicScope || '').trim() || /(?:기본\s*범위|포함\s*범위|결과물|A4|페이지|쪽|장|문항)/i.test(conversationText))
     && Boolean(String(quote?.days || '').trim() || /(?:예상\s*소요일|납기|당일|익일|\d+\s*일)/i.test(conversationText))
-    && Boolean(String(quote?.extraScope || '').trim() || /(?:추가\s*(?:금|비용)|수정\s*\d+\s*회|사전\s*동의|별도\s*(?:안내|비용|견적))/i.test(conversationText));
+    && Boolean(String(quote?.extraScope || '').trim() || /(?:추가\s*(?:금|비용)|수정\s*(?:은|는)?\s*\d+\s*회|사전\s*동의|별도\s*(?:안내|비용|견적))/i.test(conversationText))));
   const hireOfferAlreadyMade = alreadyAskedSoomgoHire(conversationText);
-  if ((explicitProceed || shortProceed) && (quoteHasEnoughTerms || hireOfferAlreadyMade)) {
-    // 9/25 지시 32: 채팅에서 할인한 방이면 합의 금액을 남긴다 → 고용 연결(/api/soomgo/hire) 때 작업·결제 요청 금액으로 쓴다(준희 "봇이 정하게")
+  // 9/25 지시 32 + 시뮬 2: 채팅에서 할인한 방이면 고용으로 가는 모든 길에 합의 금액을 남긴다 → /api/soomgo/hire 때 작업·결제 요청 금액으로 쓴다(준희 "봇이 정하게")
+  const agreedDiscountNote = () => {
     const agreed = chatAmountRange({ quote, conversationText });
-    const discountNote = agreed?.discountUsed ? { agreedAmount: agreed.discountUsed, reason: `채팅에서 ${agreed.discountUsed.toLocaleString('ko-KR')}원으로 할인 합의 · 이 금액으로 작업·결제 요청` } : {};
+    return agreed?.discountUsed ? { agreedAmount: agreed.discountUsed, reason: `채팅에서 ${agreed.discountUsed.toLocaleString('ko-KR')}원으로 할인 합의 · 이 금액으로 작업·결제 요청` } : {};
+  };
+  if ((explicitProceed || shortProceed) && (quoteHasEnoughTerms || hireOfferAlreadyMade)) {
+    const discountNote = agreedDiscountNote();
     return {
       ...discountNote,
       autoSend: true,
@@ -5828,6 +5881,7 @@ function soomgoReply(body = {}) {
       && quote
       && Number(quote.amount || 0) > 0
       && !INTAKE_FORM_MARKER.test(conversationText)
+      && !videoEditQuote // 9/25 시뮬 1: 문서용 접수 양식(A4·학교 과제)은 영상 견적에 보내지 않는다
       && !alreadyAskedSoomgoHire(conversationText)) {
     const form = buildIntakeForm({ ...body, ...((body.request && typeof body.request === 'object') ? body.request : {}) }, quote, { greeting: false, disclosure: false, quoteFollowup: true });
     return {
@@ -5851,9 +5905,13 @@ function soomgoReply(body = {}) {
       };
     }
     const researchAffirmation = /자료조사|공개자료|조사\s*범위/i.test(lastAssistant);
-    const askedToSendHire = alreadyAskedSoomgoHire(`[내 답변] ${lastAssistant}`);
+    // 9/25 시뮬 2: "76,000원으로 보내드릴까요?"처럼 우리가 낮춘 금액을 묻고 고객이 "네"라고 하면 그 금액으로 고용 요청
+    const discountOfferAsked = !researchAffirmation && /[?？]|까요/.test(lastAssistant)
+      && Boolean(chatAmountRange({ quote, conversationText: `[내 답변] ${lastAssistant}` })?.discountUsed);
+    const askedToSendHire = alreadyAskedSoomgoHire(`[내 답변] ${lastAssistant}`) || discountOfferAsked;
     if (askedToSendHire) {
       return {
+        ...agreedDiscountNote(),
         autoSend: true,
         manualReview: false,
         hireRequest: true,
@@ -5866,6 +5924,7 @@ function soomgoReply(body = {}) {
       && /(?:이\s*조건(?:과\s*금액)?으로\s*진행(?:할까요|하시겠어요)|진행하실\s*거면.{0,40}진행하겠습니다|안내한\s*조건으로\s*진행)/i.test(lastAssistant);
     if (acceptedQuotedTerms) {
       return {
+        ...agreedDiscountNote(),
         autoSend: true,
         manualReview: false,
         hireRequest: true,
@@ -6414,6 +6473,15 @@ function applyChatReplyPolicy(body = {}, reply = {}) {
   if (videoQuestion && !pricedQuote && reply.autoSend && !reply.manualReview && !reply.workflowHandled) {
     let priced = null;
     try { priced = require('./video-edit-quote').videoEditQuote({ volume: message, topic: message, text: message }); } catch (_) { priced = null; }
+    // 9/25 시뮬 4: 쇼츠는 원본 길이가 아니라 개당 단가 × 개수(자료를 한 번에 주면 묶음 할인)로 답한다
+    if (priced && priced.amount && priced.options?.shorts) {
+      const s = priced.shorts;
+      const text = s
+        ? `쇼츠는 개당 ${s.unitAmount.toLocaleString('ko-KR')}원이라 ${s.count}개면 ${s.fullAmount.toLocaleString('ko-KR')}원입니다.${s.bundleRate ? ` 자료를 한 번에 주셔서 같이 작업할 수 있으면 ${s.count}개 묶음으로 ${Math.round(s.bundleRate * 100)}% 할인해 드릴 수 있습니다.` : ''} 수정 ${priced.revisions}회가 포함됩니다.`
+        : `쇼츠 1개(1분 이내)는 ${priced.amount.toLocaleString('ko-KR')}원이고 작업 기간은 ${priced.days}, 수정 ${priced.revisions}회가 포함됩니다.`;
+      // 할인가는 숫자로 쓰지 않는다(우리 말에 낮은 금액이 나가면 채팅 할인 한 번을 쓴 것으로 셈해져 고용 금액이 바뀜)
+      return { ...reply, templateKey: 'video_edit_price', messageId: 'video_edit.chat_price.v1', text, videoEdit: { amount: priced.amount, shorts: s || null } };
+    }
     if (priced && priced.amount && !priced.materialsBased) {
       const days = priced.days ? `작업 기간은 ${priced.days}이고` : '작업 기간은 영상을 받아 본 뒤 날짜로 알려드리고';
       return { ...reply, templateKey: 'video_edit_price', messageId: 'video_edit.chat_price.v1', text: `영상 편집은 원본 ${priced.minutes}분 기준 ${priced.amount.toLocaleString('ko-KR')}원입니다. ${days}, 수정 ${priced.revisions}회가 포함됩니다.`, videoEdit: { amount: priced.amount, minutes: priced.minutes } };
@@ -6464,7 +6532,10 @@ function soomgoChatFactsText(body = {}) {
     const vid = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'services', 'video_edit.json'), 'utf8'));
     const p = vid.pricing || {};
     const over = (p.packages || []).find(item => item.unit);
-    lines.push(`영상 편집(지금 숨고에서 받음): ${vid.scope}. 원본 10분 이내 ${won(p.packages[0].saleAmount)}(${p.packages[0].days}), 30분 이내 ${won(p.packages[1].saleAmount)}(${p.packages[1].days}), 30분 넘으면 5분마다 ${won(over.unit.saleAmount)} 추가, 원본 ${p.cap?.fromMinutes || 70}분 이상은 ${won(p.cap?.saleAmount || 249000)}(${p.cap?.days || '3~4일'})이 상한이고 옵션을 더해도 넘지 않음. 쇼츠 1개(결과 1분 이내, 원본 10분 이내) ${won(p.shorts.saleAmount)}(${p.shorts.days}). 번역 자막은 20% 추가, 배경음악 넣기·밝기 색 맞추기는 요청할 때만 각 ${won(10000)}. 수정 ${vid.includedRevisions}회. 결과물 MP4. 경험: ${vid.experienceLine}`);
+    // 9/25 시뮬 8: 범위를 넓게(식전·성장 사진영상·쇼츠·행사), 사진·자료 기준 시작가, 쇼츠 개수·묶음 할인을 [사실]에 넣는다
+    const m = p.materials || {};
+    const bundle = (p.shorts?.bundle?.rates || []).map(r => `${r.minCount}${r.maxCount ? `~${r.maxCount}` : '개 이상'}${r.maxCount ? '개' : ''} ${Math.round(Number(r.rate) * 100)}%`).join(', ');
+    lines.push(`영상 편집(지금 숨고에서 받음): ${vid.scope}. 원본 10분 이내 ${won(p.packages[0].saleAmount)}(${p.packages[0].days}), 30분 이내 ${won(p.packages[1].saleAmount)}(${p.packages[1].days}), 30분 넘으면 5분마다 ${won(over.unit.saleAmount)} 추가, 원본 ${p.cap?.fromMinutes || 70}분 이상은 ${won(p.cap?.saleAmount || 249000)}(${p.cap?.days || '3~4일'})이 상한이고 옵션을 더해도 넘지 않음. 쇼츠 1개(결과 1분 이내, 원본 10분 이내) ${won(p.shorts.saleAmount)}(${p.shorts.days}), 여러 개면 개당 ${won(p.shorts.saleAmount)} × 개수이고 자료를 한 번에 받아 같이 작업할 수 있으면 묶음 할인(${bundle}), 따로따로 해야 하면 개당 정가. 원본 길이로 못 정하는 사진·자료 기준 영상(식전영상·성장영상·돌잔치 등)은 ${won(m.photoAmount || 89000)}부터(${m.photoDays || '2~3일'}), 그 밖에 길이를 모르는 편집은 ${won(m.generalAmount || 69000)}부터(${m.generalDays || '1~2일'}) — 자료를 보고 금액 확정. 번역 자막은 20% 추가, 배경음악 넣기·밝기 색 맞추기는 요청할 때만 각 ${won(10000)}. 수정 ${vid.includedRevisions}회. 결과물 MP4. 경험: ${vid.experienceLine}`);
   } catch (_) {}
   try {
     const sub = minutes => buildSoomgoQuote({ requestId: `FACT-SUB-${minutes}`, purpose: '자막 제작', volume: `${minutes}분`, topic: '한국어 영상 자막', format: 'SRT' }).quote;
@@ -6474,7 +6545,10 @@ function soomgoChatFactsText(body = {}) {
   } catch (_) {}
   lines.push('문서 작성·교정·PPT는 지금 숨고에서 새로 받지 않는다(이미 견적을 보낸 방이면 그 견적대로만 응대).');
   lines.push('안 하는 일: 모션그래픽, 3D, 더빙, 촬영, 방문, 광고 연출, 자소서·이력서 대필, 논문·학위 원고, 설계 도면·물량 산출.');
-  lines.push('결제는 숨고페이 안전결제, 결과물 확인 뒤 거래 확정. 작업 방식을 물으면 작업 도구로 초안을 만들고 결과물은 직접 확인하고 고친다고 말한다. AI 사용 여부 질문은 여기로 오지 않는다(준희가 직접 답함).');
+  lines.push('결제는 숨고페이 안전결제, 결과물 확인 뒤 거래 확정. 작업 방식이나 AI 사용 여부를 물으면 작업 도구로 초안을 만들고 결과물은 직접 확인하고 고친다고 말한다(부풀리지 않는다).');
+  const shortsQuote = body.quote?.videoEdit?.shorts;
+  if (shortsQuote && Number(shortsQuote.count) > 1) lines.push(`이 방 견적: 쇼츠 ${shortsQuote.count}개, 개당 ${won(shortsQuote.unitAmount)} × ${shortsQuote.count}개 = ${won(shortsQuote.fullAmount)}${shortsQuote.bundleRate ? `, 자료를 한 번에 주면 묶음 ${Math.round(shortsQuote.bundleRate * 100)}% 할인가 ${won(shortsQuote.bundleAmount)}` : ''}.`);
+  else if (Number(body.quote?.amount || 0) > 0 && (body.quote?.videoEdit?.materialsBased || /부터/.test(String(body.quote?.message || '')))) lines.push(`이 방 견적 ${won(Number(body.quote?.amount || 0))}은 시작가("부터")다. 자료를 보고 최종 금액을 확정한다.`);
   if (body.hiredConversation) lines.push(`이 방은 숨고 고용이 이미 확정됐다. 작업 단계: ${String(body.workflowStage || '기록 없음')}.`);
   const rangeFacts = chatAmountRangeFacts(chatAmountRange(body));
   if (rangeFacts) lines.push(rangeFacts);
@@ -6556,8 +6630,16 @@ function swanQuoteReadFollowupText(request = {}, quote = {}, state = null) {
   return swanQuoteReadFollowup(request, quote, state).text;
 }
 
-function soomgoQuoteReadFollowupReply(state, body = {}) {
+// 9/25 준희 "견적 받고 답 없는 고객에겐 먼저 연락하지 않는다": 견적 읽음 안부 멘트 스위치(정책 quoteReadFollowup.enabled, 기본 false)
+function quoteReadFollowupEnabled(policy = null) {
+  try { return (policy || readOperatingPolicy()).quoteReadFollowup?.enabled === true; } catch (_) { return false; }
+}
+function soomgoQuoteReadFollowupReply(state, body = {}, opts = {}) {
   const conversationId = String(body.conversationId || '').slice(0, 160);
+  // 고객이 직접 다시 연락해 달라고 한 경우(customerRequestedFollowup)만 스위치와 상관없이 기존 규칙을 따른다
+  if (body.customerRequestedFollowup !== true && !quoteReadFollowupEnabled(opts.policy || null)) {
+    return { autoSend: false, manualReview: false, skip: true, templateKey: 'quote_read_followup_off', reason: '견적 읽음 안부 멘트 꺼짐(정책 quoteReadFollowup.enabled=false · 준희 9/25 먼저 연락하지 않음)' };
+  }
   // 채팅 확장프로그램이 실제 견적 읽음 알림을 확인한 뒤 10분 동안
   // 고객 답장을 기다리고 호출한 경우에만 단 한 번 후속 안내를 허용한다.
   // 고객이 재연락을 직접 요청한 경우도 같은 중복 방지 규칙을 적용한다.
@@ -6758,6 +6840,21 @@ function humanChatViaClaude(body = {}, det = {}, opts = {}) {
   if (!roomReply) return { ...det, autoSend: false, manualReview: true, templateKey: 'human_chat_no_room', reason: 'Claude 답장 대기열이 꺼져 있어 준희 확인' };
   const paidClaim = SOOMGO_PAID_CLAIM.test(text);
   return { ...roomReply, humanViaClaude: true, templateOff: det.templateKey || '', ...(paidClaim ? { attention: true, paymentCheck: true, reason: `${roomReply.reason ? `${roomReply.reason} · ` : ''}고객이 결제했다고 함 · 결제 확인 필요` } : {}) };
+}
+
+// 9/25 시뮬 10: 옛 대기 답을 닫을 만한 새 답인가 — 바로 나가는 답·예약된 답·고용 요청
+function supersedesOlderRoomReplies(reply = {}) {
+  if (!reply || reply.skip) return false;
+  if (reply.hireRequest === true || reply.scheduledReply) return true;
+  return reply.autoSend === true && !reply.pendingRoom && !reply.manualReview && Boolean(String(reply.text || '').trim());
+}
+
+// 9/25 시뮬 5: 존댓말 검사는 고객에게 실제로 나갈 글만 본다. Claude 대기열(pendingRoom·humanViaClaude·supervisor)의 text는
+// Claude에게 주는 지시문이라 검사하면 "존댓말 위반"이 알림 사유로 잘못 뜬다(Claude 답은 bridge에서 따로 검사). 보내지 않는 초안도 건너뜀.
+function honorificCheckApplies(reply = {}) {
+  if (!reply || !reply.text || reply.skip) return false;
+  if (reply.pendingRoom || reply.humanViaClaude || reply.supervisor) return false;
+  return reply.autoSend === true;
 }
 
 // 9/25 지시 31(decisions 7-17): 제브 문지기. 규칙이 못 정해서 Claude로 가려는 고객 말만 제브에 먼저 묻는다.
@@ -8469,7 +8566,7 @@ async function route(req, res) {
         if (!seen) {
           const dryQuote = JSON.parse(JSON.stringify(quote));
           const dryRequest = JSON.parse(JSON.stringify(request));
-          soomgoAutoRules.applySoomgoAutoRules({ body, request: dryRequest, quote: dryQuote, requestedServiceId, existingLead: null, state: { soomgoAutoDeletes: [...(Array.isArray(snapshot.soomgoAutoDeletes) ? snapshot.soomgoAutoDeletes : [])], videoEditAutoQuotes: [...(Array.isArray(snapshot.videoEditAutoQuotes) ? snapshot.videoEditAutoQuotes : [])] }, requestId, now: Date.now(), supportedServiceIds: serviceRegistry.listServices({ channel: 'soomgo' }).map(service => service.id), sampleAmount: soomgoSamplePrice });
+          soomgoAutoRules.applySoomgoAutoRules({ body, request: dryRequest, quote: dryQuote, requestedServiceId, existingLead: null, state: { soomgoAutoDeletes: [...(Array.isArray(snapshot.soomgoAutoDeletes) ? snapshot.soomgoAutoDeletes : [])], videoEditAutoQuotes: [...(Array.isArray(snapshot.videoEditAutoQuotes) ? snapshot.videoEditAutoQuotes : [])], videoEditCapExtras: [...(Array.isArray(snapshot.videoEditCapExtras) ? snapshot.videoEditCapExtras : [])] }, judgeAvailable: true, requestId, now: Date.now(), supportedServiceIds: serviceRegistry.listServices({ channel: 'soomgo' }).map(service => service.id), sampleAmount: soomgoSamplePrice });
           if (quoteJudge.eligible(dryQuote)) {
             try { judgeAttempt = await quoteJudge.attempt({ requestId, request: dryRequest, quote: dryQuote, deps: quoteJudgeDeps() }); }
             catch (error) { judgeAttempt = { log: { at: new Date().toISOString(), day: quoteJudge.kstDay(), requestId, messageId: quoteJudge.MESSAGE_ID, called: false, error: String(error?.message || error).slice(0, 160) } }; }
@@ -8485,7 +8582,7 @@ async function route(req, res) {
       const classifyAttemptsBefore = Number(existing?.classifyAttempts || 0);
       const autoRuleResult = existing?.quoteEvidence?.status === 'sent'
         ? { action: 'none', ruleId: null }
-        : soomgoAutoRules.applySoomgoAutoRules({ body, request, quote, requestedServiceId, existingLead: existing || null, state: current, requestId, now: Date.now(), supportedServiceIds: serviceRegistry.listServices({ channel: 'soomgo' }).map(service => service.id), sampleAmount: soomgoSamplePrice });
+        : soomgoAutoRules.applySoomgoAutoRules({ body, request, quote, requestedServiceId, existingLead: existing || null, state: current, judgeAvailable: Boolean(judgeAttempt?.judge), requestId, now: Date.now(), supportedServiceIds: serviceRegistry.listServices({ channel: 'soomgo' }).map(service => service.id), sampleAmount: soomgoSamplePrice });
       const autoRuleStateChanged = (Array.isArray(current.soomgoAutoDeletes) ? current.soomgoAutoDeletes.length : 0) !== autoDeleteCountBefore
         || Number(existing?.classifyAttempts || 0) !== classifyAttemptsBefore;
       if (claudeAttempt?.log) claudeQuote.appendLog(current, claudeAttempt.log);
@@ -8493,7 +8590,20 @@ async function route(req, res) {
       if (claudeAttempt?.patch && !existing && claudeQuote.eligible(quote)) Object.assign(quote, claudeAttempt.patch);
       // 9/24 지시 19: 견적 판단 결과는 규칙 결과가 여전히 사람 확인일 때만 붙인다
       if (judgeAttempt?.log) quoteJudge.appendLog(current, judgeAttempt.log);
-      if (judgeAttempt?.judge && !existing && quoteJudge.eligible(quote)) quoteJudge.applyResult(quote, judgeAttempt, request);
+      if (judgeAttempt?.judge && !existing && quoteJudge.eligible(quote)) {
+        const overCap = quote.videoEdit?.autoDecision === 'daily_cap';
+        quoteJudge.applyResult(quote, judgeAttempt, request);
+        // 9/25 준희 "30건 넘어도 성사 가능성 높으면 추가": 상한을 넘긴 요청의 판단 "보내기"는 추가 한도(dailyCapExtras.maxPerDay) 안에서만, 따로 센다
+        if (overCap && quote.autoSend === true) {
+          const extraCfg = soomgoAutoRules.capExtrasConfig({});
+          if (extraCfg.enabled && soomgoAutoRules.capExtrasToday(current) < extraCfg.maxPerDay) {
+            soomgoAutoRules.recordCapExtra(current, { requestId, amount: quote.amount, source: 'quote_judge' });
+            quote.videoEdit.capExtra = { ...(quote.videoEdit.capExtra || {}), sent: true, source: 'quote_judge' };
+          } else {
+            Object.assign(quote, { autoSend: false, manualReview: true, reason: `하루 상한 + 추가 한도(${extraCfg.maxPerDay}건) 도달 · 견적 판단은 보내기였지만 보내지 않고 준희 확인` });
+          }
+        }
+      }
       // 9/24 지시 27(7-13): Claude 견적이 붙어도 문서·교정·PPT 숨고 자동 견적 멈춤은 그대로 적용
       soomgoAutoRules.applySoomgoServicePause(quote);
       // 사람 확인 판정 요청은 알림 목록에 한 번만 올린다(다시 열면 확인 시각·고수 수만 갱신).
@@ -8503,7 +8613,10 @@ async function route(req, res) {
       const judgement = quote.deleteRequest !== true && (quote.manualReview === true || quote.autoSend === false)
         ? { decision: quote.manualReview === true ? 'manual_review' : 'unsupported', reason: String(quote.reason || '').slice(0, 300), serviceId: quote.serviceId || null, definitionsVersion: serviceRegistry.definitionsVersion, judgedAt: new Date().toISOString() }
         : null;
-      const revisitMeta = { skipRevisit: Boolean(judgement) && autoRuleResult.action !== 'retry', judgement, definitionsVersion: serviceRegistry.definitionsVersion, autoRule: quote.autoRule || null };
+      // 9/25 시뮬 9: 하루 상한으로 못 보낸 요청은 영구히 건너뛰지 않는다 — 요청이 최근(dailyCapExtras.recentHours) 것이면 다음 날 다시 열어 판단
+      const capHeld = quote.videoEdit?.autoDecision === 'daily_cap' && quote.autoSend !== true && quote.deleteRequest !== true
+        && (Date.now() - (Date.parse(existing?.createdAt || '') || Date.now())) < soomgoAutoRules.capExtrasConfig({}).recentHours * 3600 * 1000;
+      const revisitMeta = { skipRevisit: Boolean(judgement) && autoRuleResult.action !== 'retry' && !capHeld, ...(capHeld ? { revisitReason: 'daily_cap' } : {}), judgement, definitionsVersion: serviceRegistry.definitionsVersion, autoRule: quote.autoRule || null };
       if (existing) {
         let changed = autoRuleStateChanged || Boolean(claudeAttempt?.log);
         if (existing.quoteEvidence?.status !== 'sent' && quote.deleteRequest === true && existing.quote?.deleteRequest !== true) { existing.quote = quote; changed = true; }
@@ -8558,8 +8671,10 @@ async function route(req, res) {
       const message = messageRegistry.getMessage(String(body.id || ''), body.serviceId || null);
       if (!message) return sendJson(res, 404, { error: 'message_not_found' });
       const values = body.values && typeof body.values === 'object' ? Object.fromEntries(Object.entries(body.values).map(([key, value]) => [key, String(value ?? '').slice(0, 200)])) : {};
-      const text = messageRegistry.renderMessage(message, values);
+      let text = messageRegistry.renderMessage(message, values);
       if (/\{\{[A-Za-z0-9_]+\}\}/.test(text) || !text.trim()) return sendJson(res, 422, { error: 'message_values_missing' });
+      // 9/25 준희: 영상 편집 고용 인사에는 자료 공유 방법(클라우드 링크, 정책에 이메일이 있으면 이메일도)을 붙인다
+      if (message.id === 'common.hire_greeting.v1' && String(body.serviceId || '') === 'video_edit') text = `${text} ${videoEditMaterialsLine()}`;
       return sendJson(res, 200, { ok: true, messageId: message.id, version: message.version || 'v1', text });
     } catch (error) {
       return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
@@ -8715,8 +8830,9 @@ async function route(req, res) {
       if (lead.quoteEvidence?.status !== 'sent') {
         return sendJson(res, 409, { error: 'soomgo_quote_not_confirmed', status: lead.quoteEvidence?.status || 'missing' });
       }
-      const request = lead.request || {};
       const fullQuote = lead.quote || body.quote || {};
+      // 9/25 시뮬: 영상 편집 요청은 요청서 글에 "자막" 같은 말이 없으면 서비스를 못 정해 고용 연결이 400으로 멈췄다 → 견적의 서비스 ID를 쓴다
+      const request = lead.request?.serviceId || !fullQuote.serviceId ? (lead.request || {}) : { ...(lead.request || {}), serviceId: fullQuote.serviceId };
       const orderType = body.orderType === 'sample' || body.sampleOrder === true ? 'sample' : 'full';
       // 9/25 준희 "봇이 정하게 해야 돼, 숨고페이 전에 다른 가격 넣으면 꼬여": 채팅에서 합의한 할인가를 작업·결제 요청 금액으로 쓴다(범위 검사 후)
       const agreedAmount = orderType === 'full' ? agreedDiscountFor(current, String(body.conversationId || ''), fullQuote) : null;
@@ -8754,12 +8870,13 @@ async function route(req, res) {
         taskId: work.task.id,
         currentTaskId: work.task.id,
         currentPostId: work.post.id,
-        request: { purpose: request.purpose, format: request.format, requiredFormats: Array.isArray(request.requiredFormats) ? request.requiredFormats : [], volume: request.volume, topic: request.topic, text: redactSoomgoPromptText(request.text || '') },
+        request: { ...(request.serviceId ? { serviceId: request.serviceId } : {}), purpose: request.purpose, format: request.format, requiredFormats: Array.isArray(request.requiredFormats) ? request.requiredFormats : [], volume: request.volume, topic: request.topic, text: redactSoomgoPromptText(request.text || '') },
         quote: quote,
         orderType,
         order: orderType === 'sample'
           ? { kind: 'sample', fullAmount: Number(fullQuote.amount || 0), orderAmount: Number(quote.amount || 0), sampleRate: SOOMGO_SAMPLE_RATE, sampleScope: quote.sampleScope, creditEligibleAmount: Number(quote.amount || 0) }
-          : { kind: 'full', fullAmount: Number(fullQuote.amount || 0), orderAmount: Number(fullQuote.amount || 0) },
+          // 9/25 시뮬 2: 할인 합의가 있으면 주문 금액도 합의 금액(quote.amount)과 같게. 정가는 fullAmount에 남긴다
+          : { kind: 'full', fullAmount: Number(fullQuote.amount || 0), orderAmount: Number(quote.amount || 0), ...(quote.agreedDiscount ? { agreedDiscount: true } : {}) },
         sampleCreditAmount,
         sampleCredit: sampleMatch.link ? { sampleWorkflowId: sampleMatch.link.sampleWorkflowId, amount: sampleCreditAmount, status: 'applied', linkedAt: workflowNow } : null,
         initialProvider: work.task.ai,
@@ -8788,6 +8905,8 @@ async function route(req, res) {
         sampleMatch.link.creditAvailable = false;
       }
       current.soomgoWorkflows = [workflow, ...(Array.isArray(current.soomgoWorkflows) ? current.soomgoWorkflows : [])].slice(0, 2000);
+      // 9/25 시뮬 10: 고용으로 넘어간 방의 옛 상담 답(아직 안 나간 것)은 내보내지 않는다
+      if (lead.conversationId) { try { astraRoomBridge.supersedeConversation(lead.conversationId, 'hired', { before: Date.now() }); } catch (_) {} }
       const activityAt = lead.hiredAt;
       current.activities = [[activityAt, 'Soomgo Bot', lead.id, `${orderType === 'sample' ? '샘플 ' : ''}고용 요청·일정 등록 완료 · Relay Desk 작업 생성 · ${work.post.nextAI} 작성 큐 등록${sampleCreditAmount ? ` · 샘플비 ${sampleCreditAmount.toLocaleString('ko-KR')}원 차감` : ''}`], ...(Array.isArray(current.activities) ? current.activities : [])];
       writeState(current);
@@ -9122,7 +9241,7 @@ async function route(req, res) {
         const qualityPlan = rootTask.qualityPlan || { passes, label: `독립 교차검증 ${passes}회`, gates: ['요구사항·자료 대조', '사실·근거·논리 검토', '분야 적합성·실행 가능성·안전 점검', '수치·계산·출처 재확인', '파일·데이터 무결성 및 결과 형식 확인', '문장·구성·중복·가독성 편집 검수', '참고자료·고객 지시·브랜드 톤 반영 검수', '보안·개인정보·위조·표절 위험 검수', '실행 가능성·납품 절차·추가금 조건 검수', '독립 최종 검수'], rationale: '고객 요청 파일 형식에 맞춰 재제작' };
         qualityPlan.passes = passes;
         const provider = workflow.initialProvider || rootTask.ai || 'OpenAI';
-        const repairFormats = requestedWorkflowFormats(workflow.request || {});
+        const repairFormats = requestedWorkflowFormats(workflowRequestWithService(workflow));
         const repairTaskId = `${workflow.taskId}-FMT-${Date.now()}`;
         const repairTask = {
           ...rootTask, id: repairTaskId, parentTaskId: workflow.taskId,
@@ -9168,8 +9287,8 @@ async function route(req, res) {
         if (!workflow.pendingDelivery || workflow.pendingDelivery.deliveredAt) return sendJson(res, 409, { error: 'no_unconfirmed_delivery_for_exe' });
         if (body.confirmSafeRetry !== true) return sendJson(res, 409, { error: 'confirm_previous_wrong_format_not_sent' });
         if (body.confirmExeTested !== true) return sendJson(res, 409, { error: 'exe_build_and_runtime_test_confirmation_required' });
-        if (!requestedWorkflowFormats(workflow.request || {}).some(format => format.key === 'exe')) return sendJson(res, 409, { error: 'exe_not_requested' });
-        const missingBeforeExe = requestedWorkflowFormats(workflow.request || {}).filter(format => format.key !== 'exe' && !workflowDeliveryFiles(current, workflow).some(file => path.extname(String(file.name || file.originalName || '')).toLowerCase() === `.${format.extension}`));
+        if (!requestedWorkflowFormats(workflowRequestWithService(workflow)).some(format => format.key === 'exe')) return sendJson(res, 409, { error: 'exe_not_requested' });
+        const missingBeforeExe = requestedWorkflowFormats(workflowRequestWithService(workflow)).filter(format => format.key !== 'exe' && !workflowDeliveryFiles(current, workflow).some(file => path.extname(String(file.name || file.originalName || '')).toLowerCase() === `.${format.extension}`));
         if (missingBeforeExe.length) return sendJson(res, 409, { error: 'rebuild_requested_files_first', missing: missingBeforeExe.map(format => format.extension) });
         const name = safeName(body.name || 'relay-result.exe');
         if (!/\.exe$/i.test(name)) return sendJson(res, 400, { error: 'exe_filename_required' });
@@ -9445,7 +9564,7 @@ async function route(req, res) {
         if (asked) reply = asked;
       }
       // 9/25 준희 지시: 채팅봇은 무조건 존댓말. 반말 문장이 있으면 보내지도 예약하지도 않고 사람 확인으로 넘긴다.
-      if (reply && reply.text && !reply.skip) {
+      if (honorificCheckApplies(reply)) {
         const honorific = honorificGuard.checkHonorific(reply.text);
         if (!honorific.ok) reply = { ...reply, autoSend: false, manualReview: true, attention: true, honorificHold: { problems: honorific.problems.slice(0, 5) }, reason: honorificGuard.holdReason(honorific) };
       }
@@ -9461,6 +9580,13 @@ async function route(req, res) {
         }
       } catch (error) {
         reply = { ...reply, autoSend: false, manualReview: true, reason: `예약 실패로 보내지 않음(${String(error.message || error).slice(0, 80)})` };
+      }
+      // 9/25 시뮬 10: 이번 답이 바로 나가거나(고용 요청 포함) 예약되면, 이 방에 먼저 들어와 아직 안 나간 Claude 답은 내보내지 않는다(고용 뒤 늦은 옛 답 방지)
+      if (body.quoteReadFollowup !== true && supersedesOlderRoomReplies(reply)) {
+        try {
+          const superseded = astraRoomBridge.supersedeConversation(conversationId, reply.hireRequest ? 'hire_request_sent' : 'newer_reply_sent', { before: Date.now(), exceptMessageId: messageId });
+          if (superseded.length) reply = { ...reply, supersededRoomEvents: superseded };
+        } catch (_) {}
       }
       const current = readState();
       // 고객이 나갔거나 다른 고수를 선택한 대화는 이후 자동 후속 메시지를 막는다.
@@ -9743,6 +9869,12 @@ async function route(req, res) {
           rows.set(key, row);
         }
         return [...rows.values()].map(row => ({ ...row, replyRate: row.sent ? Math.round((row.replied / row.sent) * 1000) / 10 : 0 })).sort((a, b) => b.sent - a.sent).slice(0, 20);
+      })(),
+      // 9/25: 하루 상한(30건)을 넘겨 추가로 보낸 영상 견적은 따로 센다(점수·견적 판단별)
+      videoEditCapExtras: (() => {
+        const list = Array.isArray(state.videoEditCapExtras) ? state.videoEditCapExtras : [];
+        const sentIds = new Set(quoted.map(lead => lead.requestId));
+        return { total: list.length, sent: list.filter(item => sentIds.has(item.requestId)).length, bySource: list.reduce((acc, item) => { acc[item.source || 'score'] = (acc[item.source || 'score'] || 0) + 1; return acc; }, {}) };
       })(),
       hires: hiredWorkflows.length,
       paymentRequested: paymentRequested.length,
@@ -10485,7 +10617,7 @@ if (require.main === module) {
   setInterval(() => runCustomerRoomFallback().catch(error => console.error(`Customer room fallback error: ${error.message}`)), 15000);
 }
 
-module.exports = { SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, agreedDiscountFor, supervisorReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
+module.exports = { workflowPaymentPlan, quoteReadFollowupEnabled, setPaymentSplitForTest, videoEditMaterialsLine, soomgoWorkflowStatusReply, supersedesOlderRoomReplies, isWorkflowCompletion, honorificCheckApplies, mergeSoomgoCardQuote, workflowPaymentSplitAllowed, SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, agreedDiscountFor, supervisorReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
 
 
 

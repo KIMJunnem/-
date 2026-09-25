@@ -27,21 +27,58 @@ const DURATION = /(\d+(?:\.\d+)?)\s*시간(?:\s*(\d+(?:\.\d+)?)\s*분)?|(\d+(?:\
 function durations(text) {
   return [...String(text || '').matchAll(DURATION)].map(m => Math.round(m[1] !== undefined ? Number(m[1]) * 60 + Number(m[2] || 0) : Number(m[3]))).filter(n => n > 0);
 }
+// 9/25 시뮬 7: 옛 요청봇(0.4.26 이하)은 원본 길이 칸이 없으면 '희망 길이' 값을 volume에 넣었다. 요청서에 원본 길이 칸이 없고
+// volume이 희망 길이 값과 같으면 원본 길이를 모르는 것으로 본다(자료 기준 견적으로)
+function desiredLengthOnly(parsed = {}) {
+  const volume = String(parsed.volume || '').trim();
+  const text = String(parsed.text || '');
+  if (!volume || /(?:원본\s*(?:영상\s*)?길이|(?<!희망\s*|완성\s*)영상\s*길이)/.test(text)) return false;
+  const desired = text.match(/(?:희망|완성|원하는)\s*(?:영상\s*)?길이\s*\n?\s*([^\n]+)/)?.[1]?.trim();
+  return Boolean(desired && desired === volume);
+}
+function sourceVolume(parsed = {}) { return desiredLengthOnly(parsed) ? '' : parsed.volume; }
 function sourceMinutes(parsed = {}) {
+  parsed = { ...parsed, volume: sourceVolume(parsed) };
   const own = durations(parsed.volume);
   const list = own.length ? own : durations([parsed.topic, parsed.scope, parsed.notes].filter(Boolean).join(' '));
   return list.length ? Math.max(...list) : null;
 }
 // "1시간 이상"처럼 끝이 열린 길이(최댓값을 알 수 없음)
 function sourceLengthOpenEnded(parsed = {}) {
+  parsed = { ...parsed, volume: sourceVolume(parsed) };
   const text = durations(parsed.volume).length ? parsed.volume : [parsed.topic, parsed.scope, parsed.notes].filter(Boolean).join(' ');
   return /\d\s*(?:시간|분)\s*(?:이상|초과|넘)/.test(String(text || ''));
 }
 // 끝이 열린 길이의 아래 끝(분). "1시간 이상" → 60
 function openEndedLowerMinutes(parsed = {}) {
+  parsed = { ...parsed, volume: sourceVolume(parsed) };
   const text = durations(parsed.volume).length ? parsed.volume : [parsed.topic, parsed.scope, parsed.notes].filter(Boolean).join(' ');
   const m = String(text || '').match(/((?:\d+(?:\.\d+)?\s*시간(?:\s*\d+\s*분)?)|(?:\d+(?:\.\d+)?\s*분))\s*(?:이상|초과|넘)/);
   return m ? (durations(m[1])[0] || null) : null;
+}
+
+// 9/25 시뮬 4: 쇼츠 개수. "릴스 쇼츠 30초짜리 5개", "쇼츠 3편", "5개 쇼츠"처럼 쇼츠 말 가까이에 있는 개수만 본다(원본 파일 개수·사진 장수와 섞지 않게)
+const SHORTS_WORD = '(?:쇼츠|숏츠|숏폼|릴스|shorts|reels)';
+function shortsCount(parsed = {}) {
+  const text = fieldText(parsed);
+  const after = text.match(new RegExp(`${SHORTS_WORD}[^\\n.]{0,20}?(\\d{1,3})\\s*(?:개|편)`, 'i'));
+  const before = text.match(new RegExp(`(\\d{1,3})\\s*(?:개|편)\\s*(?:의\\s*)?(?:짧은\\s*)?${SHORTS_WORD}`, 'i'));
+  const n = Number(after?.[1] || before?.[1] || 1);
+  return n >= 1 ? n : 1;
+}
+// 묶음 할인 비율(services/video_edit.json pricing.shorts.bundle.rates). 해당 없으면 0
+function shortsBundleRate(count) {
+  const rates = DEFINITION?.pricing?.shorts?.bundle?.rates || [];
+  const hit = rates.find(item => count >= Number(item.minCount || 0) && (item.maxCount === undefined || count <= Number(item.maxCount)));
+  return hit ? Number(hit.rate || 0) : 0;
+}
+// 개당 단가 × 개수, 묶음이면 할인. 반환 { count, unitAmount, fullAmount, bundleRate, bundleAmount }
+function shortsPricing(count, unitAmount) {
+  const unit = Number(unitAmount || DEFINITION?.pricing?.shorts?.saleAmount || 0);
+  const fullAmount = unit * count;
+  const bundleRate = count >= 2 ? shortsBundleRate(count) : 0;
+  const bundleAmount = bundleRate ? round1000(fullAmount * (1 - bundleRate)) : fullAmount;
+  return { count, unitAmount: unit, fullAmount, bundleRate, bundleAmount };
 }
 
 function fee(id) { return (DEFINITION?.pricing?.additionalFees || []).find(item => item.id === id) || null; }
@@ -73,8 +110,18 @@ function videoEditQuote(parsed = {}) {
   let amount = null; let days = null; let scopeCheck = null; let workLine = copy.workLine;
   const shorts = def.pricing.shorts;
   if (options.shorts) {
+    const count = shortsCount(parsed);
     if (minutes !== null && minutes > Number(shorts.maxSourceMinutes)) scopeCheck = 'shorts_long_source';
-    else { amount = Number(shorts.saleAmount); days = shorts.days; workLine = copy.shortsWorkLine; }
+    else if (count > Number(shorts.maxCount || 20)) scopeCheck = 'shorts_too_many';
+    else {
+      amount = Number(shorts.saleAmount); days = shorts.days; workLine = copy.shortsWorkLine;
+      if (count > 1) {
+        // 견적 금액(amount)은 따로따로 할 때의 정가(개당 × 개수). 묶음 할인가는 문구·[사실]에만 쓴다
+        base.shorts = shortsPricing(count, amount);
+        amount = base.shorts.fullAmount;
+        workLine = `보내주신 영상으로 1분 이내 쇼츠 ${count}개를 만들어 한국어 자막을 입혀 MP4로 보내드립니다(개당 ${Number(shorts.saleAmount).toLocaleString('ko-KR')}원 × ${count}개).`;
+      }
+    }
   } else if (minutes === null) {
     // 9/25 준희: 식전영상처럼 원본 길이로 정해지지 않는 요청은 "자료 보고 확정"으로 시작가를 보낸다.
     const materials = def.pricing.materials;
@@ -96,20 +143,21 @@ function videoEditQuote(parsed = {}) {
     if (options.bgm) amount += Number(fee('bgm').amount);
     if (options.color) amount += Number(fee('color').amount);
     // 금액 상한(decisions 7-4, 준희 9/24): 원본이 길어도·옵션을 더해도 cap.saleAmount를 넘기지 않는다. 원본 cap.fromMinutes분 이상은 납기도 cap.days.
+    // 9/25 시뮬 4: 여러 개 쇼츠는 상한을 개당으로 본다(개당 39,000원 × N개는 원본 길이 상한과 다른 셈이라 합계를 자르지 않는다)
     const cap = def.pricing.cap;
     if (cap && Number(cap.saleAmount) > 0) {
-      if (amount > Number(cap.saleAmount)) amount = Number(cap.saleAmount);
+      if (amount > Number(cap.saleAmount) && !base.shorts) amount = Number(cap.saleAmount);
       if (!options.shorts && minutes !== null && minutes >= Number(cap.fromMinutes)) days = cap.days || days;
     }
   }
 
   if (scopeCheck) {
-    const question = scopeCheck === 'length_unknown' ? copy.questionLengthUnknown : copy.questionShortsLongSource;
+    const question = scopeCheck === 'length_unknown' ? copy.questionLengthUnknown : scopeCheck === 'shorts_too_many' ? copy.questionShortsTooMany : copy.questionShortsLongSource;
     return { ...base, amount: null, days: null, scopeCheck, message: [intro, copy.workLine, copy.safeLine, copy.experienceLine, question].filter(Boolean).join('\n') };
   }
   const won = amount.toLocaleString('ko-KR');
   const dayText = days ? `작업 기간 ${days}` : copy.daysLater;
-  const priceLine = base.materialsBased ? `견적 ${won}원부터(자료를 보고 최종 금액 확정) · ${dayText} · 수정 ${revisions}회 포함` : `견적 ${won}원 · ${dayText} · 수정 ${revisions}회 포함`;
+  const priceLine = base.shorts ? `견적 개당 ${base.shorts.unitAmount.toLocaleString('ko-KR')}원 × ${base.shorts.count}개 = ${won}원 · ${dayText} · 수정 ${revisions}회 포함${base.shorts.bundleRate ? ` · 자료를 한 번에 주시면 ${base.shorts.count}개 묶음으로 ${Math.round(base.shorts.bundleRate * 100)}% 할인` : ''}` : base.materialsBased ? `견적 ${won}원부터(자료를 보고 최종 금액 확정) · ${dayText} · 수정 ${revisions}회 포함` : `견적 ${won}원 · ${dayText} · 수정 ${revisions}회 포함`;
   const lines = [intro, workLine, options.translation ? copy.translationLine : null, priceLine, copy.safeLine, copy.experienceLine, copy.questionKnown];
   return { ...base, amount, days, scopeCheck: null, message: lines.filter(Boolean).join('\n') };
 }
@@ -178,13 +226,18 @@ function autoQuoteMessage(parsed = {}, priced = {}, decision = {}, opts = {}) {
   const said = customerWords(parsed);
   const who = said ? `${said} ` : '';
   const lines = [];
-  if (priced.options?.shorts) lines.push(`안녕하세요, ${who}영상으로 1분 이내 쇼츠 1개 만들어서 자막까지 넣는 건 ${won}에 해 드릴 수 있습니다.`);
+  if (priced.options?.shorts && priced.shorts?.count > 1) {
+    // 9/25 준희: 개당 단가 × 개수. 자료를 한 번에 받으면 묶음 할인(금액은 비율만 말한다 — 할인가를 숫자로 쓰면 채팅 할인 한 번을 이미 쓴 것으로 셈해진다)
+    const s = priced.shorts;
+    lines.push(`안녕하세요, ${who}영상으로 1분 이내 쇼츠 ${s.count}개 만들어서 자막까지 넣는 건 개당 ${s.unitAmount.toLocaleString('ko-KR')}원 × ${s.count}개로 ${won}에 해 드릴 수 있습니다.`);
+    if (s.bundleRate) lines.push(`자료를 한 번에 주시면 ${s.count}개 묶음으로 ${Math.round(s.bundleRate * 100)}% 할인해 드립니다.`);
+  } else if (priced.options?.shorts) lines.push(`안녕하세요, ${who}영상으로 1분 이내 쇼츠 1개 만들어서 자막까지 넣는 건 ${won}에 해 드릴 수 있습니다.`);
   else if (priced.materialsBased) {
     // 9/25 준희: 길이로 못 정하는 요청(식전영상 등)은 자료를 보고 확정한다고 말하고 시작가만 알린다.
     lines.push(`안녕하세요, ${who}보내주실 사진·영상 자료를 보고 정확한 금액을 확정해 드리려고 합니다. 기본 구성 기준으로 ${won}부터 해 드릴 수 있습니다.`);
   } else {
     // 고객이 고른 원본 길이 답("5분 이내", "2시간 이내")을 그대로 되짚는다. 없으면 계산에 쓴 분.
-    const own = String(parsed.volume || '').trim();
+    const own = String(sourceVolume(parsed) || '').trim();
     const length = own && own.length <= 20 && durations(own).length ? own : `${priced.minutes}분`;
     lines.push(`안녕하세요, ${who}원본 ${length}${/이내$|이하$/.test(length) ? '면' : ' 기준으로'} 필요 없는 부분 정리하고 자막까지 넣어서 ${won}에 해 드릴 수 있습니다.`);
   }
@@ -202,4 +255,4 @@ function autoQuoteMessage(parsed = {}, priced = {}, decision = {}, opts = {}) {
   return lines.join(' ');
 }
 
-module.exports = { videoType, abVariant, videoEditQuote, sourceMinutes, sourceLengthOpenEnded, openEndedLowerMinutes, detectOptions, autoQuoteDecision, autoQuoteMessage, customerWords, DEFINITION, DEFINITION_PATH };
+module.exports = { shortsCount, shortsBundleRate, shortsPricing, videoType, abVariant, videoEditQuote, sourceMinutes, sourceLengthOpenEnded, openEndedLowerMinutes, detectOptions, autoQuoteDecision, autoQuoteMessage, customerWords, DEFINITION, DEFINITION_PATH };

@@ -14,7 +14,9 @@
       { "when": { "minutesGt": 30 }, "saleAmount": 129000, "unit": { "sizeMinutes": 5, "saleAmount": 15000 }, "days": "3일", "_note": "30분 넘으면 5분마다 15,000원. 작업 기간 3일(9/24 지시 25 감독 결정: 30분 이내 2~3일과 70분 이상 3~4일 사이). 70분 이상은 cap(249,000원·3~4일)" }
     ],
     "cap": { "saleAmount": 249000, "fromMinutes": 70, "days": "3~4일", "_note": "decisions 7-4(준희 9/24 15시대): 원본이 길어도 영상 편집 견적은 249,000원을 넘기지 않는다. 원본 70분 이상은 249,000원·3~4일. 번역·배경음악·색 옵션을 더해도 상한 그대로" },
-    "shorts": { "match": "쇼츠|숏츠|숏폼|릴스|shorts|reels", "saleAmount": 39000, "days": "당일~1일", "resultMaxMinutes": 1, "maxSourceMinutes": 10, "_note": "쇼츠 1개(결과 1분 이내·원본 10분 이내). 원본이 10분을 넘으면 금액 없이 범위 확인" },
+    "shorts": { "match": "쇼츠|숏츠|숏폼|릴스|shorts|reels", "saleAmount": 39000, "days": "당일~1일", "resultMaxMinutes": 1, "maxSourceMinutes": 10, "_note": "쇼츠 1개(결과 1분 이내·원본 10분 이내). 원본이 10분을 넘으면 금액 없이 범위 확인",
+      "maxCount": 20,
+      "bundle": { "rates": [ { "minCount": 2, "maxCount": 4, "rate": 0.1 }, { "minCount": 5, "rate": 0.15 } ], "_note": "9/25 준희: 쇼츠 여러 개는 개당 단가 × 개수. 자료를 한 번에 받아 같이 작업할 수 있으면 묶음 할인(2~4개 10%, 5개 이상 15%), 따로따로 해야 하면 개당 정가. 비율은 여기서 바꾼다. 개수가 maxCount를 넘으면 금액 없이 준희 확인" } },
     "additionalFees": [
       { "id": "translation", "rate": 0.2, "rounding": 1000, "match": "번역|외국어|영어|일본어|중국어|불어|프랑스어|베트남어", "_note": "번역 자막(외국어→한국어): 자막 가격 규칙과 같게 +20%, 천 원 단위 반올림" },
       { "id": "bgm", "amount": 10000, "match": "배경\\s*음악|bgm", "onRequestOnly": true },
@@ -34,7 +36,8 @@
   ],
   "includedRevisions": 2,
   "deliverFormats": ["mp4"],
-  "scope": "말하는 영상(강의·인터뷰·유튜브 토크·행사 발언) 컷편집 + 한국어 자막 입히기(번역 자막 가능), 결과물 MP4, 수정 2회",
+  "scope": "컷편집·자막(말하는 영상: 강의·인터뷰·유튜브 토크·행사 발언, 한국어 자막·번역 자막), 식전·성장(돌잔치) 사진 영상, 쇼츠·릴스, 행사·강의 영상 편집 등 결과물 MP4, 수정 2회. 촬영·3D·모션그래픽은 하지 않음",
+  "_scopeNote": "9/25 시뮬 8: 예전 범위는 \"말하는 영상 컷편집\"뿐이라 Claude가 사진 영상을 안 하는 일로 볼 수 있었다. 실제로 받는 종류(식전·성장·쇼츠·행사)를 넣음",
   "notIncluded": ["모션그래픽", "3D", "더빙", "촬영·방문", "광고 영상 연출"],
   "experienceLine": "33분 분량 영상의 번역 자막을 실제로 제작해 납품했습니다.",
   "quoteMessageVersion": "v1",
@@ -48,11 +51,12 @@
     "safeLine": "결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.",
     "experienceLine": "33분 분량 영상의 번역 자막을 실제로 제작해 납품했습니다.",
     "sampleUrl": "",
-    "sampleUrls": { "youtube": "", "wedding": "https://youtu.be/TB5e8xc_3bQ", "baby": "https://youtu.be/09-JcNXNur0", "shorts": "https://youtube.com/shorts/ygQCzp02MTA", "event": "", "lecture": "", "promo": "" },
+    "sampleUrls": { "youtube": "", "wedding": "https://youtu.be/TB5e8xc_3bQ", "baby": "https://youtu.be/09-JcNXNur0", "shorts": "https://youtube.com/shorts/ygQCzp02MTA", "event": "", "lecture": "https://youtu.be/yrc4mKqd_uA", "promo": "" },
     "_sampleUrlsNote": "9/25 준희 \"많이 찾는 유형별로 샘플 하나씩\": 요청 종류(sampleTypes)에 맞는 링크를 먼저 쓰고, 없으면 sampleUrl",
     "_sampleUrlNote": "9/25: 장편 편집 샘플을 유튜브 일부공개로 올린 뒤 링크를 넣으면 자동 견적 끝에 \"작업 예시 영상: 링크\"가 붙는다(youtube.com·youtu.be·share.descript.com만)",
     "questionKnown": "원본 영상 파일이 몇 개인지만 알려주실 수 있을까요?",
     "questionLengthUnknown": "원본 영상이 전체 몇 분인지 알려주시면 금액을 바로 확정해 드리겠습니다.",
+    "questionShortsTooMany": "쇼츠 개수가 많아서, 한 번에 받을 수 있는 자료인지 먼저 여쭤봐도 될까요?",
     "questionShortsLongSource": "원본 영상이 10분을 넘어서, 어느 부분을 쇼츠로 만들지 먼저 여쭤봐도 될까요?"
   },
   "intakeQuestions": [

@@ -48,7 +48,7 @@ const bot = fs.readFileSync(path.join(root, 'soomgo-chat-bot', 'chat-content.js'
 const i = bot.indexOf('if (reply.attachment?.fileUrl) {');
 assert.ok(i > 0 && i < bot.indexOf('const sent = await sendChatText(reply.text);', i), '첨부가 문구 전송보다 먼저');
 assert.match(bot.slice(i, i + 1200), /if \(!attached\.attached\) \{[\s\S]*?return true;/);
-assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'soomgo-chat-bot', 'manifest.json'), 'utf8')).version, '0.3.25'); // 9/24 지시 15: 채팅봇 0.3.24(감지 전용 추가)
+assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'soomgo-chat-bot', 'manifest.json'), 'utf8')).version, '0.3.26'); // 9/25 채팅봇 0.3.26(고용 인사 serviceId). 9/24 지시 15: 채팅봇 0.3.24(감지 전용 추가)
 // 0.3.21 대기열(Astra 고객대응실) 답변: 같은 문구가 방에 있으면 생략, [ATTACHMENT] 샘플은 먼저 첨부하고 실패하면 보내지 않음
 const outbox = bot.slice(bot.indexOf('async function processAstraRoomOutbox()'));
 assert.ok(outbox.indexOf('reply_text_already_in_room') > 0 && outbox.indexOf('reply_text_already_in_room') < outbox.indexOf('await sendChatText(replyText)'));

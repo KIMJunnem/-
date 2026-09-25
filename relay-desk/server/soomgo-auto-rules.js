@@ -65,6 +65,39 @@ function videoAutoQuotesToday(state, now = Date.now()) {
   return new Set((Array.isArray(state?.videoEditAutoQuotes) ? state.videoEditAutoQuotes : []).filter(item => seoulDay(item.at) === today).map(item => item.requestId)).size;
 }
 
+// 9/25 준희 "30건을 넘어도 성사 가능성이 높으면 추가로 받는다": 하루 상한을 넘긴 영상 편집 요청 중 가능성이 높은 것만 추가 발송.
+// 정책 dailyCapExtras(astra-relay-operating-policy.json): maxPerDay(기본 10)·minScore(기본 4/5)·recentHours(재조회 허용 시간).
+// 견적 판단(quoteJudge)이 판단했으면 그 판단을 따르고(relay-server), 판단이 없으면 아래 점수로만 정한다. 추가분은 videoEditCapExtras에 따로 센다.
+function capExtrasConfig(ctx = {}) {
+  let raw = ctx.capExtrasConfig;
+  if (!raw) { try { raw = require('./operating-policy').readOperatingPolicy().dailyCapExtras; } catch (_) { raw = null; } }
+  raw = raw || {};
+  return { enabled: raw.enabled !== false, maxPerDay: Number(raw.maxPerDay ?? 10), minScore: Number(raw.minScore ?? 4), recentHours: Number(raw.recentHours ?? 48) };
+}
+function capExtrasToday(state, now = Date.now()) {
+  const today = seoulDay(now);
+  return new Set((Array.isArray(state?.videoEditCapExtras) ? state.videoEditCapExtras : []).filter(item => seoulDay(item.at) === today).map(item => item.requestId)).size;
+}
+// 성사 가능성 점수(0~5). 요청서 칸만 본다(외부 호출 없음): 경쟁 고수 적음·최근 요청·완료 희망일 분명·원본 길이나 자료가 분명·샘플 링크 있는 종류
+function capExtraScore(request = {}, priced = {}, video = null) {
+  const text = String(request.text || '');
+  const signals = [];
+  const rivals = text.match(/견적\s*보낸\s*고수\s*(\d+)\s*명/);
+  if (rivals && Number(rivals[1]) <= 2) signals.push('few_rivals');
+  const ago = text.match(/(\d+)\s*(분|시간)\s*전/);
+  if (ago && (ago[2] === '분' || Number(ago[1]) <= 3)) signals.push('recent');
+  const due = text.match(/완료\s*희망일\s*\n?\s*([^\n]+)/)?.[1] || '';
+  if (due && !/협의|상관\s*없|미정|모르/.test(due)) signals.push('clear_deadline');
+  if (priced.minutes !== null && priced.minutes !== undefined) signals.push('source_length');
+  else if (priced.materialsBased && /\d+\s*(?:장|개|컷|클립)|자료|사진/.test([request.topic, request.notes, text].filter(Boolean).join(' '))) signals.push('clear_materials');
+  try {
+    const def = video?.DEFINITION || {};
+    const type = video.videoType(request);
+    if (String(def.quoteCopy?.sampleUrls?.[type] || '').trim()) signals.push('sample_link');
+  } catch (_) {}
+  return { score: signals.length, signals };
+}
+
 // 영상 편집 견적값. 길이를 모르거나 쇼츠 원본이 길면 금액 없이 범위 확인으로 둔다.
 // 9/24 지시 24(decisions 7-10): services/video_edit.json autoQuote.enabled가 true이고 조건을 다 맞으면 자동 발송(하루 10건).
 // ctx.videoAutoQuoteConfig는 시험용 덮어쓰기(실제 서버는 넘기지 않는다).
@@ -79,7 +112,7 @@ function attachVideoEditQuote(quote, request, ctx = {}) {
     label: priced.label, days: priced.days || '', message: priced.message, includedRevisions: priced.revisions,
     quoteMessageId: priced.quoteMessageId, quoteMessageVersion: priced.quoteMessageVersion,
     pricing: { table: 'video-edit-2026-09-24', type: 'video_edit', units: priced.minutes, unit: '분', options: priced.options, scopeCheck: priced.scopeCheck },
-    videoEdit: { serviceId: priced.serviceId, amount: priced.amount, days: priced.days, scopeCheck: priced.scopeCheck, manualSendOnly: true },
+    videoEdit: { serviceId: priced.serviceId, amount: priced.amount, days: priced.days, scopeCheck: priced.scopeCheck, manualSendOnly: true, ...(priced.shorts ? { shorts: priced.shorts } : {}), ...(priced.materialsBased ? { materialsBased: priced.materialsBased } : {}) },
     autoSend: false, manualReview: true
   });
   const now = ctx.now || Date.now();
@@ -87,6 +120,19 @@ function attachVideoEditQuote(quote, request, ctx = {}) {
   const decision = video.autoQuoteDecision(request, priced, { ...(ctx.videoAutoQuoteConfig || {}), sentToday: alreadyCounted ? 0 : videoAutoQuotesToday(ctx.state, now) });
   quote.videoEdit.autoDecision = decision.reason;
   if (decision.storyboard) quote.videoEdit.storyboard = true;
+  let capExtra = null;
+  if (!decision.send && decision.reason === 'daily_cap') {
+    const cfg = capExtrasConfig(ctx);
+    const scored = capExtraScore(request, priced, video);
+    const alreadyExtra = (Array.isArray(ctx.state?.videoEditCapExtras) ? ctx.state.videoEditCapExtras : []).some(item => item.requestId === ctx.requestId && seoulDay(item.at) === seoulDay(now));
+    const extrasUsed = alreadyExtra ? 0 : capExtrasToday(ctx.state, now);
+    quote.videoEdit.capExtra = { score: scored.score, signals: scored.signals, minScore: cfg.minScore, extrasUsed, maxPerDay: cfg.maxPerDay };
+    // 견적 판단이 이 요청을 판단하면(ctx.judgeAvailable) 점수로 보내지 않고 판단에 맡긴다 — 판단의 "보내기"도 같은 추가 한도 안에서만(relay-server)
+    if (cfg.enabled && !ctx.judgeAvailable && scored.score >= cfg.minScore && extrasUsed < cfg.maxPerDay) {
+      const retry = video.autoQuoteDecision(request, priced, { ...(ctx.videoAutoQuoteConfig || {}), sentToday: 0 });
+      if (retry.send) { Object.assign(decision, retry); capExtra = { source: 'score', ...scored }; quote.videoEdit.capExtra.sent = true; quote.videoEdit.autoDecision = 'daily_cap_extra'; }
+    }
+  }
   if (!decision.send) {
     if (decision.reason !== 'switch_off') quote.reason = `${quote.reason || ''} · 영상 편집 자동 견적 안 함(${decision.reason}) — 준희 확인`.replace(/^ · /, '');
     return;
@@ -105,10 +151,24 @@ function attachVideoEditQuote(quote, request, ctx = {}) {
     autoRule: { ruleId: 'video_edit_auto', action: 'quote', category: '영상 편집' }
   });
   quote.videoEdit.manualSendOnly = false;
+  if (capExtra) {
+    quote.videoEdit.capExtra.sent = true;
+    quote.reason = null;
+    if (ctx.state && ctx.requestId) recordCapExtra(ctx.state, { requestId: ctx.requestId, now, amount: quote.amount, source: capExtra.source, score: capExtra.score, signals: capExtra.signals });
+    return;
+  }
   if (ctx.state && ctx.requestId && !alreadyCounted) {
     const log = Array.isArray(ctx.state.videoEditAutoQuotes) ? ctx.state.videoEditAutoQuotes : [];
     ctx.state.videoEditAutoQuotes = [{ at: new Date(now).toISOString(), requestId: ctx.requestId, amount: priced.amount, minutes: priced.minutes }, ...log].slice(0, 500);
   }
+}
+
+// 상한을 넘겨 추가로 보낸 요청은 videoEditAutoQuotes(하루 30건)와 따로 센다. 같은 요청은 한 번만
+function recordCapExtra(state, { requestId, now = Date.now(), amount = 0, source = 'score', score = null, signals = [] } = {}) {
+  const log = Array.isArray(state.videoEditCapExtras) ? state.videoEditCapExtras : [];
+  if (log.some(item => item.requestId === requestId)) return false;
+  state.videoEditCapExtras = [{ at: new Date(now).toISOString(), requestId, amount, source, score, signals }, ...log].slice(0, 500);
+  return true;
 }
 
 function applyDocumentPrice(quote, priced, extra = {}) {
@@ -243,4 +303,4 @@ function applySoomgoAutoRulesInner(ctx) {
   return { action: 'none', ruleId: null };
 }
 
-module.exports = { RULES, applySoomgoAutoRules, applySoomgoServicePause, pausedSummary, setPauseConfigForTest, SOOMGO_PAUSE_CODES, deletesToday, seoulDay };
+module.exports = { capExtrasConfig, capExtrasToday, capExtraScore, recordCapExtra, RULES, applySoomgoAutoRules, applySoomgoServicePause, pausedSummary, setPauseConfigForTest, SOOMGO_PAUSE_CODES, deletesToday, seoulDay };
