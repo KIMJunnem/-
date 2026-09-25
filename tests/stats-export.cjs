@@ -31,7 +31,7 @@ const state = {
   ],
   jevGateLog: [{ at, choice: 'thanks', action: 'thanks', called: true }],
   botStatus: { chat: { at: now - 45 * 60000, status: '채팅 확인 오류 · Resource::kQuotaBytes quota exceeded 홍길순' }, request: { at: now - 60000, status: '정상' } },
-  soomgoWorkflows: [{ id: 'WF-1', stage: 'payment_requested', updatedAt: new Date(now - 130 * 60000).toISOString() }, { id: 'WF-TEST-2', stage: 'x', updatedAt: at }]
+  soomgoWorkflows: [{ id: 'WF-1', stage: 'payment_requested', hireEvidence: { confirmed: true }, updatedAt: new Date(now - 130 * 60000).toISOString() }, { id: 'WF-TEST-2', stage: 'x', hireEvidence: { confirmed: true }, updatedAt: at }, { id: 'WF-OLD-3', stage: 'awaiting_completion_confirmation', updatedAt: new Date(now - 9000 * 60000).toISOString() }]
 };
 const stateFile = path.join(tmp, 'state.json');
 fs.writeFileSync(stateFile, JSON.stringify(state));

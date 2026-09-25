@@ -63,7 +63,8 @@ function extraCounts(state = {}, now = Date.now()) {
     }])),
     // 9/25: 첫 고용부터 단계가 멈추면 알림(단계별 건수·가장 오래 멈춘 분)
     workflows: (() => {
-      const open = (Array.isArray(state.soomgoWorkflows) ? state.soomgoWorkflows : []).filter(item => !['completed', 'cancelled', 'closed'].includes(String(item?.stage || '')) && !/SELFTEST|TEST|DEMO|SIMULATION/i.test(String(item?.id || '')));
+      // 실제 고용(숨고 내 고용 확인·크몽 결제 확인)으로 생긴 작업만 센다 — 예전 시험 작업이 '멈춤'으로 잡히지 않게(9/25 첫 통계에서 44건 오탐)
+      const open = (Array.isArray(state.soomgoWorkflows) ? state.soomgoWorkflows : []).filter(item => item?.hireEvidence?.confirmed === true && !['completed', 'cancelled', 'closed'].includes(String(item?.stage || '')) && !/SELFTEST|TEST|DEMO|SIMULATION/i.test(String(item?.id || '')));
       const ages = open.map(item => Math.round((now - (Date.parse(item.updatedAt || item.stageUpdatedAt || item.createdAt || '') || now)) / 60000));
       return { byStage: count(open, item => item.stage), oldestStuckMinutes: ages.length ? Math.max(...ages) : 0 };
     })()
