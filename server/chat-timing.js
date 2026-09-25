@@ -103,16 +103,21 @@ function splitReply(text, limit = SPLIT_LIMIT) {
 function splitGapMs(key) { return SPLIT_GAP_MIN_MS + Math.round(unit(key, 'split') * (SPLIT_GAP_MAX_MS - SPLIT_GAP_MIN_MS)); }
 
 // 보내기 직전 AI 티 점검. 반환: 걸린 이유 코드('' = 통과)
-const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}\u{FE0F}]/u;
-const FORBIDDEN_TONE = /드릴게요|괜찮아요|들어\s*있어요|최선을\s*다하|고객님의\s*소중한|퀄리티\s*보장|빠르고\s*정확하게/;
+const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}]/gu;
+// 9/26 준희 실제 말투: "~드릴게요"·"괜찮아요"·😊 한 개는 준희도 쓴다(예전 금지 풀림). "~하겠습니다" 연발·"~습니당" 두 번 이상·이모지 두 개 이상은 봇 티
+const FORBIDDEN_TONE = /들어\s*있어요|최선을\s*다하|고객님의\s*소중한|퀄리티\s*보장|빠르고\s*정확하게/;
 const SYSTEM_TONE = /Relay\s*Desk|자동\s*응답|비상\s*상황을\s*감지|작업을\s*시작합니다|\[MODE:|\[DECISION:/i;
 function sentencesOf(text) { return String(text || '').split(/(?<=[.!?。…])\s+|\n+/).map(s => s.replace(/\s+/g, ' ').trim()).filter(s => s.replace(/\s/g, '').length >= 12); }
-function aiTellCheck(text, conversationText = '') {
+// opts.maxChars·maxLines: 9/26 준희 "한 메시지에 목적 하나, 1~3줄"(정책 customerRoomFallback.maxReplyChars·maxReplyLines, 없으면 검사 안 함)
+function aiTellCheck(text, conversationText = '', opts = {}) {
   const value = String(text || '');
   if (!value.trim()) return 'empty';
-  if (EMOJI.test(value)) return 'emoji';
-  if (/·|\*\*|^\s*[-•*]\s|^\s*\d+[.)]\s/m.test(value)) return 'list_or_dots';
-  if (FORBIDDEN_TONE.test(value)) return 'tone_rule';
+  if (Number(opts.maxChars) > 0 && value.replace(/\s+/g, ' ').trim().length > Number(opts.maxChars)) return 'too_long';
+  if (Number(opts.maxLines) > 0 && value.split(/\n+/).filter(line => line.trim()).length > Number(opts.maxLines)) return 'too_long';
+  if ((value.match(EMOJI) || []).length > 1) return 'emoji';
+  // 9/26: 준희도 "문구·자막"처럼 붙여 쓰는 가운뎃점 한 개는 괜찮다. 띄어 쓴 " · " 나열·가운뎃점 여러 개는 봇 티
+  if (/ · |·[^·\n]*·|\*\*|^\s*[-•*]\s|^\s*\d+[.)]\s/m.test(value)) return 'list_or_dots';
+  if (FORBIDDEN_TONE.test(value) || (value.match(/겠습니다/g) || []).length >= 2 || (value.match(/[습합]니당/g) || []).length >= 2) return 'tone_rule';
   if (SYSTEM_TONE.test(value)) return 'system_tone';
   const ours = String(conversationText || '').split('\n').filter(line => /^\[내 답변\]/.test(line)).join('\n').replace(/\s+/g, ' ');
   if (ours && sentencesOf(value).some(sentence => ours.includes(sentence))) return 'repeated_sentence';

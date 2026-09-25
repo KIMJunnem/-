@@ -98,8 +98,8 @@ const kim = message('2227504781', '네 가지 조건을 확인하셨다면 진�
       assert.equal(result.already,true);
       assert.equal(result.sent.length,1);
       // 서버 messages.json의 common.hire_greeting.v1 문구 그대로 나가야 한다.
-      assert.match(result.sent[0],/^고용이 확인됐습니다\. 맡겨주셔서 감사합니다\. 예상 작업 기간은 당일~1일입니다\./);
-      assert.match(result.sent[0],/1차본.*수정본과 최종본/);
+      assert.match(result.sent[0],/^고용 확인했어요, 맡겨주셔서 감사합니다! 예상 작업 기간은 당일~1일이고,/);
+      assert.match(result.sent[0],/1차본.*최종본/);
     });
     await check('Unrelated conversation quote is never reused', async () => {
       assert.equal(await page.evaluate(() => {audit.state.currentQuote={conversationId:'someone-else',amount:273000};return audit.currentConversationQuote('235090767');}),null);

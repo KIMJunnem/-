@@ -5021,13 +5021,16 @@ function isSoomgoWorkflowStatusQuestion(value) {
 
 // 9/25 준희: 고객 자료는 이메일이나 고객 클라우드(구글 드라이브 등) 링크로 받는다. 이메일 주소는 정책 contact.materialsEmail에만 둔다
 // (비어 있으면 링크만 부탁한다 — 코드에 주소를 적지 않는다).
-function videoEditMaterialsLine(policy = null) {
+function videoEditMaterialsLine(policy = null, opts = {}) {
   let email = '';
   try { email = String((policy || readOperatingPolicy()).contact?.materialsEmail || '').trim(); } catch (_) { email = ''; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) email = '';
-  return email
+  const line = email
     ? `영상·사진 자료는 구글 드라이브 같은 클라우드에 올려 공유 링크를 이 채팅으로 보내주시거나 메일(${email})로 보내주세요.`
     : '영상·사진 자료는 구글 드라이브 같은 클라우드에 올려 공유 링크를 이 채팅으로 보내주세요.';
+  // 9/25 준희: 고용 뒤 자료 요청에 "자세히 적어주실수록" 한 줄(services/video_edit.json quoteCopy.materialsDetailLine). 상태 안내에는 안 붙인다
+  const detail = opts.detail ? String(serviceRegistry.getService('video_edit')?.quoteCopy?.materialsDetailLine || '').trim() : '';
+  return detail ? `${line} ${detail}` : line;
 }
 
 function soomgoWorkflowStatusReply(workflow) {
@@ -5064,7 +5067,8 @@ function soomgoWorkflowStatusReply(workflow) {
       return `기본 의뢰는 고용 확정에 따라 진행 중이며, 추가 요청은 안내드린 금액 동의를 기다리고 있습니다. 기본 납기는 ${days}입니다.`;
     case 'awaiting_first_result':
     default:
-      return `고용 확정 감사합니다. 작업을 제작 큐에 등록해 진행 중입니다. 예상 소요일은 ${days}이며, 1차 결과물을 먼저 보내드리고 피드백 반영 후 수정본과 최종본을 순서대로 전달하겠습니다.${String(workflow?.quote?.serviceId || '') === 'video_edit' ? ` ${videoEditMaterialsLine()}` : ''}`;
+      // 9/26 준희 말투(짧게·내부 말 없이): "제작 큐" 같은 말 대신 지금 필요한 것만
+      return `고용 확정 감사합니다. 지금 작업 진행 중이고, 예상 기간은 ${days}예요. 1차본 먼저 보내드리고 말씀 주시는 대로 고쳐서 최종본 드릴게요.${String(workflow?.quote?.serviceId || '') === 'video_edit' ? ` ${videoEditMaterialsLine()}` : ''}`;
   }
 }
 
@@ -6756,6 +6760,11 @@ function chatAmountRange(body = {}) {
   // 우리 쪽 말([내 답변]·[고수])에 이미 견적보다 낮은 금액이 나갔으면 할인은 쓴 것 — 그 금액 아래로는 더 내리지 않는다.
   const ours = String(body.conversationText || body.history || '').split(/\r?\n/).filter(line => /^\s*\[(?:내 답변|고수)\]/.test(line)).join('\n');
   const offered = [...ours.replace(/,/g, '').matchAll(/(\d{4,7})\s*원/g)].map(m => Number(m[1])).filter(n => n >= floor && n < quoteAmount);
+  // 9/25 준희: 릴스·쇼츠 첫 거래 할인이 들어간 방은 채팅 할인 1회를 이미 쓴 것(더 깎아 달라 해도 그 금액이 최선)
+  if (body.quote?.introPromo || body.quote?.videoEdit?.introPromo || /첫\s*거래라/.test(ours)) {
+    const promoAmount = Math.min(quoteAmount, ...(offered.length ? offered : [quoteAmount]));
+    return { quote: quoteAmount, min: promoAmount, max, discountUsed: promoAmount, introPromo: true };
+  }
   const used = offered.length ? Math.min(...offered) : null;
   return { quote: quoteAmount, min: used || floor, max, discountUsed: used };
 }
@@ -6799,6 +6808,10 @@ function applyChatReplyPolicy(body = {}, reply = {}) {
     let priced = null;
     try { priced = require('./video-edit-quote').videoEditQuote({ volume: message, topic: message, text: message }); } catch (_) { priced = null; }
     // 9/25 시뮬 4: 쇼츠는 원본 길이가 아니라 개당 단가 × 개수(자료를 한 번에 주면 묶음 할인)로 답한다
+    // 9/25 준희: 첫 거래 할인(정책 introPromo.shorts)이 있으면 "1편 39,000원인데, 첫 거래라 29,000원"(묶음 할인과 겹치지 않음)
+    if (priced && priced.amount && priced.options?.shorts && priced.introPromo) {
+      return { ...reply, templateKey: 'video_edit_price', messageId: 'video_edit.chat_price_promo.v1', text: `${shortsPromoSentence(priced.introPromo, /릴스|reels/i.test(message) ? '릴스' : '쇼츠')} 수정 ${priced.revisions}회가 포함돼요.`, introPromo: priced.introPromo, videoEdit: { amount: priced.amount, shorts: priced.shorts || null, introPromo: priced.introPromo } };
+    }
     if (priced && priced.amount && priced.options?.shorts) {
       const s = priced.shorts;
       const text = s
@@ -6815,7 +6828,38 @@ function applyChatReplyPolicy(body = {}, reply = {}) {
     if (priced && priced.materialsBased === 'photo') return { ...reply, templateKey: 'video_edit_materials', messageId: 'video_edit.chat_materials.v1', text: `보내주실 사진·영상 자료를 보고 금액을 확정해 드리겠습니다. 기본 구성 기준으로 ${priced.amount.toLocaleString('ko-KR')}원부터이고, 자료 받고 ${priced.days} 안에 보내드릴 수 있습니다!` };
     return { ...reply, templateKey: 'video_edit_length', messageId: 'video_edit.chat_length.v1', text: '영상 편집 가능합니다. 원본 영상 길이를 알려주시면 금액을 바로 안내해 드리겠습니다.' };
   }
+  // 9/25 준희: 일반 편집으로 견적이 나간 방에서 "릴스도 69,000원인가요?" → 일반 편집 기준이었다고 말하고 릴스 가격(첫 거래가)·쇼츠 예시
+  const shortsAsk = /쇼츠|숏츠|숏폼|릴스|shorts|reels/i.test(message) && /얼마|가격|금액|비용|\d[\d,]*\s*원|인가요|인지|같은가요|똑같/.test(message);
+  if (shortsAsk && pricedQuote && isVideoEditQuote(quote) && !quote.videoEdit?.shorts && !quote.introPromo && !quote.videoEdit?.introPromo && !/쇼츠|숏츠|릴스/.test(String(quote.message || '')) && !reply.workflowHandled && !reply.manualReview) {
+    let priced = null;
+    try { priced = require('./video-edit-quote').videoEditQuote({ topic: message, text: message }); } catch (_) { priced = null; }
+    if (priced && priced.amount && priced.options?.shorts) {
+      const word = /릴스|reels/i.test(message) ? '릴스' : '쇼츠';
+      const basis = Number(quote.pricing?.units || quote.videoEdit?.minutes || 0) > 0 ? `일반 영상 편집(원본 ${Number(quote.pricing?.units || quote.videoEdit?.minutes)}분 이내) 기준` : '일반 영상 편집 기준';
+      const price = priced.introPromo ? shortsPromoSentence(priced.introPromo, word, `${word}처럼 1분 이내 세로 영상은 원래`) : `${word}처럼 1분 이내 세로 영상은 1편 ${Number(priced.amount).toLocaleString('ko-KR')}원이에요.`;
+      const sample = shortsSampleUrl();
+      const text = [`앞서 안내드린 ${Number(quote.amount).toLocaleString('ko-KR')}원은 ${basis}이에요.`, price, sample ? `쇼츠 예시 영상: ${sample}` : ''].filter(Boolean).join(' ');
+      return { ...reply, autoSend: true, templateKey: 'video_edit_shorts_price', messageId: 'video_edit.chat_shorts_price.v1', text, ...(priced.introPromo ? { introPromo: priced.introPromo } : {}) };
+    }
+  }
   return reply;
+}
+function isVideoEditQuote(quote = {}) {
+  return String(quote.serviceId || '') === 'video_edit' || Boolean(quote.videoEdit) || quote.pricing?.type === 'video_edit';
+}
+// "릴스(1분 이내 세로 영상)는 1편 39,000원인데, 첫 거래라 29,000원에 해 드릴게요."(여러 편이면 1편 29,000원씩 N편 합계)
+function shortsPromoSentence(promo = {}, word = '쇼츠', lead = '') {
+  const w = n => `${Number(n || 0).toLocaleString('ko-KR')}원`;
+  const head = lead ? `${lead} 1편 ${w(promo.fullUnitAmount)}인데` : `${word}(1분 이내 세로 영상)는 1편 ${w(promo.fullUnitAmount)}인데`;
+  return Number(promo.count || 1) > 1
+    ? `${head}, 첫 거래라 1편 ${w(promo.unitAmount)}씩 ${promo.count}편 ${w(promo.amount)}에 해 드릴게요.`
+    : `${head}, 첫 거래라 ${w(promo.amount)}에 해 드릴게요.`;
+}
+function shortsSampleUrl() {
+  try {
+    const url = String(serviceRegistry.getService('video_edit')?.quoteCopy?.sampleUrls?.shorts || '').trim();
+    return /^https:\/\/(?:(?:www\.)?(?:youtube\.com|youtu\.be)|share\.descript\.com)\//.test(url) ? url : '';
+  } catch (_) { return ''; }
 }
 
 // 2026-09-24 지시 23(준희 지정 "이제 막 숨고 시작한 사람처럼, 사람 냄새 나게"): docs/tone-human-newcomer.md 코드블록을 그대로 옮긴 것.
@@ -6860,7 +6904,10 @@ function soomgoChatFactsText(body = {}) {
     // 9/25 시뮬 8: 범위를 넓게(식전·성장 사진영상·쇼츠·행사), 사진·자료 기준 시작가, 쇼츠 개수·묶음 할인을 [사실]에 넣는다
     const m = p.materials || {};
     const bundle = (p.shorts?.bundle?.rates || []).map(r => `${r.minCount}${r.maxCount ? `~${r.maxCount}` : '개 이상'}${r.maxCount ? '개' : ''} ${Math.round(Number(r.rate) * 100)}%`).join(', ');
-    lines.push(`영상 편집(지금 숨고에서 받음): ${vid.scope}. 원본 10분 이내 ${won(p.packages[0].saleAmount)}(${p.packages[0].days}), 30분 이내 ${won(p.packages[1].saleAmount)}(${p.packages[1].days}), 30분 넘으면 5분마다 ${won(over.unit.saleAmount)} 추가, 원본 ${p.cap?.fromMinutes || 70}분 이상은 ${won(p.cap?.saleAmount || 249000)}(${p.cap?.days || '3~4일'})이 상한이고 옵션을 더해도 넘지 않음. 쇼츠 1개(결과 1분 이내, 원본 10분 이내) ${won(p.shorts.saleAmount)}(${p.shorts.days}), 여러 개면 개당 ${won(p.shorts.saleAmount)} × 개수이고 자료를 한 번에 받아 같이 작업할 수 있으면 묶음 할인(${bundle}), 따로따로 해야 하면 개당 정가. 원본 길이로 못 정하는 사진·자료 기준 영상(식전영상·성장영상·돌잔치 등)은 ${won(m.photoAmount || 89000)}부터(${m.photoDays || '2~3일'}), 그 밖에 길이를 모르는 편집은 ${won(m.generalAmount || 69000)}부터(${m.generalDays || '1~2일'}) — 자료를 보고 금액 확정. 번역 자막은 20% 추가, 배경음악 넣기·밝기 색 맞추기는 요청할 때만 각 ${won(10000)}. 수정 ${vid.includedRevisions}회. 결과물 MP4. 경험: ${vid.experienceLine}`);
+    const promo = (() => { try { return require('./video-edit-quote').introPromoShorts(); } catch (_) { return null; } })();
+    lines.push(`영상 편집(지금 숨고에서 받음): ${vid.scope}. 원본 10분 이내 ${won(p.packages[0].saleAmount)}(${p.packages[0].days}), 30분 이내 ${won(p.packages[1].saleAmount)}(${p.packages[1].days}), 30분 넘으면 5분마다 ${won(over.unit.saleAmount)} 추가, 원본 ${p.cap?.fromMinutes || 70}분 이상은 ${won(p.cap?.saleAmount || 249000)}(${p.cap?.days || '3~4일'})이 상한이고 옵션을 더해도 넘지 않음. 쇼츠 1개(결과 1분 이내, 원본 10분 이내) ${won(p.shorts.saleAmount)}(${p.shorts.days}), 여러 개면 개당 ${won(p.shorts.saleAmount)} × 개수이고 자료를 한 번에 받아 같이 작업할 수 있으면 묶음 할인(${bundle}), 따로따로 해야 하면 개당 정가.${promo ? ` 지금은 쇼츠·릴스 첫 거래 할인으로 1편 ${won(promo.price)}(정가 ${won(p.shorts.saleAmount)}은 그대로 말한다: "1편 ${won(p.shorts.saleAmount)}인데, 첫 거래라 ${won(promo.price)}에 해 드릴게요"). 첫 거래가와 묶음 할인은 겹치지 않고 더 싼 쪽 하나만(지금은 첫 거래가). 첫 거래 할인이 나간 방은 더 깎아 주지 않는다. 일반 편집으로 견적이 나간 방에서 릴스·쇼츠 가격을 물으면 앞 금액은 일반 편집 기준이었다고 말하고 쇼츠 가격을 알려 준다.` : ''} 원본 길이로 못 정하는 사진·자료 기준 영상(식전영상·성장영상·돌잔치 등)은 ${won(m.photoAmount || 89000)}부터(${m.photoDays || '2~3일'}), 그 밖에 길이를 모르는 편집은 ${won(m.generalAmount || 69000)}부터(${m.generalDays || '1~2일'}) — 자료를 보고 금액 확정. 번역 자막은 20% 추가, 배경음악 넣기·밝기 색 맞추기는 요청할 때만 각 ${won(10000)}. 수정 ${vid.includedRevisions}회. 결과물 MP4. 경험: ${vid.experienceLine}`);
+    // 9/25 준희 "영상편집은 원하는 걸 자세하게 말해줄수록 좋다고 꼭 말하자"(한 대화에서 한 번, 다른 말과 몰아넣지 않는다)
+    lines.push('영상 편집 대화에서는 원하시는 느낌·참고 영상·꼭 넣을 문구를 자세히 알려주실수록 더 딱 맞게 만들 수 있다는 점을 자연스럽게 한 번 안내한다(이미 말했으면 반복하지 않는다).');
   } catch (_) {}
   try {
     const sub = minutes => buildSoomgoQuote({ requestId: `FACT-SUB-${minutes}`, purpose: '자막 제작', volume: `${minutes}분`, topic: '한국어 영상 자막', format: 'SRT' }).quote;
@@ -9069,7 +9116,7 @@ async function route(req, res) {
       let text = messageRegistry.renderMessage(message, values);
       if (/\{\{[A-Za-z0-9_]+\}\}/.test(text) || !text.trim()) return sendJson(res, 422, { error: 'message_values_missing' });
       // 9/25 준희: 영상 편집 고용 인사에는 자료 공유 방법(클라우드 링크, 정책에 이메일이 있으면 이메일도)을 붙인다
-      if (message.id === 'common.hire_greeting.v1' && String(body.serviceId || '') === 'video_edit') text = `${text} ${videoEditMaterialsLine()}`;
+      if (message.id === 'common.hire_greeting.v1' && String(body.serviceId || '') === 'video_edit') text = `${text} ${videoEditMaterialsLine(null, { detail: true })}`;
       return sendJson(res, 200, { ok: true, messageId: message.id, version: message.version || 'v1', text });
     } catch (error) {
       return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });

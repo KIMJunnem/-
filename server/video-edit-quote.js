@@ -72,12 +72,29 @@ function shortsBundleRate(count) {
   const hit = rates.find(item => count >= Number(item.minCount || 0) && (item.maxCount === undefined || count <= Number(item.maxCount)));
   return hit ? Number(hit.rate || 0) : 0;
 }
-// 개당 단가 × 개수, 묶음이면 할인. 반환 { count, unitAmount, fullAmount, bundleRate, bundleAmount }
-function shortsPricing(count, unitAmount) {
+// 9/25 준희: 릴스·쇼츠 첫 거래 할인(정책 introPromo.shorts). 정가(39,000원)는 그대로 두고 첫 거래가로 받는다.
+// 리뷰가 endAfterReviews개 쌓이면 자동 종료. state에 "리뷰 확인" 기록이 없어 리뷰 수는 정책 reviewsCount(준희가 직접 올림)로 센다
+// opts.introPromo는 시험용 덮어쓰기(null이면 끔). 서버는 넘기지 않는다
+function introPromoShorts(opts = {}) {
+  let raw = opts.introPromo;
+  if (raw === undefined) { try { raw = require('./operating-policy').readOperatingPolicy().introPromo?.shorts; } catch (_) { raw = null; } }
+  if (!raw || raw.enabled !== true) return null;
+  const price = Number(raw.price || 0);
+  const reviews = Number(raw.reviewsCount || 0);
+  const endAfter = Number(raw.endAfterReviews || 0);
+  if (!(price > 0) || (endAfter > 0 && reviews >= endAfter)) return null;
+  return { price, reviewsCount: reviews, endAfterReviews: endAfter };
+}
+// 개당 단가 × 개수, 묶음이면 할인. 반환 { count, unitAmount, fullAmount, bundleRate, bundleAmount, introPromo? }
+// 9/25 준희: 첫 거래가와 묶음 할인은 겹치지 않는다 — 개당 첫 거래가 × 개수와 묶음 할인가 중 싼 쪽 하나만(이익이 너무 줄지 않게)
+function shortsPricing(count, unitAmount, promo = null) {
   const unit = Number(unitAmount || DEFINITION?.pricing?.shorts?.saleAmount || 0);
   const fullAmount = unit * count;
   const bundleRate = count >= 2 ? shortsBundleRate(count) : 0;
   const bundleAmount = bundleRate ? round1000(fullAmount * (1 - bundleRate)) : fullAmount;
+  if (promo && promo.price < unit && promo.price * count <= bundleAmount) {
+    return { count, unitAmount: unit, fullAmount, bundleRate: 0, bundleAmount: fullAmount, introPromo: { unitAmount: promo.price, amount: promo.price * count } };
+  }
   return { count, unitAmount: unit, fullAmount, bundleRate, bundleAmount };
 }
 
@@ -97,7 +114,7 @@ function detectOptions(parsed = {}) {
 }
 
 // 반환: { serviceId, label, amount|null, days|null, revisions, minutes, options, scopeCheck|null, message, quoteMessageId, quoteMessageVersion }
-function videoEditQuote(parsed = {}) {
+function videoEditQuote(parsed = {}, opts = {}) {
   const def = DEFINITION;
   if (!def) return null;
   const minutes = sourceMinutes(parsed);
@@ -115,11 +132,17 @@ function videoEditQuote(parsed = {}) {
     else if (count > Number(shorts.maxCount || 20)) scopeCheck = 'shorts_too_many';
     else {
       amount = Number(shorts.saleAmount); days = shorts.days; workLine = copy.shortsWorkLine;
+      const promo = introPromoShorts(opts);
       if (count > 1) {
         // 견적 금액(amount)은 따로따로 할 때의 정가(개당 × 개수). 묶음 할인가는 문구·[사실]에만 쓴다
-        base.shorts = shortsPricing(count, amount);
-        amount = base.shorts.fullAmount;
-        workLine = `보내주신 영상으로 1분 이내 쇼츠 ${count}개를 만들어 한국어 자막을 입혀 MP4로 보내드립니다(개당 ${Number(shorts.saleAmount).toLocaleString('ko-KR')}원 × ${count}개).`;
+        // 9/25: 첫 거래가가 더 싸면 첫 거래가 × 개수가 견적 금액(묶음 할인과 겹치지 않음)
+        base.shorts = shortsPricing(count, amount, promo);
+        amount = base.shorts.introPromo ? base.shorts.introPromo.amount : base.shorts.fullAmount;
+        if (base.shorts.introPromo) base.introPromo = { count, fullUnitAmount: base.shorts.unitAmount, unitAmount: base.shorts.introPromo.unitAmount, amount };
+        workLine = `보내주신 영상으로 1분 이내 쇼츠 ${count}개를 만들어 한국어 자막을 입혀 MP4로 보내드립니다(개당 ${Number(base.introPromo ? base.introPromo.unitAmount : shorts.saleAmount).toLocaleString('ko-KR')}원 × ${count}개${base.introPromo ? ', 첫 거래 할인' : ''}).`;
+      } else if (promo && promo.price < amount) {
+        base.introPromo = { count: 1, fullUnitAmount: amount, unitAmount: promo.price, amount: promo.price };
+        amount = promo.price;
       }
     }
   } else if (minutes === null) {
@@ -157,7 +180,9 @@ function videoEditQuote(parsed = {}) {
   }
   const won = amount.toLocaleString('ko-KR');
   const dayText = days ? `작업 기간 ${days}` : copy.daysLater;
-  const priceLine = base.shorts ? `견적 개당 ${base.shorts.unitAmount.toLocaleString('ko-KR')}원 × ${base.shorts.count}개 = ${won}원 · ${dayText} · 수정 ${revisions}회 포함${base.shorts.bundleRate ? ` · 자료를 한 번에 주시면 ${base.shorts.count}개 묶음으로 ${Math.round(base.shorts.bundleRate * 100)}% 할인` : ''}` : base.materialsBased ? `견적 ${won}원부터(자료를 보고 최종 금액 확정) · ${dayText} · 수정 ${revisions}회 포함` : `견적 ${won}원 · ${dayText} · 수정 ${revisions}회 포함`;
+  // 9/25: 수동 문구는 금액 하나만(첫 거래가). 정가 설명은 자동 견적·채팅 답에서
+  const promoLine = base.introPromo ? `견적 ${won}원(첫 거래가${base.introPromo.count > 1 ? `, 1편 ${base.introPromo.unitAmount.toLocaleString('ko-KR')}원씩 ${base.introPromo.count}편` : ''}) · ${dayText} · 수정 ${revisions}회 포함` : '';
+  const priceLine = promoLine || (base.shorts ? `견적 개당 ${base.shorts.unitAmount.toLocaleString('ko-KR')}원 × ${base.shorts.count}개 = ${won}원 · ${dayText} · 수정 ${revisions}회 포함${base.shorts.bundleRate ? ` · 자료를 한 번에 주시면 ${base.shorts.count}개 묶음으로 ${Math.round(base.shorts.bundleRate * 100)}% 할인` : ''}` : base.materialsBased ? `견적 ${won}원부터(자료를 보고 최종 금액 확정) · ${dayText} · 수정 ${revisions}회 포함` : `견적 ${won}원 · ${dayText} · 수정 ${revisions}회 포함`);
   const lines = [intro, workLine, options.translation ? copy.translationLine : null, priceLine, copy.safeLine, copy.experienceLine, copy.questionKnown];
   return { ...base, amount, days, scopeCheck: null, message: lines.filter(Boolean).join('\n') };
 }
@@ -174,6 +199,8 @@ const STORYBOARD = /스토리\s*보드|콘티/;
 function customerWords(parsed = {}) {
   const head = requestHead(parsed);
   const field = head.match(/서비스\s*분야\s*\n\s*([^\n]{2,20})/)?.[1]?.trim();
+  // 9/25 준희: 분류를 두 개 이상 고르면 "상업 영상 개인 영상"처럼 붙어서 어색하다 → 분류 이름 없이 쓴다
+  if (field && ((field.match(/영상/g) || []).length > 1 || /[,·/]/.test(field))) return '';
   if (field && !/상관없|기타/.test(field)) return field;
   const topic = String(parsed.topic || '').trim();
   if (topic && topic.length <= 20 && !/^영상\s*편집$/.test(topic)) return topic.replace(/\s*(?:편집|요청|문의)\s*$/, '');
@@ -226,7 +253,16 @@ function autoQuoteMessage(parsed = {}, priced = {}, decision = {}, opts = {}) {
   const said = customerWords(parsed);
   const who = said ? `${said} ` : '';
   const lines = [];
-  if (priced.options?.shorts && priced.shorts?.count > 1) {
+  const word = /릴스|reels/i.test(fieldText(parsed)) ? '릴스' : '쇼츠';
+  if (priced.options?.shorts && priced.introPromo) {
+    // 9/25 준희: "릴스(1분 이내 세로 영상)는 1편 39,000원인데, 첫 거래라 29,000원에 해드릴게요". 묶음 할인과 겹치지 않음
+    const p = priced.introPromo;
+    const full = `${Number(p.fullUnitAmount).toLocaleString('ko-KR')}원`;
+    const unit = `${Number(p.unitAmount).toLocaleString('ko-KR')}원`;
+    lines.push(p.count > 1
+      ? `안녕하세요, ${word}(1분 이내 세로 영상)는 1편 ${full}인데, 첫 거래라 1편 ${unit}씩 ${p.count}편 ${won}에 자막까지 넣어서 해 드릴게요.`
+      : `안녕하세요, ${word}(1분 이내 세로 영상)는 1편 ${full}인데, 첫 거래라 ${won}에 자막까지 넣어서 해 드릴게요.`);
+  } else if (priced.options?.shorts && priced.shorts?.count > 1) {
     // 9/25 준희: 개당 단가 × 개수. 자료를 한 번에 받으면 묶음 할인(금액은 비율만 말한다 — 할인가를 숫자로 쓰면 채팅 할인 한 번을 이미 쓴 것으로 셈해진다)
     const s = priced.shorts;
     lines.push(`안녕하세요, ${who}영상으로 1분 이내 쇼츠 ${s.count}개 만들어서 자막까지 넣는 건 개당 ${s.unitAmount.toLocaleString('ko-KR')}원 × ${s.count}개로 ${won}에 해 드릴 수 있습니다.`);
@@ -248,6 +284,8 @@ function autoQuoteMessage(parsed = {}, priced = {}, decision = {}, opts = {}) {
   lines.push(`${priced.materialsBased ? '자료 받고' : '영상 받고'} ${days} 안에 MP4로 보내드리고, 수정은 ${priced.revisions || def.includedRevisions || 2}회까지 가능합니다!!`);
   // B판: 준희 검증 문장(9/24 "훨씬 낫다")의 끝맺음 — 날짜만 물어 다음 행동을 쉽게
   if (opts.variant === 'B') lines.push('원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!');
+  // 9/25 준희 "영상편집은 원하는 걸 자세하게 말해줄수록 좋다고 꼭 말하자": 짧게 한 줄(services/video_edit.json quoteCopy.detailLine)
+  if (def.quoteCopy?.detailLine) lines.push(def.quoteCopy.detailLine);
   // 샘플 영상 링크(유튜브 일부공개). services/video_edit.json quoteCopy.sampleUrl이 있을 때만
   const sampleUrl = String(def.quoteCopy?.sampleUrls?.[videoType(parsed)] || def.quoteCopy?.sampleUrl || '').trim();
   // 9/25: Descript 일부공개 링크도 허용
@@ -255,4 +293,4 @@ function autoQuoteMessage(parsed = {}, priced = {}, decision = {}, opts = {}) {
   return lines.join(' ');
 }
 
-module.exports = { shortsCount, shortsBundleRate, shortsPricing, videoType, abVariant, videoEditQuote, sourceMinutes, sourceLengthOpenEnded, openEndedLowerMinutes, detectOptions, autoQuoteDecision, autoQuoteMessage, customerWords, DEFINITION, DEFINITION_PATH };
+module.exports = { introPromoShorts, shortsCount, shortsBundleRate, shortsPricing, videoType, abVariant, videoEditQuote, sourceMinutes, sourceLengthOpenEnded, openEndedLowerMinutes, detectOptions, autoQuoteDecision, autoQuoteMessage, customerWords, DEFINITION, DEFINITION_PATH };

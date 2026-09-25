@@ -20,10 +20,13 @@ const run = (input, state = {}) => {
   // 9/25 A/B: A판(요청 번호 V25-EXA)은 준희 예시 그대로, B판(V25-EX)은 끝에 날짜 한 줄만 더
   const { quote } = run(mk('V25-EXA', '5분 이내'));
   assert.equal(quote.autoSend, true);
-  assert.equal(quote.message, '안녕하세요, 상업 영상 원본 5분 이내면 필요 없는 부분 정리하고 자막까지 넣어서 69,000원에 해 드릴 수 있습니다. 영상 받고 1~2일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!');
+  // 9/25 준희 "영상편집은 원하는 걸 자세하게 말해줄수록 좋다고 꼭 말하자": 준희 예시 뒤에 자세히 한 줄(services/video_edit.json quoteCopy.detailLine)
+  const DETAIL = '원하시는 느낌이나 참고 영상, 넣고 싶은 문구를 자세히 알려주실수록 더 딱 맞게 만들어 드려요!';
+  const JUNHEE = '안녕하세요, 상업 영상 원본 5분 이내면 필요 없는 부분 정리하고 자막까지 넣어서 69,000원에 해 드릴 수 있습니다. 영상 받고 1~2일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!';
+  assert.equal(quote.message, `${JUNHEE} ${DETAIL}`);
   assert.equal(quote.quoteMessageVersion, 'auto-v2');
   const b = run(mk('V25-EX', '5분 이내')).quote;
-  assert.equal(b.message, `${quote.message} 원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!`);
+  assert.equal(b.message, `${JUNHEE} 원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다! ${DETAIL}`);
   assert.equal(b.quoteMessageVersion, 'auto-v2-B');
   assert.match(quote.quoteMessageVersion, /^auto-v2(?:-B)?$/, '문구가 바뀌어 버전을 올림(9/25 A/B)');
 }
@@ -31,7 +34,7 @@ const run = (input, state = {}) => {
 {
   const { quote } = run(mk('V25-45', '45분'));
   assert.equal(quote.autoSend, true); assert.equal(quote.amount, 174000); assert.equal(quote.days, '3일');
-  assert.match(quote.message, /영상 받고 3일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!(?: 원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!)?$/);
+  assert.match(quote.message, /영상 받고 3일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!(?: 원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!)? 원하시는 느낌이나 참고 영상, 넣고 싶은 문구를 자세히 알려주실수록 더 딱 맞게 만들어 드려요!$/);
 }
 // 2) 컷·자막 + 모션그래픽 섞임 → 발송, 제외 문장 한 줄 / 모션그래픽만 → 알림
 {
@@ -47,7 +50,7 @@ const run = (input, state = {}) => {
 {
   const open = run(mk('V25-OPEN', '1시간 이상'));
   assert.equal(open.quote.autoSend, true); assert.equal(open.quote.amount, 249000); assert.equal(open.quote.days, '3~4일');
-  assert.match(open.quote.message, /원본 길이 확인하고 일정은 다시 말씀드릴 수 있습니다\. 영상 받고 3~4일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!(?: 원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!)?$/);
+  assert.match(open.quote.message, /원본 길이 확인하고 일정은 다시 말씀드릴 수 있습니다\. 영상 받고 3~4일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!(?: 원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!)? 원하시는 느낌이나 참고 영상, 넣고 싶은 문구를 자세히 알려주실수록 더 딱 맞게 만들어 드려요!$/);
   assert.ok(!/\?/.test(open.quote.message), '질문으로 끝내지 않음');
   const long = run(mk('V25-3H', '3시간 이상'));
   assert.equal(long.quote.autoSend, false); assert.equal(long.quote.videoEdit.autoDecision, 'length_open_ended');

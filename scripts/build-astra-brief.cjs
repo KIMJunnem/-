@@ -243,7 +243,13 @@ function buildBrief({ now = new Date() } = {}) {
   push('');
   push(`- 원본 길이 기준: 10분 이내 ${won(vid.pricing.packages[0].saleAmount)}, 30분 이내 ${won(vid.pricing.packages[1].saleAmount)}, 30분을 넘으면 5분마다 ${won(vOver.unit.saleAmount)}씩 더한다(작업 기간은 영상을 받아 본 뒤 날짜로).`);
   if (vid.pricing.cap) push(`- 금액 상한 ${won(vid.pricing.cap.saleAmount)}: 원본이 길어도, 번역·배경음악·색 옵션을 더해도 넘기지 않는다. 원본 ${vid.pricing.cap.fromMinutes}분 이상은 ${won(vid.pricing.cap.saleAmount)}·작업 기간 ${vid.pricing.cap.days}.`);
-  push(`- 쇼츠 1개(결과 ${vid.pricing.shorts.resultMaxMinutes}분 이내·원본 ${vid.pricing.shorts.maxSourceMinutes}분 이내): ${won(vid.pricing.shorts.saleAmount)}(${vid.pricing.shorts.days}). 원본이 더 길면 금액 없이 범위부터 확인.`);
+  // 9/25 준희: 릴스·쇼츠 첫 거래가(정책 introPromo.shorts, 리뷰 endAfterReviews개 쌓이면 끝). 고객 안내용 칸이라 "할인" 말 없이 첫 거래가로 적는다
+  let shortsPromo = null;
+  try { shortsPromo = require(path.join(ROOT, 'server', 'video-edit-quote.js')).introPromoShorts(); } catch (_) { shortsPromo = null; }
+  push(`- 쇼츠 1개(결과 ${vid.pricing.shorts.resultMaxMinutes}분 이내·원본 ${vid.pricing.shorts.maxSourceMinutes}분 이내): ${won(vid.pricing.shorts.saleAmount)}(${vid.pricing.shorts.days})${shortsPromo ? `, 지금은 첫 거래가 1편 ${won(shortsPromo.price)}(리뷰 ${shortsPromo.endAfterReviews}개가 쌓이면 정가로. 묶음 가격과 겹치지 않고 더 싼 쪽 하나)` : ''}. 원본이 더 길면 금액 없이 범위부터 확인.`);
+  // 9/25 준희 수정 방침(services/video_edit.json pricing.revisionFees)
+  const rf = vid.pricing.revisionFees;
+  if (rf) push(`- 기본 수정 ${vid.includedRevisions}회 뒤 ${vid.includedRevisions + 1}번째 수정부터는 작업 전에 금액을 말하고 동의를 받는다: 가벼운 수정 1회 ${won(rf.light.amount)}(쇼츠 ${won(rf.light.shortsAmount)}), 큰 수정 ${won(rf.big.fromAmount)}부터(쇼츠 ${won(rf.big.shortsFromAmount)}부터, 정확한 금액은 준희 확인). 수정 요청은 모아서 마지막 요청 2시간 뒤 한 번에 반영(마감이 오늘·내일이면 바로).`);
   push(`- 번역 자막(외국어 영상 → 한국어 자막): 금액의 ${Math.round(vfee('translation').rate * 100)}%를 더하고 천 원 단위로 반올림한다.`);
   push(`- 배경음악 넣기·밝기/색 맞추기: 각 ${won(vfee('bgm').amount)} — 고객이 요청할 때만 안내한다(처음부터 나열하지 않음).`);
   push(`- 기본 수정 ${vid.includedRevisions}회. 결과물 ${vid.deliverFormats.map(s => s.toUpperCase()).join('·')}.`);

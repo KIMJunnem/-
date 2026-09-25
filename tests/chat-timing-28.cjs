@@ -72,9 +72,17 @@ const at = iso => Date.parse(iso);
 }
 // 4) AI 티 점검
 assert.equal(t.aiTellCheck('네, 1~2일 안에 보내드릴 수 있습니다!'), '');
-assert.equal(t.aiTellCheck('네 좋습니다 😊'), 'emoji');
+// 9/26 준희 실제 말투: 😊 한 개·"~드릴게요"는 준희도 쓴다. 이모지 두 개 이상·"~하겠습니다" 연발·"~습니당" 두 번은 봇 티
+assert.equal(t.aiTellCheck('네 좋습니다 😊'), '');
+assert.equal(t.aiTellCheck('네 좋습니다 😊😊'), 'emoji');
+assert.equal(t.aiTellCheck('네 가능해요! 오늘 새벽 3시 전까지 맞춰 드릴게요 😊'), '');
+assert.equal(t.aiTellCheck('확인하겠습니다. 바로 진행하겠습니다.'), 'tone_rule');
+assert.equal(t.aiTellCheck('적어주시면 좋습니당 감사합니당'), 'tone_rule');
+assert.equal(t.aiTellCheck('가'.repeat(181), '', { maxChars: 180 }), 'too_long');
+assert.equal(t.aiTellCheck('한 줄\n두 줄\n세 줄\n네 줄\n다섯 줄', '', { maxLines: 4 }), 'too_long');
+assert.equal(t.aiTellCheck('가'.repeat(181)), '', '상한을 안 주면 검사 안 함');
 assert.equal(t.aiTellCheck('금액 69,000원 · 기간 1~2일'), 'list_or_dots');
-assert.equal(t.aiTellCheck('네, 바로 해 드릴게요.'), 'tone_rule');
+assert.equal(t.aiTellCheck('네, 바로 해 드릴게요.'), '', '9/26 준희도 쓰는 끝맺음');
 assert.equal(t.aiTellCheck('Relay Desk 작업을 시작합니다.'), 'system_tone');
 assert.equal(t.aiTellCheck('수정은 2회까지 가능합니다!!', '[고객] 수정은요?\n[내 답변] 수정은 2회까지 가능합니다!!'), 'repeated_sentence');
 assert.equal(t.aiTellCheck('수정은 2회까지 가능합니다!!', '[고객] 수정은 2회까지 가능합니다!!'), '', '고객 말과 같은 건 반복 아님');
@@ -104,7 +112,7 @@ const bridge = createAstraRoomBridge({ dataFile: path.join(tmp, 'bridge.json'), 
   };
   const answers = {};
   const cases = [mkEvent('235900010', '5분짜리 돌영상 편집 얼마예요?', '안녕하세요, 돌잔치 영상 원본 5분 이내면 필요 없는 부분 정리하고 자막까지 넣어서 69,000원에 해 드릴 수 있습니다. 영상 받고 1~2일 안에 MP4로 보내드리고 수정도 두 번까지 됩니다! 원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!'),
-    mkEvent('235900011', '언제 받아요?', '69,000원이고 영상 받고 1~2일 안에 보내드릴 수 있습니다! 😊'),
+    mkEvent('235900011', '언제 받아요?', '69,000원이고 영상 받고 1~2일 안에 보내드릴 수 있습니다! 😊🎬'), // 9/26: 이모지 한 개는 준희도 씀 → 두 개면 봇 티
     mkEvent('235900012', '수정은요?', '69,000원에 1~2일이고요. 수정은 2회까지 가능합니다!!')];
   for (const c of cases) answers[c.id] = c.claude;
   let calls = 0;
@@ -117,7 +125,7 @@ const bridge = createAstraRoomBridge({ dataFile: path.join(tmp, 'bridge.json'), 
   assert.equal(calls, 3, '4분 넘으면 답을 씀');
   const byId = Object.fromEntries(later.handled.map(h => [h.eventId, h]));
   assert.equal(byId[cases[0].id].decision, 'SEND'); assert.equal(byId[cases[0].id].parts, 2, '120자 넘는 답은 두 통');
-  assert.equal(byId[cases[1].id].decision, 'ESCALATE'); assert.equal(byId[cases[1].id].reason, 'ai_tell:emoji', '이모지 → 준희 알림, 정해진 문구도 안 보냄');
+  assert.equal(byId[cases[1].id].decision, 'ESCALATE'); assert.equal(byId[cases[1].id].reason, 'ai_tell:emoji', '이모지 두 개 이상 → 준희 알림, 정해진 문구도 안 보냄');
   assert.equal(byId[cases[2].id].decision, 'ESCALATE'); assert.equal(byId[cases[2].id].reason, 'ai_tell:repeated_sentence', '앞 답장과 같은 문장 → 알림');
   const first = bridge.get(cases[0].id);
   const second = bridge.list({ eventType: 'customer_message', limit: 50 }).find(e => e.payload?.afterEventId === cases[0].id);

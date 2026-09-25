@@ -13,6 +13,7 @@
   "quoteReadFollowup": { "_note": "9/25 준희 \"견적 받고 답 없는 고객에겐 먼저 연락하지 않는다\": 견적 읽음 뒤 안부 멘트(2~4시간 뒤 예약)를 서버에서 끈다. 다시 켜려면 enabled true. 첫 안내 10분 뒤 무응답 후속(옛 content.js 경로)도 이 스위치가 꺼져 있으면 보내지 않는다", "enabled": false, "nightRequests": { "_note": "9/25 준희 \"새벽(0~7시) 요청은 급한 경우가 많으니 적극적으로\": enabled가 꺼져 있어도 요청이 한국 시간 startHour~endHour 사이에 들어온 건(요청 생성 시각, 모르면 견적 발송 시각)만 읽음 뒤 delayMinutes(분) 사이에 한 번 보낸다. 새벽이어도 아침으로 미루지 않는다(고객이 깨어 있다는 뜻). 고객이 먼저 말하면 취소", "enabled": true, "startHour": 0, "endHour": 7, "delayMinutes": [20, 40] } },
   "paymentSplit": { "_note": "9/25 준희 \"영상이 안 되면 다른 것도 안 되는 거잖아\": 모든 서비스 전액 한 번 결제가 기본. true면 예전처럼 5만 원 넘는 작업을 착수금 50%·잔금으로 나눔. 숨고페이가 한 거래에 결제 요청 두 번을 받는지는 확인 안 됨", "enabled": false },
   "contact": { "_note": "9/25 준희: 계약 뒤 고객 자료는 이메일이나 고객 클라우드(구글 드라이브 등) 링크로 받는다. 영상 편집 고용 인사·상태 안내에 이 주소를 붙인다. 비우면 클라우드 링크만 부탁한다", "materialsEmail": "pd960723@gmail.com" },
+  "introPromo": { "shorts": { "_note": "9/25 준희: 릴스·쇼츠 첫 거래 할인. 정가 39,000원/편(services/video_edit.json)은 그대로 두고 price로 받는다. 묶음 할인과 겹치지 않고 더 싼 쪽 하나만. 리뷰가 endAfterReviews개 쌓이면 자동 종료 — 숨고 리뷰가 확인된 기록이 state에 없어 reviewsCount를 준희가 직접 올린다(5 이상이면 끝남). 첫 거래 할인이 나간 방은 채팅 할인 1회를 쓴 것으로 본다", "enabled": true, "price": 29000, "endAfterReviews": 5, "reviewsCount": 0 } },
   "quietHours": { "_note": "9/25 준희 \"새벽이어도 2시~8시 외에는 답하자\": 한국 시간 start시~end시(끝 시각 제외)에는 채팅 자동 답장·예약 발송·안부를 내보내지 않고 end시 + 0~windowMinutes분으로 미룬다. 고용 요청·파일·결제 같은 동작이 붙은 답은 그대로(채팅봇이 바로 처리)", "start": 2, "end": 8, "windowMinutes": 20 },
   "revisionBatch": { "_note": "9/25 준희: 수정 요청은 모아서 한 번에. 고객의 마지막 수정 메시지 뒤 minDelayMinutes(분)이 지나야 그 회차 작업을 시작한다. 마감이 오늘·내일(urgentDeadlineDays)이거나 고객이 급하다고 하면(urgentPattern) 바로 시작(urgentSkip). 끄면 예전처럼 받자마자 시작", "enabled": true, "minDelayMinutes": 120, "urgentSkip": true, "urgentDeadlineDays": 1, "urgentPattern": "급해|급합니다|급하게|급한|긴급|빨리|서둘러|오늘\\s*(?:중|안|까지|저녁|밤)|내일\\s*(?:까지|오전|오후|중|아침)" },
   "dailyCapExtras": { "_note": "9/25 준희 \"30건을 넘어도 성사 가능성이 높으면 추가로 받는다\": 영상 편집 자동 견적 하루 상한(services/video_edit.json autoQuote.dailyMaxSends)을 넘긴 요청 중 견적 판단이 보내기라고 하거나(판단이 있을 때), 판단이 없으면 요청서 점수(경쟁 고수 2명 이하·최근 요청·완료 희망일 분명·원본 길이나 자료 분명·샘플 있는 종류, 5점 만점)가 minScore 이상인 것만 하루 maxPerDay건까지 추가 발송. 추가분은 state.videoEditCapExtras에 따로 센다. 못 보낸 요청은 recentHours 안이면 다음 날 다시 판단", "enabled": true, "maxPerDay": 10, "minScore": 4, "recentHours": 48 },
@@ -166,6 +167,9 @@
     "usdPerMillionOutputTokens": 20,
     "maxOutputTokens": 1200,
     "timeoutMs": 30000,
+    "maxReplyChars": 180,
+    "maxReplyLines": 4,
+    "_maxReplyNote": "9/26 준희 \"쓸데없는 추가 얘기도 너무 봇 티 나\" · \"한 메시지에 목적 하나, 1~3줄\": Claude 답이 180자나 4줄을 넘으면 보내지 않고 보류(준희 알림). 0이면 검사 안 함",
     "changedAt": "2026-09-23T16:05:00+09:00",
     "reason": "9/23 준희 A — 답장은 아스트라 전담(claudeEnabled:false). 이전: 9/23 준희 지시: 모델 Fable 5.1 → Opus 5.5(claude-opus-5-5, 공식가 입력 $4·출력 $20 /100만 토큰, platform.claude.com 모델 표 9/23 확인). Opus 5.5는 생각 단계가 항상 켜져 있어 답이 잘리지 않게 출력 한도 400→1200. 1건 약 40~60원 [추정]. 하루 30건·3,000원 한도 그대로. 9/23 준희 결정: Claude 단계 다시 켬(claudeEnabled:true, 채팅봇이 못 정한 답을 Claude가 대신 씀). 공용 자동 유료 차단(spendControls)은 그대로 두고 이 기능 호출만 예외(trigger customer_room_fallback). 이전: 준희 승인(9/22): Astra 고객응대실이 60초 안에 안 받으면 Claude가 답(확정 초안 숫자 일치 검사), Claude가 안 되면 검증된 정해진 문구로 발송. 하루 30건·3,000원 한도. 단가는 claudeQuote와 같은 Fable 5.1 공식가, 1건 약 100원 [추정]. 2주 뒤 채팅 이후 거래 기록 보고 유지 여부 결정. enabled:false면 즉시 기존 흐름 9/22 준희 결정: Claude 단계는 끔(claudeEnabled:false) — Astra가 안 받으면 정해진 문구, 안 되면 사람 확인."
   },
