@@ -167,6 +167,6 @@ assert.doesNotMatch(JSON.stringify(registry.getService('subtitle')), /영상 편
   assert.doesNotMatch(prompt, /문서 작업을 상담하는 한국어 고객 응대 담당자/);
 }
 // 금지 주제는 그대로 준희 알림
-for (const m of ['환불해 주세요', 'AI로 하시는 거예요?', '조금 깎아 주세요']) assert.equal(reply(m, sq).autoSend, false, `${m}: 자동 답장 없음`);
+for (const m of ['환불해 주세요', 'AI로 하시는 거예요?']) assert.equal(reply(m, sq).autoSend, false, `${m}: 자동 답장 없음`); // 9/25 지시 32: 흥정은 챗봇이
 assert.equal(netCalls, 0, '외부 호출 없음');
 console.log('video-auto-quote-24: PASS');
