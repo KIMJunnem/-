@@ -11,13 +11,13 @@ const known = { text: '강의 영상 컷편집', volume: '10분 이내' };
 let p = v.videoEditQuote(wedding);
 assert.strictEqual(p.materialsBased, 'photo');
 assert.strictEqual(p.amount, 89000);
-assert.strictEqual(p.days, '3~4일');
+assert.strictEqual(p.days, '2~3일');
 let d = v.autoQuoteDecision(wedding, p, { sentToday: 0 });
 assert.strictEqual(d.send, true);
 let msg = v.autoQuoteMessage(wedding, p, d);
 assert.match(msg, /자료를 보고 정확한 금액을 확정/);
 assert.match(msg, /89,000원부터/);
-assert.match(msg, /자료 받고 3~4일/);
+assert.match(msg, /자료 받고 2~3일/);
 assert.ok(checkHonorific(msg).ok, msg);
 
 p = v.videoEditQuote(general);

@@ -5806,9 +5806,9 @@ function soomgoReply(body = {}) {
     && Boolean(String(quote?.extraScope || '').trim() || /(?:추가\s*(?:금|비용)|수정\s*\d+\s*회|사전\s*동의|별도\s*(?:안내|비용|견적))/i.test(conversationText));
   const hireOfferAlreadyMade = alreadyAskedSoomgoHire(conversationText);
   if ((explicitProceed || shortProceed) && (quoteHasEnoughTerms || hireOfferAlreadyMade)) {
-    // 9/25 지시 32: 채팅에서 할인한 방이면 결제 요청 금액(보낸 견적 기준)과 달라진다 — 고용 요청은 그대로 하되 준희에게 금액 확인 알림
+    // 9/25 지시 32: 채팅에서 할인한 방이면 합의 금액을 남긴다 → 고용 연결(/api/soomgo/hire) 때 작업·결제 요청 금액으로 쓴다(준희 "봇이 정하게")
     const agreed = chatAmountRange({ quote, conversationText });
-    const discountNote = agreed?.discountUsed ? { attention: true, agreedAmount: agreed.discountUsed, reason: `채팅에서 ${agreed.discountUsed.toLocaleString('ko-KR')}원으로 할인 합의 · 결제 요청 금액 확인 필요` } : {};
+    const discountNote = agreed?.discountUsed ? { agreedAmount: agreed.discountUsed, reason: `채팅에서 ${agreed.discountUsed.toLocaleString('ko-KR')}원으로 할인 합의 · 이 금액으로 작업·결제 요청` } : {};
     return {
       ...discountNote,
       autoSend: true,
@@ -6382,6 +6382,16 @@ function chatAmountRangeFacts(range) {
     ? `가격 조정: 이 방에서는 이미 ${won(range.discountUsed)}으로 한 번 낮췄다. 더 낮추지 않는다(더 깎아 달라고 하면 이 금액이 최선이라고 답한다).`
     : `가격 조정: 할인·흥정 요청이면 이 방에서 한 번만, 최저 ${won(range.min)}까지 낮춰 줄 수 있다(1,000원 단위, 할인 이유는 말하지 않는다). 그보다 낮게는 안 된다고 답한다.`;
   return `${discount}\n범위가 늘면 위 가격표로 다시 계산한 금액을 쓴다. 가격표에 없는 추가 작업은 최대 ${won(range.max)}까지 제시할 수 있다(넘으면 금액을 쓰지 말고 확인 후 알려드리겠다고 답한다).\n결제 진행: 날짜가 정해지면 숨고페이로 결제, 결과물 확인 뒤 거래 확정. 고객이 진행 의사와 날짜를 말하면 고용 요청을 보내드린다고 답한다.`;
+}
+// 이 방에서 챗봇이 고용 요청 때 남긴 할인 합의 금액(hire_ready의 agreedAmount). 85%~견적 사이·1,000원 단위만 인정.
+function agreedDiscountFor(state = {}, conversationId = '', quote = {}) {
+  const quoteAmount = Number(quote.amount || 0);
+  if (!conversationId || !(quoteAmount > 0)) return null;
+  const floor = Math.ceil((quoteAmount * CHAT_DISCOUNT_FLOOR_RATE) / 1000) * 1000;
+  const record = (Array.isArray(state.soomgoReplies) ? state.soomgoReplies : [])
+    .find(item => String(item.conversationId || '') === conversationId && Number(item.reply?.agreedAmount || 0) > 0);
+  const agreed = Number(record?.reply?.agreedAmount || 0);
+  return agreed >= floor && agreed < quoteAmount && agreed % 1000 === 0 ? agreed : null;
 }
 // 고객이 결제했다고 말함 → 답장은 그대로 하고 준희에게 "결제 확인 필요" 알림(막지 않음)
 const SOOMGO_PAID_CLAIM = /결제\s*(?:했|완료|끝났|끝냈|드렸|하였)|입금\s*(?:했|완료|드렸)|숨고\s*페이로\s*(?:보냈|결제)/;
@@ -8672,7 +8682,9 @@ async function route(req, res) {
       const request = lead.request || {};
       const fullQuote = lead.quote || body.quote || {};
       const orderType = body.orderType === 'sample' || body.sampleOrder === true ? 'sample' : 'full';
-      const quote = orderType === 'sample' ? sampleQuoteFromFull(fullQuote) : fullQuote;
+      // 9/25 준희 "봇이 정하게 해야 돼, 숨고페이 전에 다른 가격 넣으면 꼬여": 채팅에서 합의한 할인가를 작업·결제 요청 금액으로 쓴다(범위 검사 후)
+      const agreedAmount = orderType === 'full' ? agreedDiscountFor(current, String(body.conversationId || ''), fullQuote) : null;
+      const quote = orderType === 'sample' ? sampleQuoteFromFull(fullQuote) : (agreedAmount ? { ...fullQuote, amount: agreedAmount, agreedFromAmount: Number(fullQuote.amount), agreedDiscount: true } : fullQuote);
       const sampleMatch = orderType === 'full' ? findSoomgoSampleLink(current, {
         conversationId: String(body.conversationId || ''),
         message: String(body.sampleCreditCode || '')
@@ -10432,7 +10444,7 @@ if (require.main === module) {
   setInterval(() => runCustomerRoomFallback().catch(error => console.error(`Customer room fallback error: ${error.message}`)), 15000);
 }
 
-module.exports = { SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
+module.exports = { SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, agreedDiscountFor, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
 
 
 
