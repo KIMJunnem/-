@@ -9,6 +9,7 @@
     "reason": "현재 기록상 판매 중인 두 상품 가운데 문서/글 작성의 견적 후 답변률이 자막보다 높음. 결제 표본이 없어 임시 시험 대상으로만 지정",
     "templateMode": "fixed-by-category"
   },
+  "jevGate": { "_note": "9/25 지시 31(decisions 7-17): 제브 문지기. 켜기·끄기는 jev-gate-on/off.bat(준희). 규칙이 못 정한 고객 말만, 확률 0.9 이상일 때만 Claude 대신 처리", "enabled": false, "threshold": 0.9, "dailyMaxCalls": 500, "timeoutMs": 2000 },
   "limits": {
     "maxConcurrentPaidOrders": 2,
     "maxDailyNewQuotes": 30,

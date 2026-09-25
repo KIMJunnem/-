@@ -28,6 +28,7 @@ const attentionDedupe = require('./attention-dedupe');
 const jevReview = require('./jev-review');
 const pipelineSim = require('./pipeline-sim');
 const jevSimulation = require('./jev-simulation');
+const jevGate = require('./jev-gate');
 // PPT 샘플 유형 고르기(2026-09-22): 고객이 샘플을 달라고 하면 맞는 예시 PDF를 고른다.
 const presentationDesign = require('./presentation-design');
 const codexProduction = require('./codex-production');
@@ -6749,6 +6750,35 @@ function humanChatViaClaude(body = {}, det = {}, opts = {}) {
   return { ...roomReply, humanViaClaude: true, templateOff: det.templateKey || '', ...(paidClaim ? { attention: true, paymentCheck: true, reason: `${roomReply.reason ? `${roomReply.reason} · ` : ''}고객이 결제했다고 함 · 결제 확인 필요` } : {}) };
 }
 
+// 9/25 지시 31(decisions 7-17): 제브 문지기. 규칙이 못 정해서 Claude로 가려는 고객 말만 제브에 먼저 묻는다.
+// 확률 0.9 이상: 숨고 알림 → 답장 안 함 · 짧은 감사 → 정해진 감사 문구 · 금지 주제 → 준희 알림. 그 밖·실패·꺼짐 → null(지금처럼 Claude)
+// opts는 시험용(policy·deps·templatesForHumanMessages·writeLog). 서버는 넘기지 않는다.
+async function jevGateReply(body = {}, det = {}, state = {}, opts = {}) {
+  let policy = opts.policy || null;
+  if (!policy) { try { policy = readOperatingPolicy(); } catch (_) { policy = {}; } }
+  if (!jevGate.config(policy).enabled) return null;
+  const probe = humanChatViaClaude(body, det, { templatesForHumanMessages: opts.templatesForHumanMessages, enqueue: () => ({ jevProbe: true }) });
+  if (!probe || !probe.jevProbe) return null; // 규칙이 먼저 정한 것은 그대로
+  const deps = opts.deps || {
+    getKey: () => runtimeProviderKeys.Jev || process.env.TYPESAFE_API_KEY || '',
+    callJev: args => jevSimulation.callJev({ ...args, fetchImpl: global.fetch })
+  };
+  const decision = await jevGate.decide({ message: String(body.message || body.text || ''), body, policy, state, deps });
+  if (decision.log) {
+    const write = typeof opts.writeLog === 'function' ? opts.writeLog : entry => {
+      const current = readState();
+      current.jevGateLog = [entry, ...(Array.isArray(current.jevGateLog) ? current.jevGateLog : [])].slice(0, 5000);
+      writeState(current);
+    };
+    try { write({ ...decision.log, conversationId: String(body.conversationId || '').slice(0, 80) }); } catch (_) {}
+  }
+  const gate = { choice: decision.choice || '', confidence: decision.confidence ?? null };
+  if (decision.action === 'skip') return { ...det, autoSend: false, manualReview: false, skip: true, templateKey: 'jev_gate_system_notice', jevGate: gate, reason: `${decision.reason} · 숨고 알림으로 보고 답장 안 함` };
+  if (decision.action === 'thanks') return { autoSend: true, manualReview: false, templateKey: 'later_contact_thanks', text: SOOMGO_LATER_CONTACT_TEXT, jevGate: gate, reason: decision.reason };
+  if (decision.action === 'alert') return { ...det, autoSend: false, manualReview: true, attention: true, templateKey: 'jev_gate_alert', jevGate: gate, reason: `${decision.reason} · 금지 주제로 보고 준희 확인` };
+  return null;
+}
+
 // 9/24 지시 20(decisions 7-7): 고객 첨부 판단 결과로 이번 답을 정한다.
 // 범위 밖·금지 주제·불확실·금액을 서버가 확인 못 함 → 자동 답장 없이 준희 알림(판단 요약 + 보낼 문구 초안).
 // 그 밖 → 판단 결과를 [사실]에 넣어 채팅 Claude(지시 17·29 말투)가 답한다. 금액은 서버 계산값만 [사실]에 들어간다.
@@ -9352,9 +9382,10 @@ async function route(req, res) {
         ? soomgoQuoteReadFollowupReply(before, replyBody)
         : applyChatReplyPolicy(replyBody, workflowReply(before, replyBody) || soomgoReply(replyBody));
       // 9/24 지시 30: 고객이 직접 쓴 말은 정해진 문구 대신 Claude(붙여넣기 방식). 링크·첨부·비상 판정은 그대로 먼저
-      const humanViaClaude = body.quoteReadFollowup === true || linkReply || attachmentReply || judgeReply || isSoomgoEmergencySignal(replyBody, deterministicReply)
-        ? null
-        : humanChatViaClaude(replyBody, deterministicReply);
+      const claudeBound = !(body.quoteReadFollowup === true || linkReply || attachmentReply || judgeReply || isSoomgoEmergencySignal(replyBody, deterministicReply));
+      // 9/25 지시 31: 제브 문지기(스위치 jevGate.enabled, 기본 꺼짐). 규칙이 못 정한 것만, 확실할 때만 Claude 대신 처리
+      const jevReply = claudeBound ? await jevGateReply(replyBody, deterministicReply, before) : null;
+      const humanViaClaude = !claudeBound ? null : (jevReply || humanChatViaClaude(replyBody, deterministicReply));
       let reply = body.quoteReadFollowup === true
         ? deterministicReply
         : linkReply || attachmentReply || judgeReply || humanViaClaude || (isSoomgoEmergencySignal(replyBody, deterministicReply)
@@ -10401,7 +10432,7 @@ if (require.main === module) {
   setInterval(() => runCustomerRoomFallback().catch(error => console.error(`Customer room fallback error: ${error.message}`)), 15000);
 }
 
-module.exports = { SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
+module.exports = { SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
 
 
 
