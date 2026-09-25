@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T16:13:05.891Z",
+  "generatedAt": "2026-09-25T17:18:01.856Z",
   "kstDay": "2026-09-26",
   "funnel": {
     "requests": 430,
@@ -269,7 +269,7 @@
   "extra": {
     "windowDays": 7,
     "leadsByDay": {
-      "2026-09-19": 111,
+      "2026-09-19": 105,
       "2026-09-24": 35,
       "2026-09-22": 33,
       "2026-09-25": 28,
@@ -286,7 +286,7 @@
     "videoMaterialsQuotes": 1,
     "repliesByDay": {
       "2026-09-20": 51,
-      "2026-09-19": 35,
+      "2026-09-19": 33,
       "2026-09-21": 18,
       "2026-09-22": 16,
       "2026-09-24": 11,
@@ -295,7 +295,7 @@
     "replyTemplates": {
       "(없음)": 24,
       "quote_read_followup": 17,
-      "emergency_astra_review": 13,
+      "emergency_astra_review": 11,
       "system_notice": 8,
       "quote_read_followup_relinked": 6,
       "emergency_astra_failed": 6,
@@ -325,7 +325,7 @@
       "auto_format": 1
     },
     "replyAuto": 51,
-    "replyManual": 70,
+    "replyManual": 68,
     "honorificHeld": 0,
     "paymentClaims": 0,
     "agreedDiscounts": 0,
