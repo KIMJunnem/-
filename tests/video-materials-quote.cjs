@@ -57,3 +57,19 @@ console.log('식전영상·길이 모름 자동 견적 통과');
   assert.strictEqual(v.abVariant(''), 'A');
   console.log('A/B·샘플 링크 통과');
 }
+
+// 9/25 종류별 샘플 링크: 맞는 종류 링크가 먼저, 없으면 공통 링크
+{
+  const wedding = { text: '결혼식 식전영상 만들어 주세요' };
+  const p = v.videoEditQuote(wedding); const d = v.autoQuoteDecision(wedding, p, { sentToday: 0 });
+  const saved = { one: v.DEFINITION.quoteCopy.sampleUrl, many: { ...v.DEFINITION.quoteCopy.sampleUrls } };
+  v.DEFINITION.quoteCopy.sampleUrl = 'https://youtu.be/common';
+  v.DEFINITION.quoteCopy.sampleUrls.wedding = 'https://youtu.be/wedding';
+  assert.match(v.autoQuoteMessage(wedding, p, d, { variant: 'A' }), /youtu\.be\/wedding$/);
+  const other = { text: '가족 여행 영상 편집' };
+  const po = v.videoEditQuote(other);
+  assert.match(v.autoQuoteMessage(other, po, v.autoQuoteDecision(other, po, { sentToday: 0 }), { variant: 'A' }), /youtu\.be\/common$/);
+  v.DEFINITION.quoteCopy.sampleUrl = saved.one; v.DEFINITION.quoteCopy.sampleUrls = saved.many;
+  assert.strictEqual(v.videoType({ text: '돌잔치 성장영상' }), 'baby');
+  console.log('종류별 샘플 링크 통과');
+}
