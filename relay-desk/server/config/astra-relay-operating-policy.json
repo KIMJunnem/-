@@ -13,7 +13,7 @@
   "jevGate": { "_note": "9/25 지시 31(decisions 7-17): 제브 문지기. 켜기·끄기는 jev-gate-on/off.bat(준희). 규칙이 못 정한 고객 말만, 확률 0.9 이상일 때만 Claude 대신 처리", "enabled": false, "threshold": 0.9, "dailyMaxCalls": 500, "timeoutMs": 2000 },
   "limits": {
     "maxConcurrentPaidOrders": 2,
-    "maxDailyNewQuotes": 30,
+    "maxDailyNewQuotes": 15,
     "maxDailyFollowups": 3,
     "maxFollowupsPerCustomer": 1,
     "maxAstraUsdPerOrder": 0.35,
