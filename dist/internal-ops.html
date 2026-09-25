@@ -1,0 +1,7 @@
+<!doctype html><meta charset="utf-8"><title>Relay Desk 내부 운영</title>
+<style>body{font-family:system-ui,sans-serif;max-width:900px;margin:32px auto;padding:0 16px;color:#202124}button{padding:8px 12px;margin:4px;border:1px solid #bbb;border-radius:8px;background:#fff;cursor:pointer}pre{background:#f6f7f9;padding:16px;border-radius:10px;white-space:pre-wrap}</style>
+<h1>내부 운영 도구 MVP</h1><p>읽기 전용 계산·장애 시뮬레이션 화면입니다. 외부 결제·숨고·파일 전송을 호출하지 않습니다.</p>
+<div><button data-s="duplicate_delivery">중복 전송 시뮬레이션</button><button data-s="timeout_unknown">결과 불명 시뮬레이션</button><button data-s="scope_change">범위 변경 시뮬레이션</button><button data-s="restart_recovery">재시작 복구 시뮬레이션</button></div><pre id="out">시뮬레이션을 선택하세요.</pre>
+<script>
+document.querySelectorAll('[data-s]').forEach(b=>b.onclick=async()=>{const r=await fetch('/api/internal-ops/simulate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({scenario:b.dataset.s})});document.querySelector('#out').textContent=JSON.stringify(await r.json(),null,2)});
+</script>

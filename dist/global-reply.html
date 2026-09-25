@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>파이버 답장 초안</title>
+<style>
+  :root { --bg:#f6f5f2; --panel:#fff; --ink:#1d1d1f; --muted:#6b6b70; --line:#e3e1dc; --accent:#3a5bd9; --warn:#b36b00; --bad:#b3261e; --ok:#1f7a4d; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141416; --panel:#1d1d20; --ink:#ececef; --muted:#9a9aa2; --line:#2d2d32; --accent:#8aa2ff; --warn:#e0a24a; --bad:#ff8a80; --ok:#6fd3a0; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 -apple-system,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:16px; margin:0 0 8px; }
+  p.sub { color:var(--muted); margin:0 0 18px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  textarea { width:100%; min-height:150px; padding:10px; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; font:inherit; resize:vertical; }
+  .row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; margin:10px 0; }
+  input[type=number], input[type=text], select { padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:transparent; color:inherit; font:inherit; }
+  input[type=number] { width:90px; }
+  button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:9px 16px; font:inherit; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  button.ghost { background:transparent; color:var(--accent); border:1px solid var(--accent); padding:5px 12px; font-size:14px; }
+  pre { white-space:pre-wrap; word-break:break-word; margin:0; font:inherit; }
+  .out { border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin:6px 0 4px; min-height:40px; }
+  .muted { color:var(--muted); } .warn { color:var(--warn); } .bad { color:var(--bad); } .ok { color:var(--ok); }
+  .head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>파이버 답장 초안</h1>
+  <p class="sub">고객 메시지를 붙여넣으면 번역과 영어 답장 초안을 만듭니다. <b>보내기 기능은 없습니다</b> — 복사해서 파이버에 직접 붙여넣으세요. 금액은 서버가 가격표(파이버 채널)로 계산합니다.</p>
+
+  <section class="panel">
+    <h2>고객 메시지</h2>
+    <textarea id="msg" placeholder="파이버에서 받은 메시지를 그대로 붙여넣기"></textarea>
+    <div class="row">
+      <label>영상 길이(분) <input type="number" id="minutes" min="1" step="1" placeholder="모름" /></label>
+      <label>원어 <input type="text" id="lang" placeholder="예: English" /></label>
+      <label>자막 삽입(MP4) <select id="burn"><option value="">메시지대로</option><option value="yes">예</option><option value="no">아니오</option></select></label>
+    </div>
+    <div class="row">
+      <button id="go">초안 만들기</button>
+      <span id="status" class="muted"></span>
+    </div>
+    <div class="muted" id="usage">오늘 사용량 확인 중…</div>
+  </section>
+
+  <section class="panel" id="result" hidden>
+    <div class="head"><h2>고객 메시지 (한국어 번역)</h2><button class="ghost" data-copy="messageKo">복사</button></div>
+    <div class="out"><pre id="messageKo"></pre></div>
+
+    <div class="head" style="margin-top:14px"><h2>영어 답장 초안</h2><button class="ghost" data-copy="replyEn">복사</button></div>
+    <div class="out"><pre id="replyEn"></pre></div>
+
+    <div class="head" style="margin-top:14px"><h2>답장 초안 (한국어 번역)</h2><button class="ghost" data-copy="replyKo">복사</button></div>
+    <div class="out"><pre id="replyKo"></pre></div>
+
+    <p id="meta" class="muted" style="margin:12px 0 0"></p>
+    <p id="issues" class="warn" style="margin:6px 0 0"></p>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const ERR = { api_unavailable: 'API 잔액이 없어 초안을 만들 수 없습니다', global_reply_disabled: '꺼져 있습니다(정책 globalReply.enabled).', claude_key_missing: 'Claude 키가 없습니다.', daily_max_calls: '오늘 상한(건수)에 닿았습니다.', daily_budget_krw: '오늘 예산(원)에 닿았습니다.', message_empty: '메시지를 붙여넣으세요.', call_failed: 'Claude 호출 실패', parse_failed: '결과를 읽지 못했습니다. 다시 눌러 보세요.' };
+const ISSUE = { price_placeholder_missing: '초안에 금액 자리가 없어 금액 줄이 빠졌습니다', model_wrote_price: '초안에 모델이 쓴 금액이 있습니다 — 지우고 보내세요', more_than_one_question: '질문이 2개 이상입니다', forbidden_claim: '과장·허위로 보일 수 있는 표현이 있습니다', off_platform: '파이버 밖 연락을 암시하는 표현이 있습니다' };
+async function usage() {
+  try {
+    const r = await fetch('/api/global/reply-usage', { cache: 'no-store' });
+    if (!r.ok) { $('usage').textContent = r.status === 404 ? '서버 재시작 후 쓸 수 있습니다.' : '사용량을 못 읽었습니다.'; return; }
+    const d = await r.json();
+    $('usage').textContent = d.enabled ? `오늘 ${d.usage.calls}/${d.maxCalls}건 · ${d.usage.krw}원 / ${d.budgetKrw}원` : '꺼져 있음';
+  } catch (_) { $('usage').textContent = '서버에 연결하지 못했습니다.'; }
+}
+$('go').onclick = async () => {
+  const burn = $('burn').value;
+  const body = { message: $('msg').value, minutes: Number($('minutes').value) || null, sourceLanguage: $('lang').value.trim() || null, burnIn: burn === 'yes' ? true : burn === 'no' ? false : null };
+  $('go').disabled = true; $('status').textContent = '만드는 중… (10~30초)';
+  try {
+    const r = await fetch('/api/global/reply-draft', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (d.error === 'api_unavailable') { $('status').textContent = ERR.api_unavailable; return; }
+    if (!r.ok || !d.ok) { $('status').textContent = '실패: ' + (ERR[d.error] || d.error || r.status) + (d.detail ? ` (${d.detail})` : ''); return; }
+    $('messageKo').textContent = d.messageKo; $('replyEn').textContent = d.replyEn; $('replyKo').textContent = d.replyKo;
+    const p = d.price || {};
+    const priceText = p.ok ? `$${p.usd}${p.burnInUsd ? ` (자막 삽입 $${p.burnInUsd} 포함)` : ''}` : ({ custom_offer: p.burnIn ? '자막 입히기 → 맞춤 견적(파이버 옵션 없음)' : '30분 초과 → 맞춤 견적', minutes_unknown: '영상 길이 모름 → 금액 줄 없음', out_of_scope: '범위 밖 요청' }[p.reason] || p.reason);
+    $('meta').textContent = `금액: ${priceText} · 길이 ${d.detected.minutes ?? '모름'}분 · 원어 ${d.detected.sourceLanguage || '모름'} · 이번 호출 ${d.cost.krw}원 · 문구 ${d.messageId}`;
+    $('issues').textContent = (d.issues || []).map(k => '⚠ ' + (ISSUE[k] || k)).join(' / ');
+    $('result').hidden = false; $('status').textContent = '완료 — 확인 후 복사해서 직접 보내세요.';
+  } catch (e) { $('status').textContent = '실패: ' + e.message; }
+  finally { $('go').disabled = false; usage(); }
+};
+document.querySelectorAll('button[data-copy]').forEach(b => b.onclick = async () => {
+  const text = $(b.dataset.copy).textContent;
+  try { await navigator.clipboard.writeText(text); } catch (_) { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  b.textContent = '복사됨'; setTimeout(() => { b.textContent = '복사'; }, 1500);
+});
+usage();
+</script>
+</body>
+</html>

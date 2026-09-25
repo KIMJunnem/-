@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "Relay Desk · 숨고 자동 견적",
+  "version": "0.4.21",
+  "description": "숨고 요청서를 읽어 Relay Desk에서 견적·소요일을 계산하고 견적 입력을 자동화합니다.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://soomgo.com/*",
+    "https://www.soomgo.com/*",
+    "http://127.0.0.1:8787/*",
+    "http://localhost:8787/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://soomgo.com/*",
+        "https://www.soomgo.com/*"
+      ],
+      "js": [
+        "automation-guard.js",
+        "content-v3.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "auto-update.js"
+  },
+  "action": {
+    "default_title": "Relay Desk 숨고 봇"
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

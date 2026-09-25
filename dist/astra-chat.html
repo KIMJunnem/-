@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Astra 채팅 · Relay Desk</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1322;--panel:#141e31;--line:#2c3b54;--muted:#b1bed2;--accent:#99baff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#eff4ff;font:16px/1.6 system-ui,sans-serif}a{color:var(--accent)}button,input,textarea,select{font:inherit}button,select,input,textarea{border:1px solid var(--line);border-radius:10px;background:#0e1728;color:inherit;padding:10px}button{cursor:pointer}button.primary{background:#a9c6ff;color:#0b1933;font-weight:750}button:disabled{opacity:.5;cursor:not-allowed}:focus-visible{outline:3px solid #a9c6ff;outline-offset:3px}header{max-width:1240px;margin:auto;padding:22px 24px 8px}h1{margin:10px 0 0;font-size:28px}header p{color:var(--muted);margin:4px 0 16px}.layout{max-width:1240px;margin:auto;padding:0 24px 24px;display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}aside{align-self:start}h2{font-size:17px;margin:0 0 12px}label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}select{width:100%;margin-bottom:10px}aside button{width:100%}.divider{border-top:1px solid var(--line);margin:22px 0}.small{font-size:13px;color:var(--muted)}#balanceTitle{color:#f6d390;font-weight:700}#estimate{font-size:19px;font-weight:700;margin:12px 0}#baseline{width:100%;margin-bottom:8px}.chat{min-height:70vh;display:flex;flex-direction:column}.notice{font-size:13px;color:#cfdaee;border-left:3px solid var(--accent);padding:8px 12px;background:#1b2941;border-radius:6px}#messages{flex:1;min-height:220px;max-height:65vh;overflow-y:auto;padding:18px 0;scroll-behavior:smooth}.turn{margin:0 0 16px;max-width:94%;border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:#101a2b}.turn.user{margin-left:auto;background:#233652}.speaker{font-size:12px;font-weight:750;color:var(--accent);margin-bottom:5px}.text{white-space:pre-wrap;overflow-wrap:anywhere}.meta{border-top:1px solid var(--line);padding-top:8px;margin-top:10px;font-size:12px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}.error{color:#ffbaba}.empty{color:var(--muted);text-align:center;padding:50px 12px}#message{width:100%;resize:vertical;min-height:106px;max-height:300px}.actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:9px}#status{min-height:26px;margin:8px 0;font-size:14px}#recover{margin:0 0 10px}#refresh{width:auto;margin-top:10px}@media(max-width:760px){header{padding:16px}.layout{padding:0 12px 16px;grid-template-columns:1fr;gap:12px}.panel{padding:14px}.chat{min-height:60vh}#messages{max-height:60vh}.turn{max-width:100%}aside .divider{margin:14px 0}h1{font-size:24px}.actions .small{font-size:12px}}
+</style>
+</head>
+<body>
+<header><a href="/astra-chat.html">← Astra 채팅 새로고침</a><h1>Astra 채팅</h1><p>독립 대화 공간 · 답변과 사용 비용을 함께 확인하세요</p></header>
+<div class="layout">
+<aside class="panel" aria-label="대화 및 잔액">
+<h2>대화</h2><label for="sessions">저장된 대화 (최대 20개)</label><select id="sessions"><option value="">새 대화</option></select><button id="new" type="button">＋ 새 대화</button>
+<div class="divider"></div><h2>잔액 및 사용량</h2><div id="balanceTitle">실제 잔액 조회 미지원</div><div id="estimate">수동 기준 잔액 미설정</div><div id="balanceDetail" class="small" aria-live="polite">불러오는 중…</div>
+<p class="small">이 채팅만의 추정치입니다. 다른 API 사용, 요금 조정, 결과 미확인 요청으로 실제 잔액과 다를 수 있습니다. 공식 잔액은 제공하지 않습니다.</p>
+<form id="baselineForm"><label for="baseline">선택: 현재 잔액 직접 입력 (USD)</label><input id="baseline" type="number" min="0" max="1000000000" step="any" inputmode="decimal" placeholder="예: 25.00" required><button type="submit">수동 기준 잔액 저장</button></form><p id="balanceStatus" class="small" role="status"></p>
+<a href="https://platform.openai.com/settings/organization/billing/overview" target="_blank" rel="noopener noreferrer">OpenAI 결제 대시보드 ↗</a><p class="small">15초마다 잔액 기록만 확인합니다. AI 요청이나 추가 생성은 하지 않습니다.</p>
+</aside>
+<main class="panel chat">
+<div class="notice">이 채팅은 고객 채널이나 파일을 직접 조작하지 않습니다. 명령 실행 및 봇 설정 변경 기능이 없는 직접 대화입니다.</div>
+<div id="messages" role="log" aria-label="대화 메시지" aria-live="polite"></div>
+<div id="status" role="status" aria-live="polite"></div><button id="recover" type="button" hidden>저장 상태 확인 (AI 재전송 없음)</button>
+<form id="chatForm"><label for="message">메시지 (최대 20,000자)</label><textarea id="message" maxlength="20000" placeholder="Astra에게 질문하세요." required></textarea><div class="actions"><span class="small">Ctrl + Enter 전송 · 최대 120초 대기</span><button class="primary" id="send" type="submit">보내기</button></div></form>
+<button id="refresh" type="button">저장된 대화 새로고침</button>
+</main>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+let selected = new URLSearchParams(location.search).get('sessionId') || '', busy = false, unresolved = false, balanceBusy = false;
+const publicToken = new URLSearchParams(location.search).get('access_token') || '';
+const markerKey = 'relay-astra-pending-v1';
+const money = n => typeof n === 'number' ? '$' + n.toFixed(6) : '확인 불가';
+const statusNames = { pending:'처리 중', completed:'완료', incomplete:'일부 생성', failed:'실패', uncertain:'결과 미확인', cancelled:'취소됨' };
+async function api(url, options) {
+  const headers = { ...(options && options.headers ? options.headers : {}) };
+  if (publicToken) headers['x-relay-astra-token'] = publicToken;
+  const r = await fetch(url, { credentials:'same-origin', cache:'no-store', ...options, headers });
+  let data;
+  try { data = await r.json(); }
+  catch (_) { const e = new Error('서버 응답을 읽지 못했습니다. 릴레이 데스크 서버 상태를 확인하세요.'); e.status = r.status; throw e; }
+  if (!r.ok) { const e = new Error(data.error || '요청에 실패했습니다.'); e.data = data; throw e; }
+  return data;
+}
+function status(text, error = false) { $('status').textContent = text; $('status').className = error ? 'error' : ''; }
+function controls() {
+  $('send').disabled = busy || unresolved;
+  $('message').disabled = busy || unresolved;
+  $('sessions').disabled = busy;
+  $('new').disabled = busy;
+  $('recover').hidden = !unresolved;
+}
+function node(tag, className, text) { const el = document.createElement(tag); el.className = className; el.textContent = text; return el; }
+function render(messages) {
+  const box = $('messages'); box.replaceChildren();
+  if (!messages.length) box.append(node('div','empty','새 질문으로 대화를 시작하세요. 메시지는 서버에 저장됩니다.'));
+  for (const m of messages) {
+    const turn = node('article', 'turn ' + (m.role === 'user' ? 'user' : 'assistant'), '');
+    turn.append(node('div','speaker',m.role === 'user' ? '나' : 'Astra · ' + (statusNames[m.status] || m.status || '')));
+    turn.append(node('div','text',m.text || (m.status === 'pending' ? '응답을 기다리고 있습니다…' : '표시할 텍스트가 없습니다.')));
+    if (m.error) turn.append(node('div','error small',m.error));
+    if (m.role === 'assistant') {
+      const u = m.usage;
+      turn.append(node('div','meta', '실제 모델: ' + (m.model || '확인 불가') + '\n응답 ID: ' + (m.responseId || '없음 / 확인 불가') + '\n상태: ' + (m.providerStatus || m.status) + '\n입력 ' + (u?.inputTokens ?? '—') + ' · 캐시 입력 ' + (u?.cachedInputTokens ?? '—') + ' · 출력 ' + (u?.outputTokens ?? '—') + ' 토큰\n비용 USD: ' + money(u?.costUsd)));
+    }
+    box.append(turn);
+  }
+  box.scrollTop = box.scrollHeight;
+}
+async function listSessions() {
+  const data = await api('/api/astra/chat');
+  const select = $('sessions'); select.replaceChildren();
+  const first = document.createElement('option'); first.value = ''; first.textContent = '새 대화'; select.append(first);
+  for (const s of data.sessions) { const o = document.createElement('option'); o.value = s.id; o.textContent = s.title; select.append(o); }
+  if (selected && !data.sessions.some(s => s.id === selected)) selected = '';
+  select.value = selected;
+  return data.sessions;
+}
+async function loadSession(id) {
+  selected = id; $('sessions').value = id;
+  if (!id) { render([]); return null; }
+  const data = await api('/api/astra/chat?sessionId=' + encodeURIComponent(id));
+  if (selected === id) render(data.session.messages);
+  return data.session;
+}
+async function refreshBalance() {
+  if (balanceBusy) return;
+  balanceBusy = true;
+  try {
+    const b = await api('/api/astra/balance');
+    $('estimate').textContent = b.estimatedBalanceUsd == null ? '수동 기준 잔액 미설정' : '추정 잔액 ' + money(b.estimatedBalanceUsd);
+    $('balanceDetail').textContent = '이 채팅 추적 비용: ' + money(b.trackedSpendUsd) + '\n갱신: ' + new Date(b.updatedAt).toLocaleString('ko-KR') + '\n마지막 비용: ' + money(b.lastUsage?.costUsd) + '\n결과 미확인: ' + b.uncertainRequests + ' · 비용 미확인 응답: ' + b.unpricedResponses;
+    $('balanceDetail').style.whiteSpace = 'pre-line';
+  } catch (_) { $('balanceDetail').textContent = '잔액 기록을 불러오지 못했습니다. 다음 확인까지 기다려 주세요.'; }
+  finally { balanceBusy = false; }
+}
+function marker() { try { return JSON.parse(localStorage.getItem(markerKey) || 'null'); } catch (_) { return null; } }
+async function recover() {
+  const pending = marker();
+  try {
+    const sessions = await listSessions();
+    let found = null;
+    if (pending) {
+      const candidates = pending.sessionId ? sessions.filter(s => s.id === pending.sessionId) : sessions;
+      for (const s of candidates) {
+        const data = await api('/api/astra/chat?sessionId=' + encodeURIComponent(s.id));
+        if (data.session.messages.some(m => m.clientMessageId === pending.id)) { found = data.session; break; }
+      }
+    }
+    if (found) {
+      selected = found.id; $('sessions').value = selected; render(found.messages);
+      const turn = found.messages.find(m => m.clientMessageId === pending.id && m.role === 'assistant');
+      unresolved = !turn || turn.status === 'pending' || turn.status === 'uncertain';
+      if (!unresolved) { localStorage.removeItem(markerKey); status('저장된 처리 결과를 복구했습니다. 같은 요청은 재실행하지 않습니다.'); }
+      else status('처리 중이거나 결과가 미확인입니다. AI 요청은 재전송하지 않습니다.', true);
+    } else if (pending) {
+      unresolved = true; status('저장 결과를 아직 찾지 못했습니다. 중복 과금을 막기 위해 재전송을 차단했습니다. 관리자 확인이 필요합니다.', true);
+    } else { await loadSession(selected || sessions[0]?.id || ''); status('저장된 대화를 불러왔습니다.'); }
+  } catch (e) { status(e.message, true); }
+  controls();
+}
+async function pollSavedTurn(sessionId, clientMessageId, attempts = 12) {
+  for (let i = 0; i < attempts; i += 1) {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    try {
+      const data = await api('/api/astra/chat?sessionId=' + encodeURIComponent(sessionId));
+      const turn = data.session.messages.find(m => m.clientMessageId === clientMessageId && m.role === 'assistant');
+      if (turn && !['pending', 'uncertain'].includes(turn.status)) return data.session;
+    } catch (_) {}
+  }
+  return null;
+}
+$('chatForm').addEventListener('submit', async e => {
+  e.preventDefault(); if (busy || unresolved) return;
+  const message = $('message').value.trim();
+  if (!message || message.length > 20000) { status('1~20,000자의 메시지를 입력하세요.', true); return; }
+  const id = crypto.randomUUID();
+  // Store only correlation metadata locally, never keys or message contents.
+  try { localStorage.setItem(markerKey, JSON.stringify({ id, sessionId: selected || null })); }
+  catch (_) { status('복구용 브라우저 저장소를 사용할 수 없어 전송을 중단했습니다.', true); return; }
+  busy = true; controls(); status('응답 생성 중… 창을 닫아도 저장 상태를 나중에 확인할 수 있습니다.');
+  const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 135000);
+  try {
+    let result;
+    try { result = await api('/api/astra/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sessionId:selected || undefined, message, clientMessageId:id }), signal:controller.signal }); }
+    catch (err) { if (err.data?.assistant) result = err.data; else throw err; }
+    selected = result.sessionId;
+    unresolved = result.status === 'pending' || result.status === 'uncertain';
+    if (!unresolved) localStorage.removeItem(markerKey);
+    $('message').value = '';
+    await listSessions(); await loadSession(selected);
+    status(result.error || '응답이 저장되었습니다.', !!result.error);
+  } catch (err) {
+    unresolved = true;
+    status('응답이 늦어 저장 결과를 확인하는 중입니다. 같은 요청은 재전송하지 않습니다.');
+    if (selected) {
+      const recovered = await pollSavedTurn(selected, id);
+      if (recovered) { unresolved = false; localStorage.removeItem(markerKey); await listSessions(); await loadSession(selected); status('Astra 응답이 저장되어 화면에 표시되었습니다.'); }
+      else status('저장 결과가 아직 확인되지 않습니다. 새로고침 후 같은 대화를 선택해 주세요.', true);
+    }
+  } finally { clearTimeout(timer); busy = false; controls(); refreshBalance(); }
+});
+$('message').addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); $('chatForm').requestSubmit(); } });
+$('sessions').addEventListener('change', () => { loadSession($('sessions').value).catch(e => status(e.message,true)); });
+ $('new').addEventListener('click', async () => {
+  if (busy) return;
+  selected = ''; unresolved = false;
+  await loadSession('');
+  status('새 대화입니다. 이전 요청은 재전송하지 않고 보존되어 있습니다.');
+  controls(); $('message').focus();
+ });
+$('recover').addEventListener('click', recover);
+ $('refresh').addEventListener('click', async () => {
+  if (busy) return;
+  const button = $('refresh'); button.disabled = true; status('저장된 대화를 새로고침하는 중…');
+  try { await recover(); }
+  finally { button.disabled = false; }
+ });
+$('baselineForm').addEventListener('submit', async e => {
+  e.preventDefault(); const button = e.currentTarget.querySelector('button'); button.disabled = true;
+  try { await api('/api/astra/balance', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ balanceUsd:Number($('baseline').value) }) }); $('balanceStatus').textContent = '현재 누적 비용을 기준으로 수동 잔액을 저장했습니다.'; await refreshBalance(); }
+  catch (err) { $('balanceStatus').textContent = err.message; }
+  finally { button.disabled = false; }
+});
+unresolved = !!marker(); controls(); render([]); recover(); refreshBalance(); setInterval(refreshBalance,15000);
+</script>
+</body>
+</html>

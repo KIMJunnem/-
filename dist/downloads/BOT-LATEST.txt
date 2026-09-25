@@ -1,0 +1,9 @@
+﻿Relay Desk 숨고 봇 최신 발행본
+업데이트: 2026-09-24T16:33:19.810Z (Relay Desk 자체 재시작)
+
+숨고 요청 봇: 0.4.21
+폴더: relay-desk-soomgo-bot
+숨고 채팅 봇: 0.3.24
+폴더: relay-desk-soomgo-chat-bot
+크몽 봇: 0.1.3
+폴더: relay-desk-kmong-bot

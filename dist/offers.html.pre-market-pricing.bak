@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Relay Desk · 수익화 상품</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#eaf1ff;background:#08101e}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% -10%,#213a60,#08101e 52%);min-height:100vh}main{max-width:1080px;margin:auto;padding:28px 18px 56px}.brand{color:#7ee7d0;font-size:13px;font-weight:800;letter-spacing:.08em}.hero{display:flex;justify-content:space-between;align-items:end;gap:20px;margin:18px 0 26px}.hero h1{font-size:clamp(28px,5vw,48px);letter-spacing:-.05em;line-height:1.05;margin:0}.hero p{max-width:600px;color:#9eacc5;line-height:1.7;margin:10px 0 0;font-size:14px}.note{border:1px solid #294668;background:#102039;border-radius:14px;padding:14px 16px;color:#b9c8de;font-size:12px;line-height:1.6}.featured{margin:18px 0;border:1px solid #8667ef;background:linear-gradient(135deg,#211b4a,#101b33);border-radius:16px;padding:20px}.featured h2{margin:0 0 8px;font-size:21px}.featured p{color:#c8d2e5;font-size:13px;line-height:1.7;margin:0;max-width:760px}.featured .links{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.featured a{display:inline-flex;align-items:center;border:1px solid #4f62a6;border-radius:8px;padding:8px 11px;color:#dfe7ff;text-decoration:none;font-size:11px;background:#172345}.featured a:hover{background:#263765}.featured img{display:block;width:min(100%,360px);margin-top:16px;border-radius:12px;border:1px solid #4f62a6;background:#fff}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{border:1px solid #263b5c;background:rgba(13,24,43,.88);border-radius:16px;padding:18px;min-height:190px;display:flex;flex-direction:column}.num{color:#7ee7d0;font-size:12px;font-weight:800}.card h2{font-size:17px;margin:8px 0}.card p{color:#aebbd1;font-size:13px;line-height:1.6;margin:0}.price{color:#f4ce83;font-weight:800;margin-top:14px;line-height:1.5}.price .was{display:block;color:#7788a4;font-size:11px;font-weight:500;text-decoration:line-through}.price .now{display:block;color:#f4ce83;font-size:16px}.price .promo{display:block;color:#7ee7d0;font-size:10px;font-weight:700;margin-top:2px}.meta{color:#7486a4;font-size:11px;margin-top:8px}.footer{color:#7f91ad;font-size:11px;line-height:1.7;margin-top:24px}@media(max-width:700px){main{padding:22px 13px 40px}.hero{display:block}.grid{grid-template-columns:1fr}.card{min-height:0}.hero h1{font-size:34px}}
+  </style>
+</head>
+<body>
+<main>
+  <div class="brand">RELAY DESK · SALES CATALOG</div>
+  <div class="hero"><div><h1>AI로 바로 실행하는<br>수익화 상품</h1><p>아이디어 검토부터 판매 페이지, 반복 리서치, 업무 자동화까지 필요한 결과물을 정해진 범위와 일정으로 제공합니다.</p></div></div>
+  <div class="note">숨고 시작 기념으로 표시된 상품은 정상가에서 20% 할인된 가격입니다. 프로모션은 선착순·기간 한정이며, 자료량·난이도·추가 요청에 따라 최종 견적이 달라질 수 있습니다.</div>
+  <section class="featured" aria-label="문서작성 서비스">
+    <h2>문서작성·정리 대행</h2>
+    <p>간단 문서 정상가 9,900원부터, 시작 기념 20% 할인 적용가 8,000원부터 보고서·제안서·계획서까지 목적에 맞춰 작성합니다. 기본 수정 1회와 1~3일 납기를 포함하며, 기본형·확장형·제출형 옵션을 선택할 수 있습니다.</p>
+    <div class="links"><a href="/downloads/document-writing-price-card.png" download>가격표 이미지</a><a href="/downloads/document-writing-price-card.svg" download>가격표 SVG</a><a href="/downloads/document-writing-post-under-1000.txt" download>게시글·가격표 통합 TXT(1,000자 이내)</a><a href="/downloads/document-quote-template.txt" download>의뢰 접수·견적 템플릿</a><a href="/downloads/document-writing-listing.txt" download>게시글 문안 TXT</a><a href="/downloads/document-writing-price-menu.txt" download>상세 가격표 TXT</a></div>
+    <img src="/downloads/document-writing-price-card.png" alt="문서작성·정리 대행 가격표 이미지" />
+  </section>
+  <section class="featured" aria-label="숨고 자동 견적 봇">
+    <h2>숨고 요청 자동 견적 봇</h2>
+    <p>숨고 요청 상세를 읽어 릴레이 서버에서 숨고 시장가 기준 정상가의 20% 할인 금액·예상 소요일·기본 범위·추가금 기준을 계산하고 견적 설명을 작성한 뒤 자동 발송합니다. 고객 채팅은 별도 채팅 봇이 문맥을 읽고 가격·방법·일정·자료 요청에 답하며, 같은 요청은 한 번만 처리하고 증빙·위조 의뢰는 자동 발송하지 않습니다.</p>
+    <div class="links"><a href="/downloads/relay-desk-soomgo-bot.zip" download>요청 견적 봇 ZIP</a><a href="/downloads/relay-desk-soomgo-chat-bot.zip" download>고객 채팅 봇 ZIP</a><a href="/downloads/relay-desk-soomgo-bot-setup.txt" download>설치 안내 TXT</a></div>
+  </section>
+  <section class="grid" aria-label="수익화 상품 목록">
+    <article class="card"><div class="num">01</div><h2>48시간 수익화 진단</h2><p>고객·가격·판매경로·첫 실행 과제를 정리합니다.</p><div class="price"><span class="was">정상가 99,000원부터</span><span class="now">할인가 79,000원부터</span><span class="promo">숨고 시작 기념 20% 할인</span></div><div class="meta">TXT 또는 PDF · 48시간</div></article>
+    <article class="card"><div class="num">02</div><h2>AI 업무 자동화 세팅</h2><p>자료 정리, 인수인계, 반복 업무 흐름을 설계합니다.</p><div class="price"><span class="was">정상가 299,000원부터</span><span class="now">할인가 239,000원부터</span><span class="promo">숨고 시작 기념 20% 할인</span></div><div class="meta">초기 설정 · 사용 안내</div></article>
+    <article class="card"><div class="num">03</div><h2>경쟁사·시장 주간 모니터링</h2><p>가격·신상품·고객 반응을 매주 보고합니다.</p><div class="price"><span class="was">정상가 월 99,000원부터</span><span class="now">할인가 월 79,000원부터</span><span class="promo">숨고 시작 기념 20% 할인</span></div><div class="meta">반복 구독형</div></article>
+    <article class="card"><div class="num">04</div><h2>상품 판매 페이지 제작</h2><p>상품명·설명·FAQ·광고 문구·페이지 구성을 만듭니다.</p><div class="price"><span class="was">정상가 149,000원부터</span><span class="now">할인가 119,000원부터</span><span class="promo">숨고 시작 기념 20% 할인</span></div><div class="meta">디지털·서비스 상품</div></article>
+    <article class="card"><div class="num">05</div><h2>회의·대화 → 실행계획</h2><p>결정사항·담당자·기한·다음 행동을 정리합니다.</p><div class="price"><span class="was">정상가 99,000원부터</span><span class="now">할인가 79,000원부터</span><span class="promo">숨고 시작 기념 20% 할인</span></div><div class="meta">건별 납품</div></article>
+    <article class="card"><div class="num">06</div><h2>프롬프트·템플릿 팩</h2><p>인수인계·리서치·검증·보고서 템플릿을 제공합니다.</p><div class="price"><span class="was">정상가 19,000~49,000원</span><span class="now">할인가 15,000~39,000원</span><span class="promo">숨고 시작 기념 20% 할인</span></div><div class="meta">디지털 다운로드</div></article>
+    <article class="card"><div class="num">07</div><h2>유료 사전예약 리서치</h2><p>예약 고객의 질문을 모아 맞춤 리서치로 전달합니다.</p><div class="price"><span class="was">정상가 50,000원부터</span><span class="now">할인가 40,000원부터</span><span class="promo">숨고 시작 기념 20% 할인</span></div><div class="meta">선착순 주제형</div></article>
+    <article class="card"><div class="num">08</div><h2>대행사 화이트라벨 리서치</h2><p>대행사 이름으로 납품 가능한 시장·경쟁사 조사입니다.</p><div class="price"><span class="was">정상가 100,000~300,000원</span><span class="now">할인가 80,000~240,000원</span><span class="promo">숨고 시작 기념 20% 할인</span></div><div class="meta">건별 납품</div></article>
+    <article class="card"><div class="num">09</div><h2>AI 업무 자동화 실습회</h2><p>90분 실습과 개인별 업무 흐름 초안을 제공합니다.</p><div class="price"><span class="was">정상가 49,000원</span><span class="now">할인가 39,000원</span><span class="promo">숨고 시작 기념 20% 할인</span></div><div class="meta">기업 세션 별도</div></article>
+    <article class="card"><div class="num">10</div><h2>Relay Desk 유료 베타</h2><p>팀별 AI 인수인계 허브와 누적 보고서를 운영합니다.</p><div class="price"><span class="was">정상가 월 29,000~99,000원</span><span class="now">할인가 월 23,000~79,000원</span><span class="promo">숨고 시작 기념 20% 할인</span></div><div class="meta">5개 팀 한정</div></article>
+  </section>
+  <div class="footer">문의 시 원하는 상품 번호와 상품 설명, 목표 고객, 원하는 결과물을 보내주세요. 개인정보·비밀번호·API 키는 보내지 마세요.</div>
+</main>
+</body>
+</html>
