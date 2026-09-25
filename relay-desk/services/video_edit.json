@@ -48,7 +48,7 @@
     "safeLine": "결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.",
     "experienceLine": "33분 분량 영상의 번역 자막을 실제로 제작해 납품했습니다.",
     "sampleUrl": "",
-    "sampleUrls": { "youtube": "", "wedding": "https://share.descript.com/view/R5FXoEyZBWK", "baby": "", "shorts": "https://share.descript.com/view/cdaSNQh7ngM", "event": "", "lecture": "", "promo": "" },
+    "sampleUrls": { "youtube": "", "wedding": "https://youtu.be/TB5e8xc_3bQ", "baby": "https://youtu.be/09-JcNXNur0", "shorts": "https://youtube.com/shorts/ygQCzp02MTA", "event": "", "lecture": "", "promo": "" },
     "_sampleUrlsNote": "9/25 준희 \"많이 찾는 유형별로 샘플 하나씩\": 요청 종류(sampleTypes)에 맞는 링크를 먼저 쓰고, 없으면 sampleUrl",
     "_sampleUrlNote": "9/25: 장편 편집 샘플을 유튜브 일부공개로 올린 뒤 링크를 넣으면 자동 견적 끝에 \"작업 예시 영상: 링크\"가 붙는다(youtube.com·youtu.be·share.descript.com만)",
     "questionKnown": "원본 영상 파일이 몇 개인지만 알려주실 수 있을까요?",
