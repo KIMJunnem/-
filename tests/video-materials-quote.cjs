@@ -31,9 +31,9 @@ assert.strictEqual(p.materialsBased, undefined);
 assert.strictEqual(p.amount, 69000);
 
 // 하루 30건
-assert.strictEqual(v.DEFINITION.autoQuote.dailyMaxSends, 30);
-assert.strictEqual(v.autoQuoteDecision(wedding, v.videoEditQuote(wedding), { sentToday: 29 }).send, true);
-assert.strictEqual(v.autoQuoteDecision(wedding, v.videoEditQuote(wedding), { sentToday: 30 }).reason, 'daily_cap');
+assert.strictEqual(v.DEFINITION.autoQuote.dailyMaxSends, 15); // 9/25 샘플 링크 전까지 15
+assert.strictEqual(v.autoQuoteDecision(wedding, v.videoEditQuote(wedding), { sentToday: 14 }).send, true);
+assert.strictEqual(v.autoQuoteDecision(wedding, v.videoEditQuote(wedding), { sentToday: 15 }).reason, 'daily_cap');
 // 안 하는 작업·방문은 여전히 거름
 assert.strictEqual(v.autoQuoteDecision({ text: '식전영상 3D 애니메이션 제작' }, v.videoEditQuote({ text: '식전영상 3D 애니메이션 제작' }), { sentToday: 0 }).reason, 'excluded_work');
 assert.strictEqual(v.autoQuoteDecision({ text: '돌잔치 현장 촬영 해주세요' }, v.videoEditQuote({ text: '돌잔치 현장 촬영 해주세요' }), { sentToday: 0 }).reason, 'visit_or_shoot');
