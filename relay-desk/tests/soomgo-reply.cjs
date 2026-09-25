@@ -39,7 +39,7 @@ const hiredConversation = soomgoReply({
 assert.equal(hiredConversation.autoSend, true);
 assert.equal(hiredConversation.postHire, true);
 assert.equal(hiredConversation.templateKey, 'post_hire_status');
-assert.match(hiredConversation.text, /제작 큐.*진행 중/);
+assert.match(hiredConversation.text, /작업 진행 중/); // 9/26 준희 말투: "제작 큐" 같은 내부 말 없이
 assert.doesNotMatch(hiredConversation.text, /고용 요청을 보내|진행하실까요/);
 assert.equal(shouldUseSoomgoAiReply(hiredConversation), true);
 
@@ -80,7 +80,7 @@ const startAvailability = workflowReply({ soomgoWorkflows: [firstResultWorkflow]
   conversationId: 'TEST-WORKFLOW-START', message: '바로 작업 가능하신가요?'
 });
 assert.equal(startAvailability.templateKey, 'workflow_status');
-assert.match(startAvailability.text, /제작 큐/);
+assert.match(startAvailability.text, /작업 진행 중/);
 
 const contextualYes = soomgoReply({
   conversationId: 'TEST-CONTEXTUAL-YES',

@@ -112,7 +112,9 @@ function attachVideoEditQuote(quote, request, ctx = {}) {
     label: priced.label, days: priced.days || '', message: priced.message, includedRevisions: priced.revisions,
     quoteMessageId: priced.quoteMessageId, quoteMessageVersion: priced.quoteMessageVersion,
     pricing: { table: 'video-edit-2026-09-24', type: 'video_edit', units: priced.minutes, unit: '분', options: priced.options, scopeCheck: priced.scopeCheck },
-    videoEdit: { serviceId: priced.serviceId, amount: priced.amount, days: priced.days, scopeCheck: priced.scopeCheck, manualSendOnly: true, ...(priced.shorts ? { shorts: priced.shorts } : {}), ...(priced.materialsBased ? { materialsBased: priced.materialsBased } : {}) },
+    videoEdit: { serviceId: priced.serviceId, amount: priced.amount, days: priced.days, scopeCheck: priced.scopeCheck, manualSendOnly: true, ...(priced.shorts ? { shorts: priced.shorts } : {}), ...(priced.materialsBased ? { materialsBased: priced.materialsBased } : {}), ...(priced.introPromo ? { introPromo: priced.introPromo } : {}) },
+    // 9/25 준희: 릴스·쇼츠 첫 거래 할인이 들어간 견적(채팅 할인 1회를 쓴 것으로 본다)
+    ...(priced.introPromo ? { introPromo: priced.introPromo } : {}),
     autoSend: false, manualReview: true
   });
   const now = ctx.now || Date.now();

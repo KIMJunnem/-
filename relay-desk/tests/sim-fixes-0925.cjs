@@ -66,7 +66,9 @@ assert.match(hireSource, /orderAmount: Number\(quote\.amount \|\| 0\)/, '주문 
   const rates = V.DEFINITION.pricing.shorts.bundle.rates;
   assert.deepEqual(rates.map(r => [r.minCount, r.maxCount, r.rate]), [[2, 4, 0.1], [5, undefined, 0.15]]);
   const five = { topic: '릴스 쇼츠 30초짜리 5개 만들어주세요', text: '릴스 쇼츠 30초짜리 5개 만들어주세요' };
-  const p = V.videoEditQuote(five);
+  // 9/25 준희 첫 거래 할인(정책 introPromo.shorts)이 켜져 있어도 정가·묶음 계산은 그대로 — 여기서는 첫 거래 할인을 끄고(opts.introPromo=null) 본다. 켠 상태는 tests/revision-policy-0925.cjs
+  const NO_PROMO = { introPromo: null };
+  const p = V.videoEditQuote(five, NO_PROMO);
   assert.equal(p.amount, 195000);
   assert.deepEqual({ ...p.shorts }, { count: 5, unitAmount: 39000, fullAmount: 195000, bundleRate: 0.15, bundleAmount: 166000 });
   const msg = V.autoQuoteMessage(five, p, V.autoQuoteDecision(five, p, { enabled: true, sentToday: 0 }));
@@ -74,18 +76,19 @@ assert.match(hireSource, /orderAmount: Number\(quote\.amount \|\| 0\)/, '주문 
   assert.match(msg, /자료를 한 번에 주시면 5개 묶음으로 15% 할인해 드립니다/);
   assert.doesNotMatch(msg, /166,000원/, '할인가 숫자는 견적 문구에 쓰지 않음(채팅 할인으로 셈해지지 않게)');
   assert.ok(checkHonorific(msg).ok, msg);
-  assert.equal(V.videoEditQuote({ topic: '유튜브 쇼츠 3편' }).shorts.bundleRate, 0.1);
-  assert.equal(V.videoEditQuote({ topic: '5개 쇼츠 부탁' }).shorts.count, 5);
-  assert.equal(V.videoEditQuote({ topic: '쇼츠 1개' }).amount, 39000);
-  assert.equal(V.videoEditQuote({ topic: '쇼츠 1개' }).shorts, undefined);
-  assert.equal(V.videoEditQuote({ topic: '쇼츠 25개' }).scopeCheck, 'shorts_too_many');
-  assert.equal(V.videoEditQuote({ topic: '쇼츠 7개' }).amount, 273000, '상한 249,000원은 원본 길이 셈에만(쇼츠는 개당)');
+  assert.equal(V.videoEditQuote({ topic: '유튜브 쇼츠 3편' }, NO_PROMO).shorts.bundleRate, 0.1);
+  assert.equal(V.videoEditQuote({ topic: '5개 쇼츠 부탁' }, NO_PROMO).shorts.count, 5);
+  assert.equal(V.videoEditQuote({ topic: '쇼츠 1개' }, NO_PROMO).amount, 39000);
+  assert.equal(V.videoEditQuote({ topic: '쇼츠 1개' }, NO_PROMO).shorts, undefined);
+  assert.equal(V.videoEditQuote({ topic: '쇼츠 25개' }, NO_PROMO).scopeCheck, 'shorts_too_many');
+  assert.equal(V.videoEditQuote({ topic: '쇼츠 7개' }, NO_PROMO).amount, 273000, '상한 249,000원은 원본 길이 셈에만(쇼츠는 개당)');
   // 금액 검사 상한(견적의 150%)이 합계 기준이라 195,000원 답이 막히지 않는다
   const range = { quote: 195000, min: 166000, max: 292000 };
   assert.equal(R.validSoomgoAiReply('5개면 195,000원입니다.', '견적 금액은 195,000원입니다.', { requireNumbers: false, amountRange: range }), true);
+  // 채팅 가격 답은 지금 정책(첫 거래 할인 켜짐): 첫 거래가가 묶음 할인보다 싸서 첫 거래가 하나만
   const chat = R.applyChatReplyPolicy({ message: '릴스 쇼츠 5개면 얼마예요?' }, { autoSend: true, text: 'x' });
-  assert.match(chat.text, /개당 39,000원이라 5개면 195,000원/);
-  assert.match(chat.text, /15% 할인/);
+  assert.match(chat.text, /1편 39,000원인데, 첫 거래라 1편 29,000원씩 5편 145,000원/);
+  assert.doesNotMatch(chat.text, /15% 할인/, '묶음 할인과 겹치지 않음');
   const facts = R.soomgoChatFactsText({ quote: { serviceId: 'video_edit', amount: 195000, videoEdit: { shorts: p.shorts } } });
   assert.match(facts, /개당 39,000원 × 5개 = 195,000원, 자료를 한 번에 주면 묶음 15% 할인가 166,000원/);
 }
@@ -279,6 +282,8 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const policy = JSON.parse(fs.readFileSync(policyFile, 'utf8'));
   policy.quoteJudge.enabled = false;
   policy.contact.materialsEmail = 'materials-e2e@example.net';
+  // 새벽(0~7시) 요청 안부는 revision-policy-0925에서 따로 본다. 여기서는 시험 시각과 상관없이 "낮 요청은 안부 없음"을 본다
+  if (policy.quoteReadFollowup.nightRequests) policy.quoteReadFollowup.nightRequests.enabled = false;
   fs.writeFileSync(policyFile, JSON.stringify(policy, null, 2));
   const today = new Date().toISOString();
   fs.writeFileSync(path.join(dir, 'server', 'data', 'state.json'), JSON.stringify({ soomgoLeads: [], soomgoReplies: [], promptPosts: [], videoEditAutoQuotes: Array.from({ length: 30 }, (_, i) => ({ at: today, requestId: `seed${i}` })) }));

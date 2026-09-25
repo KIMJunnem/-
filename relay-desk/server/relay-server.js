@@ -2791,7 +2791,24 @@ function intakeFromParsedRequest(parsed = {}) {
 
 // 참고 이미지·영상은 채팅 첨부가 기본이고, 숨고 채팅으로 전송되지 않는
 // 큰 파일만 메일로 받는다. 연락처를 먼저 내세우지 않도록 조건부로 적는다.
-const INTAKE_ATTACHMENT_LINE = '참고할 이미지나 영상이 있으면 이 채팅에 함께 올려주세요. 용량이 커서 첨부되지 않는 파일만 pd960723@gmail.com으로 보내주시면 됩니다.';
+// 9/25: 큰 파일 받을 메일 주소는 정책 contact.materialsEmail에서 읽는다(코드에 주소를 적지 않음). 비어 있거나 주소 모양이 아니면 메일 문장 없이 클라우드 링크만
+function materialsEmailAddress(policy = null) {
+  let email = '';
+  try { email = String((policy || readOperatingPolicy()).contact?.materialsEmail || '').trim(); } catch (_) { email = ''; }
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
+}
+function intakeAttachmentLine(policy = null) {
+  const email = materialsEmailAddress(policy);
+  return email
+    ? `참고할 이미지나 영상이 있으면 이 채팅에 함께 올려주세요. 용량이 커서 첨부되지 않는 파일만 ${email}으로 보내주시면 됩니다.`
+    : '참고할 이미지나 영상이 있으면 이 채팅에 함께 올려주세요. 용량이 커서 첨부되지 않는 파일은 구글 드라이브 같은 클라우드 공유 링크로 보내주시면 됩니다.';
+}
+function largeFileEmailText(policy = null) {
+  const email = materialsEmailAddress(policy);
+  return email
+    ? `파일 용량이 커서 숨고 채팅으로 전송되지 않는 경우에는 ${email}으로 보내 주세요. 메일 제목에 숨고 고객명과 의뢰 종류를 적어 주시고, 전송 후 이 채팅에 “메일 보냈습니다”라고 남겨 주시면 바로 확인하겠습니다.`
+    : '파일 용량이 커서 숨고 채팅으로 전송되지 않는 경우에는 구글 드라이브 같은 클라우드에 올려 공유 링크를 이 채팅으로 보내 주세요. 링크를 남겨 주시면 바로 확인하겠습니다.';
+}
 const SOOMGO_FIRST_CHAT_GREETING = '안녕하세요, swan입니다. 보내주신 요청 내용을 먼저 확인하겠습니다.';
 // 상담 주체 고지는 첫 접점에 한 번만 짧게 넣고, 이후 답변마다 반복하지 않는다.
 // 사람 상담원이라고 오인시키지 않으면서 자연스러운 대화를 유지한다.
@@ -2969,7 +2986,7 @@ function buildIntakeForm(parsed = {}, quote = {}, options = {}) {
           ? '아래 추가 항목도 번호로 답해주시면 금액과 일정을 바로 확정해 드리겠습니다.'
           : '주제와 꼭 들어가야 할 내용만 한두 줄 적어주시면 금액과 일정을 바로 확정해 드리겠습니다.',
         ...serviceGuide,
-        INTAKE_ATTACHMENT_LINE,
+        intakeAttachmentLine(),
         ...(options.disclosure === false ? [] : [soomgoProcessDisclosure(parsed)])
       ].join('\n')
     };
@@ -2987,7 +3004,7 @@ function buildIntakeForm(parsed = {}, quote = {}, options = {}) {
   lines.push('주제와 꼭 들어가야 할 내용만 한두 줄 적어주세요.');
   lines.push('예) 학교 과제, A4 2쪽, 내일, 자료는 보내드릴게요. 주제는 광고시장의 한계와 개선 방향입니다.');
   lines.push(...serviceGuide);
-  lines.push(INTAKE_ATTACHMENT_LINE);
+  lines.push(intakeAttachmentLine());
   if (options.disclosure !== false) lines.push(soomgoProcessDisclosure(parsed));
   return { known, asked: missing.map(slot => slot.key), complete: false, text: lines.join('\n') };
 }
@@ -4562,6 +4579,254 @@ function customerRevisionsUsed(workflow = {}) {
   return (Array.isArray(workflow.feedbacks) ? workflow.feedbacks : []).filter(item => item && !item.extraFeeAccepted).length;
 }
 
+// 9/25 준희 수정 방침: 고객이 다음 버전을 받기 전까지 보낸 수정 요청 묶음 = 1회차. 지금까지 시작한 회차 수(유료 회차 포함)
+function customerRevisionRounds(workflow = {}) {
+  return (Array.isArray(workflow.feedbacks) ? workflow.feedbacks : []).filter(Boolean).length;
+}
+const KOREAN_ORDINALS = ['첫', '두', '세', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열'];
+function revisionOrdinal(round) {
+  const n = Math.max(1, Math.floor(Number(round) || 1));
+  return n <= KOREAN_ORDINALS.length ? `${KOREAN_ORDINALS[n - 1]} 번째` : `${n}번째`;
+}
+// 9/25 준희: 기본 수정 뒤 유료 수정 금액표(services/*.json pricing.revisionFees). 없는 서비스는 예전 revision_overage 그대로
+function serviceRevisionFees(quote = {}) {
+  const serviceId = quote.serviceId || serviceRegistry.classify(String(quote.label || quote.category || '')).id;
+  const fees = serviceRegistry.getService(serviceId)?.pricing?.revisionFees;
+  return fees && fees.light && fees.big ? fees : null;
+}
+function revisionPatternTest(pattern, text) {
+  if (!pattern) return false;
+  try { return new RegExp(pattern, 'i').test(String(text || '')); } catch (_) { return false; }
+}
+// 쇼츠·릴스 업무면 쇼츠 금액(견적의 쇼츠 표시, 아니면 요청 글에서 video_edit.json shorts.match)
+function workflowIsShorts(workflow = {}) {
+  const quote = workflow.quote || {};
+  if (quote.videoEdit?.shorts) return true;
+  const pattern = serviceRegistry.getService('video_edit')?.pricing?.shorts?.match;
+  return revisionPatternTest(pattern, [workflow.request?.topic, workflow.request?.purpose, workflow.request?.text, quote.label].filter(Boolean).join(' '));
+}
+// 큰 수정 단서가 있으면 큰 수정, 가벼운 단서만 있으면 가벼운 수정, 둘 다 없으면 unclear(Claude 판단)
+function revisionSize(fees, text = '') {
+  if (revisionPatternTest(fees?.big?.match, text)) return 'big';
+  if (revisionPatternTest(fees?.light?.match, text)) return 'light';
+  return 'unclear';
+}
+// 영상 수정 단서(음악·컷·색 등) + 부탁하는 말이면 수정 요청으로 본다("자막 좋네요"는 아님)
+function revisionHintRequest(fees, text = '') {
+  const value = String(text || '');
+  const hint = revisionPatternTest(fees?.big?.match, value) || revisionPatternTest(fees?.light?.match, value);
+  return hint && /주세요|줘요|주실\s*수|해\s*주|부탁|했으면|하고\s*싶|바꿔|바꾸|변경|수정|교체|빼\s*|넣어|줄여|늘려|고쳐/.test(value);
+}
+function revisionFeeQuote(workflow = {}, size = 'light') {
+  const fees = serviceRevisionFees(workflow.quote);
+  if (!fees) return null;
+  const shorts = workflowIsShorts(workflow);
+  const light = Number((shorts && fees.light.shortsAmount) || fees.light.amount || 0);
+  const bigFrom = Number((shorts && fees.big.shortsFromAmount) || fees.big.fromAmount || 0);
+  // 큰 수정·판단 필요는 "부터" 금액만 안내하고 정확한 금액은 준희가 확정
+  return size === 'light' ? { size, amount: light, from: false, shorts, light, bigFrom } : { size, amount: bigFrom, from: true, shorts, light, bigFrom };
+}
+function registryText(id, values = {}) {
+  return messageRegistry.renderMessage(messageRegistry.getMessage(id), values);
+}
+function wonText(amount) {
+  return `${Number(amount || 0).toLocaleString('ko-KR')}원`;
+}
+
+// 9/25 준희: 수정 요청은 모아서 한 번에. 마지막 수정 메시지 뒤 minDelayMinutes가 지나야 그 회차 작업 시작(정책 revisionBatch)
+function revisionBatchConfig(policy = null) {
+  let raw = {};
+  try { raw = (policy || readOperatingPolicy()).revisionBatch || {}; } catch (_) { raw = {}; }
+  return {
+    enabled: raw.enabled === true,
+    minDelayMinutes: Math.max(0, Number(raw.minDelayMinutes ?? 120)),
+    urgentSkip: raw.urgentSkip !== false,
+    urgentDeadlineDays: Number(raw.urgentDeadlineDays ?? 1),
+    urgentPattern: String(raw.urgentPattern || '')
+  };
+}
+// 요청서 완료 희망일이 오늘부터 며칠 뒤인지(한국 날짜). 모르면 null
+function workflowDeadlineDays(workflow = {}, now = Date.now()) {
+  const request = workflow.request || {};
+  const text = String(request.deadline || String(request.text || '').match(/완료\s*희망일\s*\n?\s*([^\n]+)/)?.[1] || '').trim();
+  if (!text || /협의|상관\s*없|미정|모르/.test(text)) return null;
+  if (/오늘|당일|긴급|asap/i.test(text)) return 0;
+  if (/내일/.test(text)) return 1;
+  if (/모레/.test(text)) return 2;
+  const md = text.match(/(\d{1,2})\s*(?:월|[./-])\s*(\d{1,2})/);
+  if (!md) return null;
+  const kst = new Date(Number(now) + 9 * 3600 * 1000);
+  const today = Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate());
+  let target = Date.UTC(kst.getUTCFullYear(), Number(md[1]) - 1, Number(md[2]));
+  if (target < today - 60 * 86400000) target = Date.UTC(kst.getUTCFullYear() + 1, Number(md[1]) - 1, Number(md[2])); // 12월에 1월 마감
+  return Math.round((target - today) / 86400000);
+}
+// 마감이 오늘·내일이거나 고객이 급하다고 하면 모으지 않고 바로 시작(urgentSkip)
+function revisionUrgent(workflow = {}, message = '', cfg = revisionBatchConfig(), now = Date.now()) {
+  if (!cfg.urgentSkip) return false;
+  const texts = [message, ...((workflow.revisionBatch?.messages || []).map(item => item.text))];
+  if (cfg.urgentPattern && texts.some(text => revisionPatternTest(cfg.urgentPattern, text))) return true;
+  const days = workflowDeadlineDays(workflow, now);
+  return days !== null && days <= cfg.urgentDeadlineDays;
+}
+function addToRevisionBatch(workflow, message, cfg, now = Date.now(), extra = {}) {
+  const at = new Date(now).toISOString();
+  const current = workflow.revisionBatch && Array.isArray(workflow.revisionBatch.messages) ? workflow.revisionBatch : null;
+  const batch = current || { round: customerRevisionRounds(workflow) + 1, messages: [], firstAt: at };
+  batch.messages = [...batch.messages, { text: String(message || '').slice(0, 2400), at }].slice(-20);
+  batch.lastAt = at;
+  batch.eligibleAt = new Date(Number(now) + cfg.minDelayMinutes * 60 * 1000).toISOString();
+  Object.assign(batch, extra);
+  workflow.revisionBatch = batch;
+  return batch;
+}
+function revisionBatchFeedback(batch = {}) {
+  const list = (Array.isArray(batch.messages) ? batch.messages : []).map(item => String(item?.text || '').trim()).filter(Boolean);
+  return list.length <= 1 ? (list[0] || '') : list.map((text, index) => `${index + 1}) ${text}`).join('\n');
+}
+// 모은 수정을 한 회차 수정 작업으로 만든다(기존 createWorkflowRevision → 제작 대기열)
+function startRevisionBatch(current, workflow, now = Date.now()) {
+  const batch = workflow.revisionBatch;
+  if (!batch) return null;
+  const feedback = revisionBatchFeedback(batch) || String(workflow.pendingFeedback || '');
+  const created = createWorkflowRevision(current, workflow, feedback, false, '고객', { feeRecorded: batch.paid === true });
+  if (!created) return null;
+  workflow.revisionBatch = null;
+  workflow.pendingFeedback = null;
+  workflow.pendingRevisionFee = null;
+  return created;
+}
+// 기존 제작 대기열(processPendingQueue)이 부른다: 모은 수정의 시작 시각(eligibleAt)이 지난 업무만 수정 작업을 만든다(기다리는 루프 없음)
+function releaseDueRevisionBatches(current, now = Date.now()) {
+  let started = 0;
+  for (const workflow of (Array.isArray(current.soomgoWorkflows) ? current.soomgoWorkflows : [])) {
+    const batch = workflow?.revisionBatch;
+    if (!batch || batch.awaitingFee || batch.failedAt || workflow.stage !== 'awaiting_feedback') continue;
+    if ((Date.parse(String(batch.eligibleAt || '')) || 0) > now) continue;
+    if (startRevisionBatch(current, workflow, now)) {
+      started += 1;
+    } else {
+      // 원본 결과를 못 찾으면 1.5초마다 다시 시도하지 않고 한 번만 기록(사람 확인)
+      batch.failedAt = new Date(now).toISOString();
+      current.activities = [[batch.failedAt, 'Relay Desk', workflow.id, '모은 수정 요청을 시작하지 못함 · 원본 결과를 찾지 못해 직접 확인 필요'], ...(Array.isArray(current.activities) ? current.activities : [])];
+      started += 1;
+    }
+  }
+  return started;
+}
+// 3번째 회차부터(유료): 작업 전에 금액을 안내하고 동의를 기다린다. 가벼운 수정은 금액, 큰 수정은 "부터" + 준희 알림, 모르면 Claude 판단
+function revisionFeeNoticeReply(current, workflow, message, round, included, cfg, now = Date.now()) {
+  const fees = serviceRevisionFees(workflow.quote);
+  const size = revisionSize(fees, message);
+  const fee = revisionFeeQuote(workflow, size);
+  const at = new Date(now).toISOString();
+  workflow.stage = 'awaiting_additional_fee';
+  workflow.pendingFeedback = String(message || '').slice(0, 2400);
+  workflow.pendingRevisionFee = { size, amount: fee.amount, from: fee.from, shorts: fee.shorts, round, included, at };
+  addToRevisionBatch(workflow, message, cfg, now, { awaitingFee: true, paid: true });
+  workflow.updatedAt = at;
+  writeState(current);
+  return revisionFeeNoticeText(workflow, round);
+}
+function revisionFeeNoticeText(workflow, round) {
+  const pending = workflow.pendingRevisionFee || {};
+  const included = Number(pending.included || includedRevisionsFor(workflow.quote));
+  const values = { ordinal: revisionOrdinal(round || pending.round), included, amount: wonText(pending.amount) };
+  const revisionFee = { size: pending.size, amount: pending.amount, from: pending.from === true, round: pending.round };
+  if (pending.size === 'light') {
+    return { autoSend: true, manualReview: false, workflowHandled: true, templateKey: 'revision_fee_light', messageId: 'common.revision_fee_light.v1', revisionFee, text: registryText('common.revision_fee_light.v1', values) };
+  }
+  if (pending.size === 'big') {
+    return { autoSend: true, manualReview: false, workflowHandled: true, attention: true, templateKey: 'revision_fee_big', messageId: 'common.revision_fee_big.v1', revisionFee, reason: `${values.ordinal} 수정(큰 수정) · ${values.amount}부터 안내함 · 정확한 금액 준희 확인 필요`, text: registryText('common.revision_fee_big.v1', values) };
+  }
+  const fee = revisionFeeQuote(workflow, 'light') || {};
+  return {
+    autoSend: false, manualReview: true, workflowHandled: true, revisionFeeJudge: true, revisionFee, templateKey: 'revision_fee_unclear',
+    reason: `${values.ordinal} 수정 · 가벼운 수정인지 큰 수정인지 규칙으로 못 정함`,
+    supervisorRule: `기본 수정 ${included}회를 다 쓴 뒤의 ${values.ordinal} 수정 요청이다. 가벼운 수정(자막 오타나 문구, 순서 바꾸기, 컷 길이 조정, 음악 교체, 색이나 밝기 살짝)이면 1회 ${wonText(fee.light)}의 추가 비용이, 큰 수정(구성 새로 짜기, 새 자료 추가, 분위기나 스타일 전체 변경, 길이 대폭 변경)이면 ${wonText(fee.bigFrom)}부터 추가 비용이 있고 정확한 금액은 요청 내용을 보고 안내한다고 존댓말로 따뜻하게 말하고 괜찮으신지 여쭌다. 재촉하지 않는다. 작업을 시작했다고 하지 않는다. 어느 쪽인지 모르겠으면 "보류".`
+  };
+}
+function isRevisionFeeDecline(message = '') {
+  return /(싫|어렵|취소|안\s*할|안\s*해|사양|부담|비싸|그냥\s*(?:둘|두|이대로|지금)|됐어요|됐습니다|필요\s*없|말고|안\s*하겠)/.test(String(message || ''));
+}
+function isRevisionFeeConsent(message = '') {
+  const text = String(message || '').trim();
+  if (!text || isRevisionFeeDecline(text) || /[?？]\s*$/.test(text)) return false;
+  return /^(?:네|넵|넹|예|좋아요|좋습니다|괜찮아요|괜찮습니다|알겠습니다|알겠어요|오케이|ok|진행)/i.test(text)
+    || /(?:진행|반영)\s*해\s*(?:주세요|주셔도|줘)|진행할게요|진행하겠습니다|추가\s*(?:비용|금).{0,10}(?:괜찮|동의|좋)|동의(?:합니다|해요)/i.test(text);
+}
+// 유료 수정 금액 안내 뒤 고객 답: 동의하면 추가금 기록(가벼운 수정) 또는 준희 금액 확인(큰 수정·판단 필요), 거절하면 지금 버전으로 마무리
+function revisionFeeConsentReply(current, workflow, message, cfg, now = Date.now()) {
+  const pending = workflow.pendingRevisionFee || {};
+  const fees = serviceRevisionFees(workflow.quote);
+  const at = new Date(now).toISOString();
+  const moreRevision = isSoomgoWorkflowRevisionRequest(message) || (fees && revisionHintRequest(fees, message));
+  if (isRevisionFeeDecline(message) && !moreRevision) {
+    workflow.stage = 'awaiting_feedback';
+    workflow.pendingFeedback = null; workflow.pendingRevisionFee = null; workflow.revisionBatch = null;
+    workflow.updatedAt = at; writeState(current);
+    return { autoSend: true, manualReview: false, workflowHandled: true, templateKey: 'revision_fee_declined', messageId: 'common.revision_fee_declined.v1', text: registryText('common.revision_fee_declined.v1') };
+  }
+  if (isRevisionFeeConsent(message)) {
+    if (moreRevision) addToRevisionBatch(workflow, message, cfg, now);
+    const batch = workflow.revisionBatch || addToRevisionBatch(workflow, workflow.pendingFeedback || message, cfg, now);
+    if (pending.size !== 'light') {
+      // 큰 수정·판단 필요: 동의만 기록하고 정확한 금액은 준희가 정한다(결제 금액에 아직 넣지 않음)
+      workflow.stage = 'manual_extension_review';
+      workflow.pendingExtension = { feedback: revisionBatchFeedback(batch).slice(0, 2400), fee: Number(pending.amount || 0), size: pending.size, from: true, amountToConfirm: true, round: pending.round, agreedAt: at, cycle: Number(workflow.cycle || 1) + 1 };
+      workflow.updatedAt = at;
+      current.activities = [[at, 'Soomgo Chat Bot', workflow.id, `${revisionOrdinal(pending.round)} 수정(${pending.size === 'big' ? '큰 수정' : '판단 필요'}) 추가 비용 동의 · ${wonText(pending.amount)}부터 · 정확한 금액 준희 확인 대기`], ...(Array.isArray(current.activities) ? current.activities : [])];
+      writeState(current);
+      return { autoSend: true, manualReview: false, workflowHandled: true, attention: true, extensionPending: true, templateKey: 'revision_fee_big_agreed', messageId: 'common.revision_fee_big_agreed.v1', reason: `고객이 ${revisionOrdinal(pending.round)} 수정 추가 비용(${wonText(pending.amount)}부터)에 동의 · 정확한 금액을 정해 안내해 주세요`, text: registryText('common.revision_fee_big_agreed.v1') };
+    }
+    const amount = Number(pending.amount || 0);
+    workflow.additionalFees = [...(Array.isArray(workflow.additionalFees) ? workflow.additionalFees : []), { amount, reason: `${revisionOrdinal(pending.round)} 수정(가벼운 수정) · ${revisionBatchFeedback(batch)}`.slice(0, 500), accepted: true, acceptedAt: at, kind: 'revision', size: 'light', round: pending.round }].slice(-20);
+    batch.awaitingFee = false;
+    batch.paid = true;
+    workflow.pendingRevisionFee = null;
+    workflow.updatedAt = at;
+    current.activities = [[at, 'Soomgo Chat Bot', workflow.id, `${revisionOrdinal(pending.round)} 수정 추가 비용 ${wonText(amount)} 동의 기록`], ...(Array.isArray(current.activities) ? current.activities : [])];
+    if (workflow.paymentConfirmedAt) {
+      // 이미 결제한 업무: 기존 추가금 흐름(기존 거래 취소 → 최종금액 새 거래 → 결제 확인 뒤 모은 수정 시작), 결제는 전액 한 번(paymentSplit)
+      workflow.pendingFeedback = revisionBatchFeedback(batch).slice(0, 2400);
+      workflow.transactionReplacementStage = 'cancel_old_transaction';
+      workflow.transactionReplacementRequestedAt = at;
+      workflow.stage = 'transaction_replacement_pending';
+      workflow.pendingAction = 'cancel_transaction';
+      workflow.paymentRound = 1;
+      workflow.paymentPlan = workflowPaymentPlan(workflow);
+      workflow.paymentAmount = workflow.paymentPlan.requestAmount;
+      writeState(current);
+      return { autoSend: true, manualReview: false, workflowHandled: true, paymentReplacementPending: true, templateKey: 'revision_fee_agreed_paid', messageId: 'common.revision_fee_agreed_paid.v1', text: registryText('common.revision_fee_agreed_paid.v1', { amount: wonText(amount) }) };
+    }
+    // 아직 결제 전: 결제 금액에 더해 두고(결제 요청은 기존 전액 한 번 흐름에서) 모은 수정은 시작 시각이 되면 제작
+    workflow.stage = 'awaiting_feedback';
+    workflow.paymentPlan = workflowPaymentPlan(workflow);
+    workflow.paymentAmount = workflow.paymentPlan.requestAmount;
+    if (cfg.enabled === false || revisionUrgent(workflow, message, cfg, now)) {
+      const created = startRevisionBatch(current, workflow, now);
+      if (!created) { writeState(current); return { autoSend: false, manualReview: true, workflowHandled: true, reason: '추가 비용 동의는 기록했지만 수정할 원본 결과를 찾지 못했습니다. 직접 확인해 주세요.' }; }
+    }
+    writeState(current);
+    return { autoSend: true, manualReview: false, workflowHandled: true, templateKey: 'revision_fee_agreed', messageId: 'common.revision_fee_agreed.v1', text: registryText('common.revision_fee_agreed.v1', { amount: wonText(amount) }) };
+  }
+  if (moreRevision) {
+    addToRevisionBatch(workflow, message, cfg, now, { awaitingFee: true, paid: true });
+    workflow.pendingFeedback = revisionBatchFeedback(workflow.revisionBatch).slice(0, 2400);
+    workflow.updatedAt = at;
+    // 가벼운 수정으로 안내했는데 큰 수정이 더해지면 큰 수정 금액으로 다시 안내
+    if (pending.size === 'light' && fees && revisionSize(fees, message) === 'big') {
+      const fee = revisionFeeQuote(workflow, 'big');
+      workflow.pendingRevisionFee = { ...pending, size: 'big', amount: fee.amount, from: true, at };
+      writeState(current);
+      return revisionFeeNoticeText(workflow, pending.round);
+    }
+    writeState(current);
+    return { autoSend: true, manualReview: false, workflowHandled: true, templateKey: 'revision_fee_more', messageId: 'common.revision_fee_more.v1', text: registryText('common.revision_fee_more.v1', { amount: `${wonText(pending.amount)}${pending.from ? '부터' : ''}` }) };
+  }
+  return revisionFeeNoticeText(workflow, pending.round);
+}
+
 function revisionOverageFee(quote = {}, requestText = '') {
   const serviceId = quote.serviceId || serviceRegistry.classify(String(quote.label || quote.category || '')).id;
   const fee = Number(serviceAdditionalFee(serviceRegistry.getService(serviceId), 'revision')?.amount || 0);
@@ -4756,13 +5021,16 @@ function isSoomgoWorkflowStatusQuestion(value) {
 
 // 9/25 준희: 고객 자료는 이메일이나 고객 클라우드(구글 드라이브 등) 링크로 받는다. 이메일 주소는 정책 contact.materialsEmail에만 둔다
 // (비어 있으면 링크만 부탁한다 — 코드에 주소를 적지 않는다).
-function videoEditMaterialsLine(policy = null) {
+function videoEditMaterialsLine(policy = null, opts = {}) {
   let email = '';
   try { email = String((policy || readOperatingPolicy()).contact?.materialsEmail || '').trim(); } catch (_) { email = ''; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) email = '';
-  return email
+  const line = email
     ? `영상·사진 자료는 구글 드라이브 같은 클라우드에 올려 공유 링크를 이 채팅으로 보내주시거나 메일(${email})로 보내주세요.`
     : '영상·사진 자료는 구글 드라이브 같은 클라우드에 올려 공유 링크를 이 채팅으로 보내주세요.';
+  // 9/25 준희: 고용 뒤 자료 요청에 "자세히 적어주실수록" 한 줄(services/video_edit.json quoteCopy.materialsDetailLine). 상태 안내에는 안 붙인다
+  const detail = opts.detail ? String(serviceRegistry.getService('video_edit')?.quoteCopy?.materialsDetailLine || '').trim() : '';
+  return detail ? `${line} ${detail}` : line;
 }
 
 function soomgoWorkflowStatusReply(workflow) {
@@ -4799,7 +5067,8 @@ function soomgoWorkflowStatusReply(workflow) {
       return `기본 의뢰는 고용 확정에 따라 진행 중이며, 추가 요청은 안내드린 금액 동의를 기다리고 있습니다. 기본 납기는 ${days}입니다.`;
     case 'awaiting_first_result':
     default:
-      return `고용 확정 감사합니다. 작업을 제작 큐에 등록해 진행 중입니다. 예상 소요일은 ${days}이며, 1차 결과물을 먼저 보내드리고 피드백 반영 후 수정본과 최종본을 순서대로 전달하겠습니다.${String(workflow?.quote?.serviceId || '') === 'video_edit' ? ` ${videoEditMaterialsLine()}` : ''}`;
+      // 9/26 준희 말투(짧게·내부 말 없이): "제작 큐" 같은 말 대신 지금 필요한 것만
+      return `고용 확정 감사합니다. 지금 작업 진행 중이고, 예상 기간은 ${days}예요. 1차본 먼저 보내드리고 말씀 주시는 대로 고쳐서 최종본 드릴게요.${String(workflow?.quote?.serviceId || '') === 'video_edit' ? ` ${videoEditMaterialsLine()}` : ''}`;
   }
 }
 
@@ -4876,7 +5145,7 @@ ${operatorNotes || '(없음)'}
 - API 키, 쿠키, 세션, 연락처 등 민감정보는 포함하지 마라.`;
 }
 
-function createWorkflowRevision(current, workflow, feedback, extraFeeAccepted = false, feedbackSource = '고객') {
+function createWorkflowRevision(current, workflow, feedback, extraFeeAccepted = false, feedbackSource = '고객', opts = {}) {
   const tasks = Array.isArray(current.tasks) ? current.tasks : [];
   const posts = Array.isArray(current.promptPosts) ? current.promptPosts : [];
   const results = Array.isArray(current.resultPosts) ? current.resultPosts : [];
@@ -4950,8 +5219,10 @@ function createWorkflowRevision(current, workflow, feedback, extraFeeAccepted = 
   workflow.stage = 'quality_review_running';
   workflow.pendingDelivery = null;
   workflow.pendingAction = null;
-  if (feedbackSource === '고객') workflow.feedbacks = [...(Array.isArray(workflow.feedbacks) ? workflow.feedbacks : []), { text: String(feedback || '').slice(0, 2400), extraFeeAccepted, at: now }].slice(-20);
-  if (extraFeeAccepted) {
+  // 9/25: 유료 수정 회차(추가금은 동의할 때 이미 기록: opts.feeRecorded)는 기본 횟수에 세지 않고 추가금도 다시 더하지 않는다
+  const feeRecorded = opts.feeRecorded === true;
+  if (feedbackSource === '고객') workflow.feedbacks = [...(Array.isArray(workflow.feedbacks) ? workflow.feedbacks : []), { text: String(feedback || '').slice(0, 2400), extraFeeAccepted: extraFeeAccepted || feeRecorded, ...(feeRecorded ? { paidRevision: true } : {}), at: now }].slice(-20);
+  if (extraFeeAccepted && !feeRecorded) {
     const fee = workflowAdditionalFee(workflow.quote, feedback);
     workflow.additionalFees = [...(Array.isArray(workflow.additionalFees) ? workflow.additionalFees : []), { amount: fee, reason: String(feedback || '추가 범위').slice(0, 500), accepted: true, acceptedAt: now }].slice(-20);
     workflow.paymentAmount = workflowPaymentAmount(workflow);
@@ -5104,7 +5375,8 @@ function updateWorkflowAfterResult(current, post, resultPost) {
   return workflow;
 }
 
-function workflowReply(state, body) {
+// opts는 시험용(policy·now). 서버는 넘기지 않는다.
+function workflowReply(state, body, opts = {}) {
   const conversationId = String(body.conversationId || '').slice(0, 160);
   const workflow = workflowForConversation(state, conversationId);
   if (!workflow) return null;
@@ -5114,8 +5386,23 @@ function workflowReply(state, body) {
   // "추가비용이 얼마나 나오나요?"는 범위 확인 질문이다. 이를 곧바로
   // 추가 작업 동의나 수정 요청으로 기록하지 않고, 기본 범위와 비용
   // 기준을 먼저 설명한다.
+  const revisionNow = Number(opts.now ?? Date.now());
+  const batchCfg = revisionBatchConfig(opts.policy || null);
+  const revisionFees = serviceRevisionFees(workflow.quote);
+  // 9/25: 유료 수정 금액을 안내한 뒤 "추가 비용 얼마예요?"는 안내한 금액 그대로(다른 추가금 계산을 섞지 않음)
+  if (workflow.stage === 'awaiting_additional_fee' && workflow.pendingRevisionFee && isSoomgoAdditionalFeeQuestion(message)) {
+    return revisionFeeNoticeText(workflow, workflow.pendingRevisionFee.round);
+  }
+  // 9/25: 수정 추가 비용을 물으면 서비스 금액표(revisionFees)로 답한다(기본 N회 무료, 이후 가벼운·큰 수정)
+  if (revisionFees && isSoomgoAdditionalFeeQuestion(message) && /수정/.test(message)) {
+    const light = revisionFeeQuote(workflow, 'light');
+    return { autoSend: true, manualReview: false, workflowHandled: true, templateKey: 'revision_fee_info', messageId: 'common.revision_fee_info.v1', text: registryText('common.revision_fee_info.v1', { included: includedRevisionsFor(workflow.quote), ordinal: revisionOrdinal(includedRevisionsFor(workflow.quote) + 1), light: wonText(light.light), big: wonText(light.bigFrom) }) };
+  }
   if (isSoomgoAdditionalFeeQuestion(message)) {
     return { autoSend: true, manualReview: false, workflowHandled: true, templateKey: 'additional_fee_info', text: soomgoAdditionalFeeMessage(workflow.quote, workflowAdditionalFee(workflow.quote, message), message) };
+  }
+  if (isSoomgoWorkflowStatusQuestion(message) && workflow.revisionBatch && workflow.stage === 'awaiting_feedback') {
+    return { autoSend: true, manualReview: false, workflowHandled: true, templateKey: 'revision_batch_status', messageId: 'common.revision_batch_status.v1', text: registryText('common.revision_batch_status.v1', { hours: Math.max(1, Math.round(batchCfg.minDelayMinutes / 60)) }) };
   }
   if (isSoomgoWorkflowStatusQuestion(message)) {
     return { autoSend: true, manualReview: false, workflowHandled: true, templateKey: 'workflow_status', text: soomgoWorkflowStatusReply(workflow) };
@@ -5131,6 +5418,8 @@ function workflowReply(state, body) {
       writeState(current);
       return { autoSend: true, manualReview: false, workflowHandled: true, freeRevision: true, text: `맞습니다. 기본 수정 ${includedRevisionsFor(workflow.quote)}회 안이라 추가금 없이 진행하겠습니다. 말씀하신 내용을 반영해 다시 검수한 뒤 보내드리겠습니다.` };
     }
+    // 9/25 준희: 3번째 수정부터 안내한 추가 비용에 대한 답(동의·거절·수정 더 보탬)
+    if (workflow.pendingRevisionFee) return revisionFeeConsentReply(current, workflow, message, batchCfg, revisionNow);
     const explicitFeeConsent = /(?:추가\s*(?:금|비용)|추가비용).{0,50}(?:동의|진행|확인)|(?:동의|진행).{0,50}(?:추가\s*(?:금|비용)|추가비용)/i.test(message)
       || /^(?:네[,\s]*(?:진행(?:하겠습니다|할게요?)|동의(?:합니다|하고\s*진행할게요?)|확인했습니다)|동의합니다|진행하겠습니다)[.!?\s]*$/i.test(message);
     if (explicitFeeConsent && !/(싫|어렵|취소|안할|사양)/i.test(message)) {
@@ -5216,6 +5505,17 @@ function workflowReply(state, body) {
       workflow.updatedAt = workflow.paymentConfirmedAt;
       // 추가금 라운드라면 새 결제 확인 후에만 수정 큐를 만든다.
       // 기존 거래 취소·새 숨고페이 등록 전에는 작업을 시작하지 않는다.
+      if (workflow.transactionReplacementStage === 'new_payment_pending' && workflow.pendingFeedback && workflow.revisionBatch?.paid) {
+        // 9/25: 유료 수정 회차는 결제 확인 뒤에도 모은 수정의 시작 시각(마지막 수정 메시지 2시간 뒤, 급하면 바로)을 지킨다
+        workflow.transactionReplacementStage = 'work_after_replacement_payment';
+        workflow.pendingAction = null;
+        workflow.stage = 'awaiting_feedback';
+        const due = (Date.parse(String(workflow.revisionBatch.eligibleAt || '')) || 0) <= revisionNow || revisionUrgent(workflow, '', batchCfg, revisionNow);
+        if (due && !startRevisionBatch(current, workflow, revisionNow)) return { autoSend: false, manualReview: true, workflowHandled: true, reason: '추가 작업을 연결할 원본을 찾지 못했습니다.' };
+        workflow.updatedAt = workflow.paymentConfirmedAt;
+        writeState(current);
+        return { autoSend: true, manualReview: false, workflowHandled: true, templateKey: 'revision_fee_paid_confirmed', text: '추가 비용 결제 확인했습니다. 모아 주신 수정 사항을 한 번에 꼼꼼히 반영해서 보내드릴게요!' };
+      }
       if (workflow.transactionReplacementStage === 'new_payment_pending' && workflow.pendingFeedback) {
         const replacementFeedback = workflow.pendingFeedback;
         const created = createWorkflowRevision(current, workflow, replacementFeedback, false);
@@ -5321,6 +5621,33 @@ function workflowReply(state, body) {
     // 그대로 이어받아 무료 수정 큐에 등록한다.
     const revisionsIncluded = includedRevisionsFor(workflow.quote);
     const revisionsUsed = customerRevisionsUsed(workflow);
+    const revisionAsk = isSoomgoWorkflowRevisionRequest(message) || isWorkflowFreeRevisionRequest(message) || Boolean(revisionFees && revisionHintRequest(revisionFees, message));
+    // 9/25 준희: 수정은 모아서 한 번에. 이미 모으는 회차에 더 온 수정은 같은 회차(마지막 메시지부터 다시 2시간)
+    if (batchCfg.enabled && workflow.revisionBatch && !workflow.revisionBatch.awaitingFee && revisionAsk) {
+      addToRevisionBatch(workflow, message, batchCfg, revisionNow);
+      if (revisionUrgent(workflow, message, batchCfg, revisionNow)) {
+        if (!startRevisionBatch(current, workflow, revisionNow)) return { autoSend: false, manualReview: true, workflowHandled: true, reason: '수정할 원본 결과를 찾지 못했습니다. 파일을 직접 확인해 주세요.' };
+        writeState(current);
+        return { autoSend: true, manualReview: false, workflowHandled: true, templateKey: 'revision_batch_urgent', messageId: 'common.revision_batch_urgent.v1', text: registryText('common.revision_batch_urgent.v1') };
+      }
+      workflow.updatedAt = new Date(revisionNow).toISOString(); writeState(current);
+      return { autoSend: true, manualReview: false, workflowHandled: true, templateKey: 'revision_batch_more', messageId: 'common.revision_batch_more.v1', revisionBatch: { round: workflow.revisionBatch.round, eligibleAt: workflow.revisionBatch.eligibleAt }, text: registryText('common.revision_batch_more.v1') };
+    }
+    // 9/25 준희: 영상처럼 유료 수정 금액표가 있는 서비스는 기본 횟수를 다 쓴 3번째 회차부터 작업 전에 금액 안내·동의
+    if (revisionFees && revisionAsk && revisionsUsed >= revisionsIncluded) {
+      return revisionFeeNoticeReply(current, workflow, message, customerRevisionRounds(workflow) + 1, revisionsIncluded, batchCfg, revisionNow);
+    }
+    // 기본 횟수 안의 수정: 바로 만들지 않고 모은다(마감이 오늘·내일이거나 급하다고 하면 바로)
+    if (batchCfg.enabled && revisionAsk && revisionsUsed < revisionsIncluded) {
+      const batch = addToRevisionBatch(workflow, message, batchCfg, revisionNow);
+      if (revisionUrgent(workflow, message, batchCfg, revisionNow)) {
+        if (!startRevisionBatch(current, workflow, revisionNow)) return { autoSend: false, manualReview: true, workflowHandled: true, reason: '수정할 원본 결과를 찾지 못했습니다. 파일을 직접 확인해 주세요.' };
+        writeState(current);
+        return { autoSend: true, manualReview: false, workflowHandled: true, freeRevision: true, templateKey: 'revision_batch_urgent', messageId: 'common.revision_batch_urgent.v1', text: registryText('common.revision_batch_urgent.v1') };
+      }
+      workflow.updatedAt = new Date(revisionNow).toISOString(); writeState(current);
+      return { autoSend: true, manualReview: false, workflowHandled: true, freeRevision: true, templateKey: 'revision_batch_ack', messageId: 'common.revision_batch_ack.v1', revisionBatch: { round: batch.round, eligibleAt: batch.eligibleAt }, text: registryText('common.revision_batch_ack.v1') };
+    }
     if (isWorkflowFreeRevisionRequest(message) && revisionsUsed < revisionsIncluded) {
       const created = createWorkflowRevision(current, workflow, message, false, '고객');
       if (!created) return { autoSend: false, manualReview: true, workflowHandled: true, reason: '첫 수정본의 원본 결과를 찾지 못했습니다. 파일을 직접 확인해 주세요.' };
@@ -5331,6 +5658,8 @@ function workflowReply(state, body) {
       workflow.stage = 'awaiting_additional_fee'; workflow.pendingFeedback = message; workflow.updatedAt = new Date().toISOString(); writeState(current);
       return { autoSend: true, manualReview: false, workflowHandled: true, text: `요청하신 추가 범위에는 추가금 ${workflowAdditionalFee(workflow.quote, message).toLocaleString('ko-KR')}원이 발생합니다. 금액을 확인하신 뒤 진행 여부를 알려주세요.` };
     }
+    // 9/25: 모으는 중인 수정이 있으면 "좋습니다"를 최종 확인으로 넘기지 않는다
+    if (workflow.revisionBatch) return null;
     if (/(확인(?:했|했습니다|했어요)?|좋습니다|괜찮습니다|문제s*없|수정s*없)/i.test(message)) {
       workflow.stage = 'awaiting_completion_confirmation'; workflow.updatedAt = new Date().toISOString(); writeState(current);
       return { autoSend: true, manualReview: false, workflowHandled: true, text: '1차 결과 확인 감사합니다. 수정할 부분이 없으면 “최종본 확인했습니다”라고 남겨 주세요. 수정할 부분이 있으면 구체적으로 알려 주세요.' };
@@ -5974,7 +6303,7 @@ function soomgoReply(body = {}) {
       autoSend: true,
       manualReview: false,
       templateKey: 'large_file_email',
-      text: '파일 용량이 커서 숨고 채팅으로 전송되지 않는 경우에는 pd960723@gmail.com으로 보내 주세요. 메일 제목에 숨고 고객명과 의뢰 종류를 적어 주시고, 전송 후 이 채팅에 “메일 보냈습니다”라고 남겨 주시면 바로 확인하겠습니다.'
+      text: largeFileEmailText()
     };
   }
   // 고객의 현재 질문을 먼저 처리한다. 봇이 앞서 보낸 "진행하겠습니다"
@@ -6431,6 +6760,11 @@ function chatAmountRange(body = {}) {
   // 우리 쪽 말([내 답변]·[고수])에 이미 견적보다 낮은 금액이 나갔으면 할인은 쓴 것 — 그 금액 아래로는 더 내리지 않는다.
   const ours = String(body.conversationText || body.history || '').split(/\r?\n/).filter(line => /^\s*\[(?:내 답변|고수)\]/.test(line)).join('\n');
   const offered = [...ours.replace(/,/g, '').matchAll(/(\d{4,7})\s*원/g)].map(m => Number(m[1])).filter(n => n >= floor && n < quoteAmount);
+  // 9/25 준희: 릴스·쇼츠 첫 거래 할인이 들어간 방은 채팅 할인 1회를 이미 쓴 것(더 깎아 달라 해도 그 금액이 최선)
+  if (body.quote?.introPromo || body.quote?.videoEdit?.introPromo || /첫\s*거래라/.test(ours)) {
+    const promoAmount = Math.min(quoteAmount, ...(offered.length ? offered : [quoteAmount]));
+    return { quote: quoteAmount, min: promoAmount, max, discountUsed: promoAmount, introPromo: true };
+  }
   const used = offered.length ? Math.min(...offered) : null;
   return { quote: quoteAmount, min: used || floor, max, discountUsed: used };
 }
@@ -6474,6 +6808,10 @@ function applyChatReplyPolicy(body = {}, reply = {}) {
     let priced = null;
     try { priced = require('./video-edit-quote').videoEditQuote({ volume: message, topic: message, text: message }); } catch (_) { priced = null; }
     // 9/25 시뮬 4: 쇼츠는 원본 길이가 아니라 개당 단가 × 개수(자료를 한 번에 주면 묶음 할인)로 답한다
+    // 9/25 준희: 첫 거래 할인(정책 introPromo.shorts)이 있으면 "1편 39,000원인데, 첫 거래라 29,000원"(묶음 할인과 겹치지 않음)
+    if (priced && priced.amount && priced.options?.shorts && priced.introPromo) {
+      return { ...reply, templateKey: 'video_edit_price', messageId: 'video_edit.chat_price_promo.v1', text: `${shortsPromoSentence(priced.introPromo, /릴스|reels/i.test(message) ? '릴스' : '쇼츠')} 수정 ${priced.revisions}회가 포함돼요.`, introPromo: priced.introPromo, videoEdit: { amount: priced.amount, shorts: priced.shorts || null, introPromo: priced.introPromo } };
+    }
     if (priced && priced.amount && priced.options?.shorts) {
       const s = priced.shorts;
       const text = s
@@ -6490,7 +6828,38 @@ function applyChatReplyPolicy(body = {}, reply = {}) {
     if (priced && priced.materialsBased === 'photo') return { ...reply, templateKey: 'video_edit_materials', messageId: 'video_edit.chat_materials.v1', text: `보내주실 사진·영상 자료를 보고 금액을 확정해 드리겠습니다. 기본 구성 기준으로 ${priced.amount.toLocaleString('ko-KR')}원부터이고, 자료 받고 ${priced.days} 안에 보내드릴 수 있습니다!` };
     return { ...reply, templateKey: 'video_edit_length', messageId: 'video_edit.chat_length.v1', text: '영상 편집 가능합니다. 원본 영상 길이를 알려주시면 금액을 바로 안내해 드리겠습니다.' };
   }
+  // 9/25 준희: 일반 편집으로 견적이 나간 방에서 "릴스도 69,000원인가요?" → 일반 편집 기준이었다고 말하고 릴스 가격(첫 거래가)·쇼츠 예시
+  const shortsAsk = /쇼츠|숏츠|숏폼|릴스|shorts|reels/i.test(message) && /얼마|가격|금액|비용|\d[\d,]*\s*원|인가요|인지|같은가요|똑같/.test(message);
+  if (shortsAsk && pricedQuote && isVideoEditQuote(quote) && !quote.videoEdit?.shorts && !quote.introPromo && !quote.videoEdit?.introPromo && !/쇼츠|숏츠|릴스/.test(String(quote.message || '')) && !reply.workflowHandled && !reply.manualReview) {
+    let priced = null;
+    try { priced = require('./video-edit-quote').videoEditQuote({ topic: message, text: message }); } catch (_) { priced = null; }
+    if (priced && priced.amount && priced.options?.shorts) {
+      const word = /릴스|reels/i.test(message) ? '릴스' : '쇼츠';
+      const basis = Number(quote.pricing?.units || quote.videoEdit?.minutes || 0) > 0 ? `일반 영상 편집(원본 ${Number(quote.pricing?.units || quote.videoEdit?.minutes)}분 이내) 기준` : '일반 영상 편집 기준';
+      const price = priced.introPromo ? shortsPromoSentence(priced.introPromo, word, `${word}처럼 1분 이내 세로 영상은 원래`) : `${word}처럼 1분 이내 세로 영상은 1편 ${Number(priced.amount).toLocaleString('ko-KR')}원이에요.`;
+      const sample = shortsSampleUrl();
+      const text = [`앞서 안내드린 ${Number(quote.amount).toLocaleString('ko-KR')}원은 ${basis}이에요.`, price, sample ? `쇼츠 예시 영상: ${sample}` : ''].filter(Boolean).join(' ');
+      return { ...reply, autoSend: true, templateKey: 'video_edit_shorts_price', messageId: 'video_edit.chat_shorts_price.v1', text, ...(priced.introPromo ? { introPromo: priced.introPromo } : {}) };
+    }
+  }
   return reply;
+}
+function isVideoEditQuote(quote = {}) {
+  return String(quote.serviceId || '') === 'video_edit' || Boolean(quote.videoEdit) || quote.pricing?.type === 'video_edit';
+}
+// "릴스(1분 이내 세로 영상)는 1편 39,000원인데, 첫 거래라 29,000원에 해 드릴게요."(여러 편이면 1편 29,000원씩 N편 합계)
+function shortsPromoSentence(promo = {}, word = '쇼츠', lead = '') {
+  const w = n => `${Number(n || 0).toLocaleString('ko-KR')}원`;
+  const head = lead ? `${lead} 1편 ${w(promo.fullUnitAmount)}인데` : `${word}(1분 이내 세로 영상)는 1편 ${w(promo.fullUnitAmount)}인데`;
+  return Number(promo.count || 1) > 1
+    ? `${head}, 첫 거래라 1편 ${w(promo.unitAmount)}씩 ${promo.count}편 ${w(promo.amount)}에 해 드릴게요.`
+    : `${head}, 첫 거래라 ${w(promo.amount)}에 해 드릴게요.`;
+}
+function shortsSampleUrl() {
+  try {
+    const url = String(serviceRegistry.getService('video_edit')?.quoteCopy?.sampleUrls?.shorts || '').trim();
+    return /^https:\/\/(?:(?:www\.)?(?:youtube\.com|youtu\.be)|share\.descript\.com)\//.test(url) ? url : '';
+  } catch (_) { return ''; }
 }
 
 // 2026-09-24 지시 23(준희 지정 "이제 막 숨고 시작한 사람처럼, 사람 냄새 나게"): docs/tone-human-newcomer.md 코드블록을 그대로 옮긴 것.
@@ -6535,7 +6904,10 @@ function soomgoChatFactsText(body = {}) {
     // 9/25 시뮬 8: 범위를 넓게(식전·성장 사진영상·쇼츠·행사), 사진·자료 기준 시작가, 쇼츠 개수·묶음 할인을 [사실]에 넣는다
     const m = p.materials || {};
     const bundle = (p.shorts?.bundle?.rates || []).map(r => `${r.minCount}${r.maxCount ? `~${r.maxCount}` : '개 이상'}${r.maxCount ? '개' : ''} ${Math.round(Number(r.rate) * 100)}%`).join(', ');
-    lines.push(`영상 편집(지금 숨고에서 받음): ${vid.scope}. 원본 10분 이내 ${won(p.packages[0].saleAmount)}(${p.packages[0].days}), 30분 이내 ${won(p.packages[1].saleAmount)}(${p.packages[1].days}), 30분 넘으면 5분마다 ${won(over.unit.saleAmount)} 추가, 원본 ${p.cap?.fromMinutes || 70}분 이상은 ${won(p.cap?.saleAmount || 249000)}(${p.cap?.days || '3~4일'})이 상한이고 옵션을 더해도 넘지 않음. 쇼츠 1개(결과 1분 이내, 원본 10분 이내) ${won(p.shorts.saleAmount)}(${p.shorts.days}), 여러 개면 개당 ${won(p.shorts.saleAmount)} × 개수이고 자료를 한 번에 받아 같이 작업할 수 있으면 묶음 할인(${bundle}), 따로따로 해야 하면 개당 정가. 원본 길이로 못 정하는 사진·자료 기준 영상(식전영상·성장영상·돌잔치 등)은 ${won(m.photoAmount || 89000)}부터(${m.photoDays || '2~3일'}), 그 밖에 길이를 모르는 편집은 ${won(m.generalAmount || 69000)}부터(${m.generalDays || '1~2일'}) — 자료를 보고 금액 확정. 번역 자막은 20% 추가, 배경음악 넣기·밝기 색 맞추기는 요청할 때만 각 ${won(10000)}. 수정 ${vid.includedRevisions}회. 결과물 MP4. 경험: ${vid.experienceLine}`);
+    const promo = (() => { try { return require('./video-edit-quote').introPromoShorts(); } catch (_) { return null; } })();
+    lines.push(`영상 편집(지금 숨고에서 받음): ${vid.scope}. 원본 10분 이내 ${won(p.packages[0].saleAmount)}(${p.packages[0].days}), 30분 이내 ${won(p.packages[1].saleAmount)}(${p.packages[1].days}), 30분 넘으면 5분마다 ${won(over.unit.saleAmount)} 추가, 원본 ${p.cap?.fromMinutes || 70}분 이상은 ${won(p.cap?.saleAmount || 249000)}(${p.cap?.days || '3~4일'})이 상한이고 옵션을 더해도 넘지 않음. 쇼츠 1개(결과 1분 이내, 원본 10분 이내) ${won(p.shorts.saleAmount)}(${p.shorts.days}), 여러 개면 개당 ${won(p.shorts.saleAmount)} × 개수이고 자료를 한 번에 받아 같이 작업할 수 있으면 묶음 할인(${bundle}), 따로따로 해야 하면 개당 정가.${promo ? ` 지금은 쇼츠·릴스 첫 거래 할인으로 1편 ${won(promo.price)}(정가 ${won(p.shorts.saleAmount)}은 그대로 말한다: "1편 ${won(p.shorts.saleAmount)}인데, 첫 거래라 ${won(promo.price)}에 해 드릴게요"). 첫 거래가와 묶음 할인은 겹치지 않고 더 싼 쪽 하나만(지금은 첫 거래가). 첫 거래 할인이 나간 방은 더 깎아 주지 않는다. 일반 편집으로 견적이 나간 방에서 릴스·쇼츠 가격을 물으면 앞 금액은 일반 편집 기준이었다고 말하고 쇼츠 가격을 알려 준다.` : ''} 원본 길이로 못 정하는 사진·자료 기준 영상(식전영상·성장영상·돌잔치 등)은 ${won(m.photoAmount || 89000)}부터(${m.photoDays || '2~3일'}), 그 밖에 길이를 모르는 편집은 ${won(m.generalAmount || 69000)}부터(${m.generalDays || '1~2일'}) — 자료를 보고 금액 확정. 번역 자막은 20% 추가, 배경음악 넣기·밝기 색 맞추기는 요청할 때만 각 ${won(10000)}. 수정 ${vid.includedRevisions}회. 결과물 MP4. 경험: ${vid.experienceLine}`);
+    // 9/25 준희 "영상편집은 원하는 걸 자세하게 말해줄수록 좋다고 꼭 말하자"(한 대화에서 한 번, 다른 말과 몰아넣지 않는다)
+    lines.push('영상 편집 대화에서는 원하시는 느낌·참고 영상·꼭 넣을 문구를 자세히 알려주실수록 더 딱 맞게 만들 수 있다는 점을 자연스럽게 한 번 안내한다(이미 말했으면 반복하지 않는다).');
   } catch (_) {}
   try {
     const sub = minutes => buildSoomgoQuote({ requestId: `FACT-SUB-${minutes}`, purpose: '자막 제작', volume: `${minutes}분`, topic: '한국어 영상 자막', format: 'SRT' }).quote;
@@ -6634,10 +7006,36 @@ function swanQuoteReadFollowupText(request = {}, quote = {}, state = null) {
 function quoteReadFollowupEnabled(policy = null) {
   try { return (policy || readOperatingPolicy()).quoteReadFollowup?.enabled === true; } catch (_) { return false; }
 }
+// 9/25 준희 "새벽(0~7시) 요청은 급한 경우가 많으니 적극적으로": 정책 quoteReadFollowup.nightRequests
+function quoteReadNightConfig(policy = null) {
+  let raw = {};
+  try { raw = (policy || readOperatingPolicy()).quoteReadFollowup?.nightRequests || {}; } catch (_) { raw = {}; }
+  const delay = Array.isArray(raw.delayMinutes) && raw.delayMinutes.length === 2 ? raw.delayMinutes.map(Number) : [20, 40];
+  return { enabled: raw.enabled === true, startHour: Number(raw.startHour ?? 0), endHour: Number(raw.endHour ?? 7), delayMinutes: delay };
+}
+// 요청이 들어온 시각: 요청봇이 읽은 시각(lead.createdAt)에서 요청서의 "N분/시간/일 전"을 뺀다. 그 말이 없으면 우리 견적 발송 시각
+function soomgoRequestPostedAt(lead = {}) {
+  const seenAt = Date.parse(String(lead.createdAt || '')) || 0;
+  const text = String(lead.request?.text || '');
+  const ago = text.match(/(\d+)\s*(분|시간|일)\s*전/);
+  if (seenAt && /방금\s*전/.test(text)) return seenAt;
+  if (seenAt && ago) return seenAt - Number(ago[1]) * ({ 분: 60, 시간: 3600, 일: 86400 })[ago[2]] * 1000;
+  return Date.parse(String(lead.quoteEvidence?.at || '')) || 0;
+}
+function isNightSoomgoRequest(lead = {}, night = quoteReadNightConfig()) {
+  const postedAt = soomgoRequestPostedAt(lead);
+  return Boolean(night.enabled && postedAt) && chatTiming.isKstHourBetween(postedAt, night.startHour, night.endHour);
+}
 function soomgoQuoteReadFollowupReply(state, body = {}, opts = {}) {
   const conversationId = String(body.conversationId || '').slice(0, 160);
-  // 고객이 직접 다시 연락해 달라고 한 경우(customerRequestedFollowup)만 스위치와 상관없이 기존 규칙을 따른다
-  if (body.customerRequestedFollowup !== true && !quoteReadFollowupEnabled(opts.policy || null)) {
+  const nightCfg = quoteReadNightConfig(opts.policy || null);
+  const nightLead = body.customerRequestedFollowup !== true && body.quoteReadFollowup === true && nightCfg.enabled
+    ? (Array.isArray(state.soomgoLeads) ? state.soomgoLeads : []).find(item => item.quoteEvidence?.status === 'sent'
+      && (String(item.conversationId || '') === conversationId || soomgoConversationIdFromUrl(item.quoteEvidence?.url) === conversationId))
+    : null;
+  const nightRequest = Boolean(nightLead) && isNightSoomgoRequest(nightLead, nightCfg);
+  // 고객이 직접 다시 연락해 달라고 한 경우(customerRequestedFollowup)만 스위치와 상관없이 기존 규칙을 따른다. 새벽 요청은 스위치가 꺼져 있어도 한 번(9/25)
+  if (body.customerRequestedFollowup !== true && !quoteReadFollowupEnabled(opts.policy || null) && !nightRequest) {
     return { autoSend: false, manualReview: false, skip: true, templateKey: 'quote_read_followup_off', reason: '견적 읽음 안부 멘트 꺼짐(정책 quoteReadFollowup.enabled=false · 준희 9/25 먼저 연락하지 않음)' };
   }
   // 채팅 확장프로그램이 실제 견적 읽음 알림을 확인한 뒤 10분 동안
@@ -6686,7 +7084,7 @@ function soomgoQuoteReadFollowupReply(state, body = {}, opts = {}) {
   const quoteSentAt = Date.parse(String(lead.quoteEvidence?.at || '')) || 0;
   const alreadySent = (Array.isArray(state.soomgoReplies) ? state.soomgoReplies : []).some(record => {
     if (String(record.conversationId || '') !== conversationId) return false;
-    if (String(record.reply?.templateKey || '') !== 'quote_read_followup') return false;
+    if (!['quote_read_followup', 'quote_read_followup_night'].includes(String(record.reply?.templateKey || ''))) return false;
     if (String(record.reply?.linkedLeadRequestId || '') !== String(lead.requestId || '')) return false;
     const createdAt = Date.parse(String(record.createdAt || '')) || 0;
     return !quoteSentAt || !createdAt || createdAt >= quoteSentAt;
@@ -6705,6 +7103,13 @@ function soomgoQuoteReadFollowupReply(state, body = {}, opts = {}) {
   // 읽음 후속은 선택지를 하나만 남긴다. 샘플·가격 재고지·추가 질문을
   // 한 메시지에 섞으면 고객이 무엇을 눌러야 하는지 흐려지고, 같은 CTA를
   // Astra가 다시 써서 중복 발송할 수 있다.
+  if (nightRequest) {
+    // 새벽 요청: 급한 고객에 맞춘 짧은 인사(서비스 이름·길이 질문 없이). 자료를 봐야 금액이 정해지는 영상이면 자료 한 줄
+    const materials = quoteReadFollowupServiceId(request, quote) === 'video_edit' && Boolean(quote.videoEdit?.materialsBased || quote.materialsBased);
+    const extra = materials ? ` ${registryText('common.quote_read_followup.night_materials.v1')}` : '';
+    const night = { delayMinutes: nightCfg.delayMinutes, text: `${registryText('common.quote_read_followup.night.v1')}${extra}`, dayText: `${registryText('common.quote_read_followup.night_day.v1')}${extra}` };
+    return { autoSend: true, manualReview: false, templateKey: 'quote_read_followup_night', messageId: 'common.quote_read_followup.night.v1', messageVersion: 'v1', text: night.text, nightFollowup: night, quote, request, linkedLeadRequestId: lead.requestId, reason: null };
+  }
   const followup = swanQuoteReadFollowup(request, quote, state);
   const text = followup.text;
   return { autoSend: true, manualReview: false, templateKey: 'quote_read_followup', messageId: followup.messageId, messageVersion: followup.messageVersion, text, quote, request, linkedLeadRequestId: lead.requestId, reason: null };
@@ -6794,6 +7199,37 @@ function scheduleOutboxSend({ conversationId, messageId = '', text, kind, releas
   });
   if (!queued.duplicate) astraRoomBridge.complete(queued.event.eventId, customerRoomFallback.responseText('SEND', { source: kind, reply: text }));
   return { eventId: queued.event.eventId, releaseAt: new Date(releaseAt).toISOString(), duplicate: queued.duplicate };
+}
+
+// 9/25 준희 "새벽이어도 2시~8시 외에는 답하자": 조용한 시간(정책 quietHours, 한국 시간 start~end시)
+function quietHoursConfig(policy = null) {
+  let raw = {};
+  try { raw = (policy || readOperatingPolicy()).quietHours || {}; } catch (_) { raw = {}; }
+  return { start: Number(raw.start ?? 2), end: Number(raw.end ?? 8), windowMinutes: Number(raw.windowMinutes ?? 20), enabled: raw.enabled !== false };
+}
+function quietReleaseAt(ms, key, policy = null) {
+  const quiet = quietHoursConfig(policy);
+  return quiet.enabled ? chatTiming.deferOutOfQuiet(Number(ms), key, quiet) : Number(ms);
+}
+function quietHoursNow(now = Date.now(), policy = null) {
+  const quiet = quietHoursConfig(policy);
+  return quiet.enabled && chatTiming.isKstHourBetween(now, quiet.start, quiet.end);
+}
+// 조용한 시간에 미룰 수 있는 글: 채팅봇이 글만 보내면 되는 답(고용 요청·파일·샘플 주문·결제 요청·리뷰 요청 동작이 없는 것)
+function quietScheduleAllowed(reply = {}) {
+  if (!reply.autoSend || !reply.text || reply.skip || reply.manualReview || reply.pendingRoom || reply.scheduledReply) return false;
+  return !(reply.attachment || reply.hireRequest || reply.sampleOrder || reply.sampleQuote || reply.sampleCreditCode || reply.paymentReady || reply.reviewReady || reply.paymentReplacementPending);
+}
+// 새벽 요청 안부: 읽은 뒤 delayMinutes(20~40분), 조용한 시간에 걸리면 8시(+0~20분)
+function nightFollowupReleaseAt(readAt, key, night = {}, quiet = quietHoursConfig()) {
+  const [lo, hi] = Array.isArray(night.delayMinutes) ? night.delayMinutes : [20, 40];
+  const raw = chatTiming.nightFollowupReleaseAt(readAt, key, lo, hi);
+  return quiet.enabled === false ? raw : chatTiming.deferOutOfQuiet(raw, key, quiet);
+}
+// 보내는 시각이 밤(22~7시)이면 "늦은 시간까지" 인사, 아침 이후면 그 말 없이
+function nightFollowupTextAt(releaseAt, night = {}) {
+  const late = chatTiming.isKstHourBetween(releaseAt, 22, 7);
+  return String((late ? night.text : night.dayText) || night.text || '');
 }
 
 // 채팅봇이 글만 보내면 되는 정해진 문구(고용 요청 버튼·파일 첨부·결제 같은 동작이 없는 것)만 예약으로 돌린다.
@@ -6895,9 +7331,11 @@ const SUPERVISOR_GUIDES = {
   file_delivery: { label: '파일 전달 요청', keepAlert: true, rule: '파일을 보냈다고 하지 않는다. 작업 상황을 확인해서 숨고 채팅으로 보내드리겠다고 답한다.' },
   ai_question: { label: 'AI 사용 질문', keepAlert: false, rule: '[준희 문장]의 작업 방식 답을 따른다: 작업 도구로 초안을 만들고 결과물은 직접 확인하고 고친다. 부풀리지 않는다.' },
   unsupported: { label: '우리가 안 하는 일일 수 있음', keepAlert: false, rule: '[사실]의 안 하는 일에 들면 된다고 하지 말고 정중히 어렵다고 말한다. 우리가 파는 서비스면 [사실] 가격으로 답한다. 판단이 안 서면 보류.' },
+  revision_fee: { label: '추가 수정 비용(가벼운 수정인지 큰 수정인지)', keepAlert: true, rule: '기본 수정 횟수를 다 쓴 뒤의 수정 요청이다. [사실]의 수정 금액으로 존댓말로 부드럽게 안내하고 괜찮으신지 여쭌다. 작업을 시작했다고 하지 않는다. 확실하지 않으면 보류.' },
   other: { label: '자동 규칙이 정하지 못함', keepAlert: false, rule: '대화 흐름과 [사실]만으로 답할 수 있으면 답한다. 금액·일정은 [사실]과 보낸 견적 값만 쓴다. 확실하지 않으면 보류.' }
 };
 function supervisorTopic(reply = {}) {
+  if (reply.revisionFeeJudge === true) return 'revision_fee';
   if (reply.forbiddenTopic === 'payment' || reply.templateKey === 'manual_cancel_review') return 'payment';
   if (reply.forbiddenTopic === 'file_delivery') return 'file_delivery';
   if (reply.forbiddenTopic === 'ai_question' || /^ai_(?:identity|workflow)_disclosure$/.test(String(reply.forbiddenTopic || ''))) return 'ai_question';
@@ -6909,15 +7347,18 @@ function supervisorReply(body = {}, reply = {}, opts = {}) {
   let policy = opts.policy || null;
   if (!policy) { try { policy = readOperatingPolicy(); } catch (_) { policy = {}; } }
   if (policy.chatSupervisor?.enabled === false) return null;
-  if (!reply || reply.autoSend || reply.skip || !reply.manualReview || reply.closeConversation || reply.workflowHandled || reply.emergency || reply.pendingRoom || reply.humanViaClaude) return null;
-  if (body.quoteReadFollowup === true || body.hiredConversation === true) return null; // 고용 뒤 작업 단계는 기존 흐름
+  // 9/25 준희: 3번째 이후 수정이 가벼운지 큰지 규칙으로 못 정하면(revisionFeeJudge) 고용 뒤 업무여도 Claude에게 묻는다
+  const revisionJudge = reply?.revisionFeeJudge === true;
+  if (!reply || reply.autoSend || reply.skip || !reply.manualReview || reply.closeConversation || (reply.workflowHandled && !revisionJudge) || reply.emergency || reply.pendingRoom || reply.humanViaClaude) return null;
+  if (body.quoteReadFollowup === true || (body.hiredConversation === true && !revisionJudge)) return null; // 고용 뒤 작업 단계는 기존 흐름
   const text = String(body.message || body.text || '').trim();
   if (!text || isSoomgoSystemMessage(text)) return null;
   const key = supervisorTopic(reply);
   const guide = SUPERVISOR_GUIDES[key];
-  const facts = [soomgoChatFactsText(body), `[자동 규칙이 보류한 이유] ${guide.label} · ${String(reply.reason || '').slice(0, 200)}`, `[이번 답의 규칙] ${guide.rule} 답할 필요가 없거나 확실하지 않으면 다른 말 없이 "보류"라고만 쓴다.`].join('\n');
+  const rule = String(reply.supervisorRule || guide.rule);
+  const facts = [soomgoChatFactsText(body), `[자동 규칙이 보류한 이유] ${guide.label} · ${String(reply.reason || '').slice(0, 200)}`, `[이번 답의 규칙] ${rule} 답할 필요가 없거나 확실하지 않으면 다른 말 없이 "보류"라고만 쓴다.`].join('\n');
   const enqueue = typeof opts.enqueue === 'function' ? opts.enqueue : enqueueAstraRoomCustomerReply;
-  const room = enqueue(body, { text: `(자동 규칙이 보류함: ${guide.label}) ${guide.rule}`, templateKey: `supervisor_${key}`, autoSend: false, humanViaClaude: true, factsText: facts, amountRange: chatAmountRange(body) });
+  const room = enqueue(body, { text: `(자동 규칙이 보류함: ${guide.label}) ${rule}`, templateKey: `supervisor_${key}`, autoSend: false, humanViaClaude: true, factsText: facts, amountRange: chatAmountRange(body) });
   if (!room) return null;
   return { ...room, humanViaClaude: true, supervisor: key, attention: guide.keepAlert === true, manualReview: false, reason: `${reply.reason ? `${reply.reason} · ` : ''}Claude에게 물어 답함${guide.keepAlert ? ' · 준희 확인도 필요' : ''}` };
 }
@@ -6993,8 +7434,9 @@ function enqueueAstraRoomCustomerReply(body = {}, deterministicReply = {}) {
       hiredConversation: body.hiredConversation === true,
       workflowStage: String(body.workflowStage || ''),
       replyPrompt: buildSoomgoAiReplyPrompt(body, deterministicReply),
-      // 9/24 지시 28: 받은 뒤 1분 30초~4분 사이에 답한다(밤·새벽도 같음). 고객이 그 사이 새로 말하면 옛 답은 닫히고 새 메시지로 다시 판단
-      releaseAt: new Date(Date.now() + chatTiming.replyDelayMs(messageId, body.message || body.text || '')).toISOString()
+      // 9/24 지시 28: 받은 뒤 1분 30초~4분 사이에 답한다. 고객이 그 사이 새로 말하면 옛 답은 닫히고 새 메시지로 다시 판단
+      // 9/25 준희 "2시~8시 외에는 답하자": 조용한 시간(정책 quietHours)에 걸리면 아침 8시(+0~20분)로 미룬다
+      releaseAt: new Date(quietReleaseAt(Date.now() + chatTiming.replyDelayMs(messageId, body.message || body.text || ''), messageId)).toISOString()
     },
     evidence: [{ evidence_id: messageId, kind: 'message', observed_at: new Date().toISOString(), ref: `soomgo:${conversationId}:${messageId}` }]
   });
@@ -8674,7 +9116,7 @@ async function route(req, res) {
       let text = messageRegistry.renderMessage(message, values);
       if (/\{\{[A-Za-z0-9_]+\}\}/.test(text) || !text.trim()) return sendJson(res, 422, { error: 'message_values_missing' });
       // 9/25 준희: 영상 편집 고용 인사에는 자료 공유 방법(클라우드 링크, 정책에 이메일이 있으면 이메일도)을 붙인다
-      if (message.id === 'common.hire_greeting.v1' && String(body.serviceId || '') === 'video_edit') text = `${text} ${videoEditMaterialsLine()}`;
+      if (message.id === 'common.hire_greeting.v1' && String(body.serviceId || '') === 'video_edit') text = `${text} ${videoEditMaterialsLine(null, { detail: true })}`;
       return sendJson(res, 200, { ok: true, messageId: message.id, version: message.version || 'v1', text });
     } catch (error) {
       return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
@@ -8870,7 +9312,7 @@ async function route(req, res) {
         taskId: work.task.id,
         currentTaskId: work.task.id,
         currentPostId: work.post.id,
-        request: { ...(request.serviceId ? { serviceId: request.serviceId } : {}), purpose: request.purpose, format: request.format, requiredFormats: Array.isArray(request.requiredFormats) ? request.requiredFormats : [], volume: request.volume, topic: request.topic, text: redactSoomgoPromptText(request.text || '') },
+        request: { ...(request.serviceId ? { serviceId: request.serviceId } : {}), purpose: request.purpose, format: request.format, requiredFormats: Array.isArray(request.requiredFormats) ? request.requiredFormats : [], volume: request.volume, topic: request.topic, ...(request.deadline ? { deadline: String(request.deadline).slice(0, 80) } : {}), text: redactSoomgoPromptText(request.text || '') },
         quote: quote,
         orderType,
         order: orderType === 'sample'
@@ -9568,15 +10010,25 @@ async function route(req, res) {
         const honorific = honorificGuard.checkHonorific(reply.text);
         if (!honorific.ok) reply = { ...reply, autoSend: false, manualReview: true, attention: true, honorificHold: { problems: honorific.problems.slice(0, 5) }, reason: honorificGuard.holdReason(honorific) };
       }
-      // 9/24 지시 28: 안부 멘트는 견적을 읽은 뒤 2~4시간(밤 12시~아침 8시면 아침 8시~9시 30분), 정해진 문구 답장도 1분 30초~4분 뒤에 나간다.
+      // 9/24 지시 28: 안부 멘트는 견적을 읽은 뒤 2~4시간(조용한 시간 02~08시면 아침 8시~9시 30분), 정해진 문구 답장도 1분 30초~4분 뒤에 나간다.
+      // 9/25 준희: 새벽(0~7시) 요청 안부는 읽은 뒤 20~40분(조용한 시간이면 8시 이후) · 조용한 시간에는 자동 답장도 아침으로 미룬다
       try {
         if (body.quoteReadFollowup === true && reply.autoSend && reply.text && !reply.skip) {
           const readAt = Date.now() - 10 * 60 * 1000; // 채팅봇은 읽음 알림 10분 뒤에 묻는다
-          const scheduled = scheduleOutboxSend({ conversationId, text: reply.text, kind: 'quote_read_followup', releaseAt: chatTiming.followupReleaseAt(readAt, conversationId), key: messageId });
-          reply = { ...reply, autoSend: false, skip: true, scheduledFollowup: scheduled, reason: `안부 멘트 예약 · ${kstClock(scheduled.releaseAt)} (고객이 먼저 말하면 취소)` };
+          const quiet = quietHoursConfig();
+          const releaseAt = reply.nightFollowup
+            ? nightFollowupReleaseAt(readAt, conversationId, reply.nightFollowup, quiet)
+            : chatTiming.followupReleaseAt(readAt, conversationId, quiet);
+          const followupText = reply.nightFollowup ? nightFollowupTextAt(releaseAt, reply.nightFollowup) : reply.text;
+          const scheduled = scheduleOutboxSend({ conversationId, text: followupText, kind: 'quote_read_followup', releaseAt, key: messageId });
+          reply = { ...reply, text: followupText, autoSend: false, skip: true, scheduledFollowup: scheduled, reason: `${reply.nightFollowup ? '새벽 요청 ' : ''}안부 멘트 예약 · ${kstClock(scheduled.releaseAt)} (고객이 먼저 말하면 취소)` };
         } else if (body.quoteReadFollowup !== true && plainScheduledReplyAllowed(reply, replyBody, before)) {
-          const scheduled = scheduleOutboxSend({ conversationId, messageId, text: reply.text, kind: 'delayed_reply', releaseAt: Date.now() + chatTiming.replyDelayMs(messageId, incomingText), key: messageId });
+          const scheduled = scheduleOutboxSend({ conversationId, messageId, text: reply.text, kind: 'delayed_reply', releaseAt: quietReleaseAt(Date.now() + chatTiming.replyDelayMs(messageId, incomingText), messageId), key: messageId });
           reply = { ...reply, autoSend: false, manualReview: false, pendingRoom: true, scheduledReply: scheduled, scheduleNote: `답장 예약 · ${kstClock(scheduled.releaseAt)}`, reason: reply.reason || `답장 예약 · ${kstClock(scheduled.releaseAt)}` };
+        } else if (body.quoteReadFollowup !== true && quietHoursNow() && quietScheduleAllowed(reply)) {
+          // 조용한 시간에 바로 나갈 글(고용 뒤 업무 안내 등)도 아침으로 미룬다. 고용 요청·파일·결제 동작이 붙은 답은 그대로
+          const scheduled = scheduleOutboxSend({ conversationId, messageId, text: reply.text, kind: 'quiet_reply', releaseAt: quietReleaseAt(Date.now() + chatTiming.replyDelayMs(messageId, incomingText), messageId), key: messageId });
+          reply = { ...reply, autoSend: false, manualReview: false, pendingRoom: true, scheduledReply: scheduled, scheduleNote: `조용한 시간 · 답장 예약 ${kstClock(scheduled.releaseAt)}`, reason: reply.reason || `조용한 시간(새벽 2시~8시) · 답장 예약 ${kstClock(scheduled.releaseAt)}` };
         }
       } catch (error) {
         reply = { ...reply, autoSend: false, manualReview: true, reason: `예약 실패로 보내지 않음(${String(error.message || error).slice(0, 80)})` };
@@ -10563,6 +11015,8 @@ async function processPendingQueue() {
   const current = readState();
   const holdState = productionState();
   if (productionHold.syncProductionHolds(current, holdState)) writeState(current);
+  // 9/25 준희: 모아 둔 수정 요청은 마지막 수정 메시지 2시간 뒤(급하면 바로) 여기서 수정 작업으로 만든다
+  if (releaseDueRevisionBatches(current)) writeState(current);
   const posts = Array.isArray(current.promptPosts) ? current.promptPosts : [];
   const candidates = posts.filter(post => {
     const status = String(post.status || '').trim();
@@ -10617,7 +11071,7 @@ if (require.main === module) {
   setInterval(() => runCustomerRoomFallback().catch(error => console.error(`Customer room fallback error: ${error.message}`)), 15000);
 }
 
-module.exports = { workflowPaymentPlan, quoteReadFollowupEnabled, setPaymentSplitForTest, videoEditMaterialsLine, soomgoWorkflowStatusReply, supersedesOlderRoomReplies, isWorkflowCompletion, honorificCheckApplies, mergeSoomgoCardQuote, workflowPaymentSplitAllowed, SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, agreedDiscountFor, supervisorReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
+module.exports = { quietHoursConfig, quietReleaseAt, quietHoursNow, quietScheduleAllowed, nightFollowupReleaseAt, nightFollowupTextAt, quoteReadNightConfig, soomgoRequestPostedAt, isNightSoomgoRequest, releaseDueRevisionBatches, revisionBatchConfig, revisionSize, revisionFeeQuote, workflowDeadlineDays, revisionUrgent, customerRevisionRounds, intakeAttachmentLine, largeFileEmailText, workflowPaymentPlan, quoteReadFollowupEnabled, setPaymentSplitForTest, videoEditMaterialsLine, soomgoWorkflowStatusReply, supersedesOlderRoomReplies, isWorkflowCompletion, honorificCheckApplies, mergeSoomgoCardQuote, workflowPaymentSplitAllowed, SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, agreedDiscountFor, supervisorReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
 
 
 

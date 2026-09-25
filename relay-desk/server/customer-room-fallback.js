@@ -36,7 +36,10 @@ function readConfig(policy) {
     maxOutputTokens: Number(raw.maxOutputTokens || 400),
     // 2026-09-23 준희 지시: 모델은 정책 파일에서 정한다(없으면 서버 기본 모델).
     model: String(raw.model || '').trim(),
-    timeoutMs: Number(raw.timeoutMs || 30000)
+    timeoutMs: Number(raw.timeoutMs || 30000),
+    // 9/26 준희 "쓸데없는 추가 얘기도 너무 봇 티 나": Claude 답이 이보다 길면 보내지 않고 보류(0이면 검사 안 함)
+    maxReplyChars: Number(raw.maxReplyChars || 0),
+    maxReplyLines: Number(raw.maxReplyLines || 0)
   };
   const ok = cfg.waitMs >= 0 && cfg.staleDispatchMs > 0 && cfg.maxAgeMs > 0 && Number.isInteger(cfg.perTick) && cfg.perTick > 0
     && Number.isInteger(cfg.dailyMaxCalls) && cfg.dailyMaxCalls >= 0 && cfg.dailyBudgetKrw >= 0 && cfg.krwPerUsd > 0
@@ -158,7 +161,7 @@ async function tick(deps) {
           const text = deps.cleanText(result.text);
           // 9/24 지시 28: 보내기 직전 AI 티 점검(이모지·점 나열·금지 말투·기계 말투·앞 답장과 같은 문장). 걸리면 보내지 않고 준희 알림
           const valid = deps.validReply(text, det.factsText ? `${det.text}\n${det.factsText}` : det.text, { requireNumbers: det.requireNumbers !== false, amountRange: det.amountRange || null });
-          const tell = valid ? chatTiming.aiTellCheck(text, event.payload?.conversationText || '') : '';
+          const tell = valid ? chatTiming.aiTellCheck(text, event.payload?.conversationText || '', { maxChars: cfg.maxReplyChars, maxLines: cfg.maxReplyLines }) : '';
           if (!valid) { claudeFailure = 'claude_reply_validation_failed'; log.passed = false; }
           else if (tell) { claudeFailure = `ai_tell:${tell}`; log.passed = false; log.tell = tell; }
           else { claudeText = text; log.passed = true; }

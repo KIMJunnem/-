@@ -1,13 +1,13 @@
 # Astra 운영 기준 (생성물)
 
 > **이 파일은 생성물 — 직접 고치지 말 것.** 값을 바꾸려면 services/*.json을 준희 승인으로 고친 뒤 `node scripts/build-astra-brief.cjs`로 다시 만든다.
-> 생성 시각: 2026-09-26 00:10 KST · 만든 것: scripts/build-astra-brief.cjs · 금액·기간·수정 횟수는 서버 견적 함수(buildSoomgoQuote, server/pricing-table.js) 계산값
+> 생성 시각: 2026-09-26 00:55 KST · 만든 것: scripts/build-astra-brief.cjs · 금액·기간·수정 횟수는 서버 견적 함수(buildSoomgoQuote, server/pricing-table.js) 계산값
 > 원본 파일:
 > - services/subtitle.json · quoteMessageVersion v8 · 수정 2026-09-25 15:49 KST · sha256 bac1c083e75d
 > - services/document_writing.json · quoteMessageVersion v8 · 수정 2026-09-25 15:49 KST · sha256 3d7c6a683b10
 > - services/presentation.json · quoteMessageVersion v6 · 수정 2026-09-25 15:49 KST · sha256 c5eb6f4cfe88
 > - services/translation_en.json · quoteMessageVersion 없음 · 수정 2026-09-25 15:49 KST · sha256 f8337214a993
-> - services/video_edit.json · quoteMessageVersion v1 · 수정 2026-09-26 00:06 KST · sha256 614cdb170849
+> - services/video_edit.json · quoteMessageVersion v1 · 수정 2026-09-26 00:51 KST · sha256 39e132359975
 > - docs/decisions.md (1·2·3·7-1절 읽기만) · 수정 2026-09-25 15:49 KST · sha256 e61bfdfaedfe
 
 ## 쓰는 법 (내부 규칙)
@@ -132,12 +132,13 @@
 | 영상 편집 원본 30분 | 129,000원 | 2~3일 | 2회 | v1 수동 문구 · 자동 견적은 auto-v2 |
 | 영상 편집 원본 45분 | 174,000원 | 3일 | 2회 | v1 수동 문구 · 자동 견적은 auto-v2 |
 | 영상 편집 원본 90분(상한) | 249,000원 | 3~4일 | 2회 | v1 수동 문구 · 자동 견적은 auto-v2 |
-| 쇼츠 1개(결과 1분 이내·원본 10분 이내) | 39,000원 | 당일~1일 | 2회 | v1 수동 문구 · 자동 견적은 auto-v2 |
+| 쇼츠 1개(결과 1분 이내·원본 10분 이내) | 29,000원 | 당일~1일 | 2회 | v1 수동 문구 · 자동 견적은 auto-v2 |
 | 영상 편집 + 번역 자막 원본 10분 | 83,000원 | 1~2일 | 2회 | v1 수동 문구 · 자동 견적은 auto-v2 |
 
 - 원본 길이 기준: 10분 이내 69,000원, 30분 이내 129,000원, 30분을 넘으면 5분마다 15,000원씩 더한다(작업 기간은 영상을 받아 본 뒤 날짜로).
 - 금액 상한 249,000원: 원본이 길어도, 번역·배경음악·색 옵션을 더해도 넘기지 않는다. 원본 70분 이상은 249,000원·작업 기간 3~4일.
-- 쇼츠 1개(결과 1분 이내·원본 10분 이내): 39,000원(당일~1일). 원본이 더 길면 금액 없이 범위부터 확인.
+- 쇼츠 1개(결과 1분 이내·원본 10분 이내): 39,000원(당일~1일), 지금은 첫 거래가 1편 29,000원(리뷰 5개가 쌓이면 정가로. 묶음 가격과 겹치지 않고 더 싼 쪽 하나). 원본이 더 길면 금액 없이 범위부터 확인.
+- 기본 수정 2회 뒤 3번째 수정부터는 작업 전에 금액을 말하고 동의를 받는다: 가벼운 수정 1회 15,000원(쇼츠 10,000원), 큰 수정 30,000원부터(쇼츠 20,000원부터, 정확한 금액은 준희 확인). 수정 요청은 모아서 마지막 요청 2시간 뒤 한 번에 반영(마감이 오늘·내일이면 바로).
 - 번역 자막(외국어 영상 → 한국어 자막): 금액의 20%를 더하고 천 원 단위로 반올림한다.
 - 배경음악 넣기·밝기/색 맞추기: 각 10,000원 — 고객이 요청할 때만 안내한다(처음부터 나열하지 않음).
 - 기본 수정 2회. 결과물 MP4.
@@ -168,5 +169,5 @@
 ## 대조용 값 (시험이 읽음)
 
 ```json
-[{"id":"sub-5","amount":32000,"days":"당일~1일","revisions":2},{"id":"sub-10","amount":49000,"days":"당일~1일","revisions":2},{"id":"sub-30","amount":89000,"days":"당일~1일","revisions":2},{"id":"sub-33","amount":99000,"days":"당일~1일","revisions":2},{"id":"sub-45","amount":119000,"days":"당일~1일","revisions":2},{"id":"sub-tr-10","amount":59000,"days":"당일~1일","revisions":2},{"id":"sub-burn-10","amount":79000,"days":"당일~1일","revisions":2},{"id":"sub-tr-burn-10","amount":89000,"days":"당일~1일","revisions":2},{"id":"doc-1","amount":21000,"days":"당일~1일","revisions":3},{"id":"doc-3","amount":30000,"days":"당일~1일","revisions":3},{"id":"doc-6","amount":57000,"days":"1~2일","revisions":3},{"id":"fmt-10","amount":23000,"days":"당일~1일","revisions":3},{"id":"proof-4","amount":21000,"days":"당일~1일","revisions":3},{"id":"proof-8","amount":41000,"days":"1~2일","revisions":3},{"id":"proof-en-4","amount":34000,"days":"당일~1일","revisions":3},{"id":"steno-10","amount":21000,"days":"당일~1일","revisions":3},{"id":"steno-20","amount":39000,"days":"당일~1일","revisions":3},{"id":"ppt-5","amount":39000,"days":"당일~1일","revisions":2},{"id":"ppt-7","amount":39000,"days":"1~2일","revisions":2},{"id":"ppt-12","amount":63000,"days":"1~2일","revisions":2},{"id":"vid-10","amount":69000,"days":"1~2일","revisions":2},{"id":"vid-30","amount":129000,"days":"2~3일","revisions":2},{"id":"vid-45","amount":174000,"days":"3일","revisions":2},{"id":"vid-90","amount":249000,"days":"3~4일","revisions":2},{"id":"vid-shorts","amount":39000,"days":"당일~1일","revisions":2},{"id":"vid-tr-10","amount":83000,"days":"1~2일","revisions":2}]
+[{"id":"sub-5","amount":32000,"days":"당일~1일","revisions":2},{"id":"sub-10","amount":49000,"days":"당일~1일","revisions":2},{"id":"sub-30","amount":89000,"days":"당일~1일","revisions":2},{"id":"sub-33","amount":99000,"days":"당일~1일","revisions":2},{"id":"sub-45","amount":119000,"days":"당일~1일","revisions":2},{"id":"sub-tr-10","amount":59000,"days":"당일~1일","revisions":2},{"id":"sub-burn-10","amount":79000,"days":"당일~1일","revisions":2},{"id":"sub-tr-burn-10","amount":89000,"days":"당일~1일","revisions":2},{"id":"doc-1","amount":21000,"days":"당일~1일","revisions":3},{"id":"doc-3","amount":30000,"days":"당일~1일","revisions":3},{"id":"doc-6","amount":57000,"days":"1~2일","revisions":3},{"id":"fmt-10","amount":23000,"days":"당일~1일","revisions":3},{"id":"proof-4","amount":21000,"days":"당일~1일","revisions":3},{"id":"proof-8","amount":41000,"days":"1~2일","revisions":3},{"id":"proof-en-4","amount":34000,"days":"당일~1일","revisions":3},{"id":"steno-10","amount":21000,"days":"당일~1일","revisions":3},{"id":"steno-20","amount":39000,"days":"당일~1일","revisions":3},{"id":"ppt-5","amount":39000,"days":"당일~1일","revisions":2},{"id":"ppt-7","amount":39000,"days":"1~2일","revisions":2},{"id":"ppt-12","amount":63000,"days":"1~2일","revisions":2},{"id":"vid-10","amount":69000,"days":"1~2일","revisions":2},{"id":"vid-30","amount":129000,"days":"2~3일","revisions":2},{"id":"vid-45","amount":174000,"days":"3일","revisions":2},{"id":"vid-90","amount":249000,"days":"3~4일","revisions":2},{"id":"vid-shorts","amount":29000,"days":"당일~1일","revisions":2},{"id":"vid-tr-10","amount":83000,"days":"1~2일","revisions":2}]
 ```

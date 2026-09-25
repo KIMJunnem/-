@@ -41,10 +41,10 @@ const toneUpdates = {
   '현재 자기소개서 초안은 어느 정도 준비돼 있나요? 편하게 알려주세요.': '현재 자기소개서 초안은 어느 정도 준비되어 있으신가요? 편하게 알려주세요.',
   '현재 자료는 어느 정도 준비돼 있나요? 편하게 알려주세요.': '현재 자료는 어느 정도 준비되어 있으신가요? 편하게 알려주세요.',
   '샘플 구매가 확인됐습니다. 예상 작업 기간은 [예상 기간]이에요. 먼저 [샘플 범위]를 만들어 보내드리고, 본 작업을 맡기시면 샘플 비용은 전액 빼드립니다. 진행 상황은 이 채팅에 남길게요.': '샘플 구매가 확인됐습니다. 예상 작업 기간은 [예상 기간]입니다. 먼저 [샘플 범위]를 만들어 보내드리고, 본 작업을 맡기시면 샘플 비용은 전액 차감해 드립니다. 진행 상황은 이 채팅으로 알려드리겠습니다.',
-  '고용이 확인됐습니다. 맡겨주셔서 감사합니다. 예상 작업 기간은 [예상 기간]이에요. 1차본을 먼저 보내드린 뒤 말씀해 주신 내용을 반영해 수정본과 최종본을 전달하겠습니다. 필요한 내용은 이 채팅에서 여쭤볼게요.': '고용이 확인됐습니다. 맡겨주셔서 감사합니다. 예상 작업 기간은 [예상 기간]입니다. 1차본을 먼저 보내드린 뒤 말씀해 주신 내용을 반영해 수정본과 최종본을 전달하겠습니다. 필요한 내용은 이 채팅으로 여쭙겠습니다.'
+  '고용이 확인됐습니다. 맡겨주셔서 감사합니다. 예상 작업 기간은 [예상 기간]이에요. 1차본을 먼저 보내드린 뒤 말씀해 주신 내용을 반영해 수정본과 최종본을 전달하겠습니다. 필요한 내용은 이 채팅에서 여쭤볼게요.': '고용 확인했어요, 맡겨주셔서 감사합니다! 예상 작업 기간은 [예상 기간]이고, 1차본 먼저 보내드린 뒤 말씀 주시는 대로 고쳐서 최종본 드릴게요.' // 9/26 준희 말투(짧게)
 };
 assert.deepEqual(definedTexts, exactTexts.map(text => toneUpdates[text] || text));
-assert.equal(messages.getMessage('common.hire_greeting.v1').version, 'v2');
+assert.equal(messages.getMessage('common.hire_greeting.v1').version, 'v3');
 assert.equal(messages.getMessage('common.sample_hire_greeting.v1').version, 'v2');
 assert.equal(messages.getMessage('document_writing.followup.material_status_a.v1', 'document_writing').version, 'v2');
 assert.equal(messages.getMessage('legacy.self_intro_followup_a.v1'), null);
