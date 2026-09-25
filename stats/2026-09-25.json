@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T13:08:02.293Z",
+  "generatedAt": "2026-09-25T14:10:37.587Z",
   "kstDay": "2026-09-25",
   "funnel": {
     "requests": 423,
@@ -274,7 +274,6 @@
       "2026-09-22": 33,
       "2026-09-21": 27,
       "2026-09-25": 23,
-      "2026-09-18": 17,
       "2026-09-23": 14,
       "2026-09-20": 5
     },
@@ -291,15 +290,15 @@
       "2026-09-22": 16,
       "2026-09-24": 11,
       "2026-09-23": 10,
-      "2026-09-18": 5
+      "2026-09-18": 3
     },
     "replyTemplates": {
       "(없음)": 24,
       "quote_read_followup": 17,
-      "emergency_astra_review": 17,
+      "emergency_astra_review": 16,
       "system_notice": 8,
-      "emergency_astra_failed": 7,
       "quote_read_followup_relinked": 6,
+      "emergency_astra_failed": 6,
       "auto_general": 4,
       "chat_only_contact": 4,
       "guard_customer_left": 3,
@@ -326,7 +325,7 @@
       "auto_format": 1
     },
     "replyAuto": 51,
-    "replyManual": 75,
+    "replyManual": 73,
     "honorificHeld": 0,
     "paymentClaims": 0,
     "agreedDiscounts": 0,
