@@ -59,6 +59,16 @@ assert.ok(read(pc1, 'server/relay-server.js').includes("require('./honorific-gua
 assert.ok(fs.existsSync(path.join(pc1, 'server', 'honorific-guard.js')));
 console.log('1 첫 설치 적용 통과');
 
+// 1-2) 윈도우 git처럼 core.autocrlf=true인 PC(9/25 실제 PC에서 줄바꿈이 CRLF로 바뀌어 시험 실패·되돌림이 반복됨)
+{
+  const pcW = makePc('pc-win');
+  git(pcW, 'config', 'core.autocrlf', 'true');
+  const w = update(pcW, true);
+  assert.strictEqual(w.state.lastApplied, head, w.log);
+  assert.ok(!read(pcW, 'soomgo-bot-extension/content-v3.js').includes('\r\n') || read(pcW, 'soomgo-bot-extension/content-v3.js') === git(REPO, 'show', `${head}:soomgo-bot-extension/content-v3.js`), '줄바꿈을 바꾸지 않음');
+  console.log('1-2 autocrlf PC 통과');
+}
+
 // 2) 다시 돌리면 변화 없음
 const before = read(pc1, 'server/relay-server.js');
 r = update(pc1);

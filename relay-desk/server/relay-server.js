@@ -6789,6 +6789,42 @@ async function jevGateReply(body = {}, det = {}, state = {}, opts = {}) {
   return null;
 }
 
+// 9/25 준희 "봇이 판단 못 하는 채팅·상황은 너(Claude)한테 물어보고 그렇게 실행": 규칙이 보류(준희 확인)로 둔 고객 말을
+// Claude 답장 대기열(customer-room-fallback, 하루·월 한도 그대로)에 이유·규칙과 함께 넘긴다. Claude 답은 금액·말투·AI 티 검사를 통과해야 나간다.
+// 답할 필요가 없거나 확실하지 않으면 Claude는 '보류'라고만 쓰고, 그러면 검사에 걸려 지금처럼 준희 알림이 된다.
+// 돈·파일이 걸린 주제(환불·취소·분쟁·계좌·세금 서류·파일 전달)는 답장과 별도로 준희 알림도 그대로 둔다.
+const SUPERVISOR_GUIDES = {
+  payment: { label: '환불·취소·분쟁·계좌·세금 서류', keepAlert: true, rule: '환불·취소·분쟁은 처리하겠다거나 된다고 약속하지 않는다. 사정에 한마디 하고 "확인해서 바로 안내드리겠습니다"로 답한다. 계좌·숨고 밖 거래는 숨고페이로만 진행한다고 정중히 말한다. 세금 서류는 확인 후 안내한다고 답한다.' },
+  file_delivery: { label: '파일 전달 요청', keepAlert: true, rule: '파일을 보냈다고 하지 않는다. 작업 상황을 확인해서 숨고 채팅으로 보내드리겠다고 답한다.' },
+  ai_question: { label: 'AI 사용 질문', keepAlert: false, rule: '[준희 문장]의 작업 방식 답을 따른다: 작업 도구로 초안을 만들고 결과물은 직접 확인하고 고친다. 부풀리지 않는다.' },
+  unsupported: { label: '우리가 안 하는 일일 수 있음', keepAlert: false, rule: '[사실]의 안 하는 일에 들면 된다고 하지 말고 정중히 어렵다고 말한다. 우리가 파는 서비스면 [사실] 가격으로 답한다. 판단이 안 서면 보류.' },
+  other: { label: '자동 규칙이 정하지 못함', keepAlert: false, rule: '대화 흐름과 [사실]만으로 답할 수 있으면 답한다. 금액·일정은 [사실]과 보낸 견적 값만 쓴다. 확실하지 않으면 보류.' }
+};
+function supervisorTopic(reply = {}) {
+  if (reply.forbiddenTopic === 'payment' || reply.templateKey === 'manual_cancel_review') return 'payment';
+  if (reply.forbiddenTopic === 'file_delivery') return 'file_delivery';
+  if (reply.forbiddenTopic === 'ai_question' || /^ai_(?:identity|workflow)_disclosure$/.test(String(reply.forbiddenTopic || ''))) return 'ai_question';
+  if (reply.templateKey === 'human_chat_unsupported') return 'unsupported';
+  return 'other';
+}
+// opts는 시험용(policy·enqueue). 서버는 넘기지 않는다.
+function supervisorReply(body = {}, reply = {}, opts = {}) {
+  let policy = opts.policy || null;
+  if (!policy) { try { policy = readOperatingPolicy(); } catch (_) { policy = {}; } }
+  if (policy.chatSupervisor?.enabled === false) return null;
+  if (!reply || reply.autoSend || reply.skip || !reply.manualReview || reply.closeConversation || reply.workflowHandled || reply.emergency || reply.pendingRoom || reply.humanViaClaude) return null;
+  if (body.quoteReadFollowup === true || body.hiredConversation === true) return null; // 고용 뒤 작업 단계는 기존 흐름
+  const text = String(body.message || body.text || '').trim();
+  if (!text || isSoomgoSystemMessage(text)) return null;
+  const key = supervisorTopic(reply);
+  const guide = SUPERVISOR_GUIDES[key];
+  const facts = [soomgoChatFactsText(body), `[자동 규칙이 보류한 이유] ${guide.label} · ${String(reply.reason || '').slice(0, 200)}`, `[이번 답의 규칙] ${guide.rule} 답할 필요가 없거나 확실하지 않으면 다른 말 없이 "보류"라고만 쓴다.`].join('\n');
+  const enqueue = typeof opts.enqueue === 'function' ? opts.enqueue : enqueueAstraRoomCustomerReply;
+  const room = enqueue(body, { text: `(자동 규칙이 보류함: ${guide.label}) ${guide.rule}`, templateKey: `supervisor_${key}`, autoSend: false, humanViaClaude: true, factsText: facts, amountRange: chatAmountRange(body) });
+  if (!room) return null;
+  return { ...room, humanViaClaude: true, supervisor: key, attention: guide.keepAlert === true, manualReview: false, reason: `${reply.reason ? `${reply.reason} · ` : ''}Claude에게 물어 답함${guide.keepAlert ? ' · 준희 확인도 필요' : ''}` };
+}
+
 // 9/24 지시 20(decisions 7-7): 고객 첨부 판단 결과로 이번 답을 정한다.
 // 범위 밖·금지 주제·불확실·금액을 서버가 확인 못 함 → 자동 답장 없이 준희 알림(판단 요약 + 보낼 문구 초안).
 // 그 밖 → 판단 결과를 [사실]에 넣어 채팅 Claude(지시 17·29 말투)가 답한다. 금액은 서버 계산값만 [사실]에 들어간다.
@@ -9403,6 +9439,11 @@ async function route(req, res) {
         : linkReply || attachmentReply || judgeReply || humanViaClaude || (isSoomgoEmergencySignal(replyBody, deterministicReply)
           ? await invokeSoomgoEmergencyAstra(replyBody, deterministicReply)
           : await conversationalSoomgoReply(replyBody, deterministicReply));
+      // 9/25 준희: 봇이 판단 못 해 보류한 고객 말은 Claude에게 물어 답한다(비상·고용 뒤 작업·시스템 알림 제외)
+      if (claudeBound) {
+        const asked = supervisorReply(replyBody, reply);
+        if (asked) reply = asked;
+      }
       // 9/25 준희 지시: 채팅봇은 무조건 존댓말. 반말 문장이 있으면 보내지도 예약하지도 않고 사람 확인으로 넘긴다.
       if (reply && reply.text && !reply.skip) {
         const honorific = honorificGuard.checkHonorific(reply.text);
@@ -10444,7 +10485,7 @@ if (require.main === module) {
   setInterval(() => runCustomerRoomFallback().catch(error => console.error(`Customer room fallback error: ${error.message}`)), 15000);
 }
 
-module.exports = { SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, agreedDiscountFor, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
+module.exports = { SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, agreedDiscountFor, supervisorReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
 
 
 

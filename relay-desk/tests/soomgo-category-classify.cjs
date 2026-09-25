@@ -122,15 +122,15 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
     const quoteCalls = fs.existsSync(log) ? fs.readFileSync(log, 'utf8').trim().split('\n').filter(Boolean) : [];
     assert.equal(quoteCalls.length, 0, `Claude 견적 호출 0회 (${quoteCalls.join(',')})`);
     assert.equal((stateFile.claudeQuoteLog || []).length, 0, 'Claude 견적 기록 없음');
-    // 첨부 판독 스위치(기본 꺼짐): API 없이 알림만
+    // 첨부 판단 스위치(9/25 준희 켬): 키가 없는 시험 서버에서는 API 없이 판단 알림만
     const reply = await post('/api/soomgo/reply', { conversationId: 'REGRESSCONV1', messageId: 'm1', message: '[사진]', attachments: [{ kind: 'image', name: '사진', mediaType: 'image/png', data: Buffer.alloc(500, 1).toString('base64') }] });
     assert.equal(reply.status, 200);
-    assert.equal(reply.body.reply.templateKey, 'attachment_read');
+    assert.equal(reply.body.reply.templateKey, 'attachment_judge_alert');
     assert.equal(reply.body.reply.attention, true);
-    assert.match(reply.body.reply.reason, /판독 꺼짐/);
+    assert.equal(reply.body.reply.autoSend, false, '키 없으면 보내지 않음');
     await sleep(200);
     const calls = (fs.existsSync(log) ? fs.readFileSync(log, 'utf8').trim().split('\n').filter(Boolean) : []).slice(quoteCalls.length);
-    assert.equal(calls.length, 0, `판독 꺼짐: 외국 API 호출 0 (${calls.join(',')})`);
+    assert.ok(calls.length <= 1 && calls.every(url => /api\.anthropic\.com/.test(url)), `첨부 판단 켜짐: Claude 호출 한 번만(시험에서는 네트워크 막힘 → 알림) (${calls.join(',')})`);
     console.log('soomgo-category-classify: PASS');
   } finally {
     child.kill();
