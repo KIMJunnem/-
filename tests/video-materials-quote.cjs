@@ -41,7 +41,8 @@ console.log('식전영상·길이 모름 자동 견적 통과');
 
 // 9/25 A/B·샘플 링크
 {
-  const req = { text: '강의 영상 컷편집', volume: '10분 이내' };
+  // 9/25: 강의(lecture)는 샘플 링크가 생겨서, 링크가 빈 종류(유튜브·브이로그)로 본다
+  const req = { text: '브이로그 영상 컷편집', volume: '10분 이내' };
   const p = v.videoEditQuote(req); const d = v.autoQuoteDecision(req, p, { sentToday: 0 });
   const a = v.autoQuoteMessage(req, p, d, { variant: 'A' });
   const b = v.autoQuoteMessage(req, p, d, { variant: 'B' });

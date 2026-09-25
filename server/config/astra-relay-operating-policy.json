@@ -10,6 +10,10 @@
     "templateMode": "fixed-by-category"
   },
   "chatSupervisor": { "_note": "9/25 준희 \"봇이 판단 못 하는 건 Claude한테 물어보고 그렇게 실행\": 보류된 고객 말을 Claude 답장 대기열로. 한도는 customerRoomFallback과 같이 셈. 끄려면 enabled false", "enabled": true },
+  "quoteReadFollowup": { "_note": "9/25 준희 \"견적 받고 답 없는 고객에겐 먼저 연락하지 않는다\": 견적 읽음 뒤 안부 멘트(2~4시간 뒤 예약)를 서버에서 끈다. 다시 켜려면 enabled true. 첫 안내 10분 뒤 무응답 후속(옛 content.js 경로)도 이 스위치가 꺼져 있으면 보내지 않는다", "enabled": false },
+  "paymentSplit": { "_note": "9/25 준희 \"영상이 안 되면 다른 것도 안 되는 거잖아\": 모든 서비스 전액 한 번 결제가 기본. true면 예전처럼 5만 원 넘는 작업을 착수금 50%·잔금으로 나눔. 숨고페이가 한 거래에 결제 요청 두 번을 받는지는 확인 안 됨", "enabled": false },
+  "contact": { "_note": "9/25 준희: 계약 뒤 고객 자료는 이메일이나 고객 클라우드(구글 드라이브 등) 링크로 받는다. 영상 편집 고용 인사·상태 안내에 이 주소를 붙인다. 비우면 클라우드 링크만 부탁한다", "materialsEmail": "pd960723@gmail.com" },
+  "dailyCapExtras": { "_note": "9/25 준희 \"30건을 넘어도 성사 가능성이 높으면 추가로 받는다\": 영상 편집 자동 견적 하루 상한(services/video_edit.json autoQuote.dailyMaxSends)을 넘긴 요청 중 견적 판단이 보내기라고 하거나(판단이 있을 때), 판단이 없으면 요청서 점수(경쟁 고수 2명 이하·최근 요청·완료 희망일 분명·원본 길이나 자료 분명·샘플 있는 종류, 5점 만점)가 minScore 이상인 것만 하루 maxPerDay건까지 추가 발송. 추가분은 state.videoEditCapExtras에 따로 센다. 못 보낸 요청은 recentHours 안이면 다음 날 다시 판단", "enabled": true, "maxPerDay": 10, "minScore": 4, "recentHours": 48 },
   "jevGate": { "_note": "9/25 지시 31(decisions 7-17): 제브 문지기. 켜기·끄기는 jev-gate-on/off.bat(준희). 규칙이 못 정한 고객 말만, 확률 0.9 이상일 때만 Claude 대신 처리", "enabled": false, "threshold": 0.9, "dailyMaxCalls": 500, "timeoutMs": 2000 },
   "limits": {
     "maxConcurrentPaidOrders": 2,

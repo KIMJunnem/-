@@ -25,8 +25,8 @@ assert.match(source, /await deleteCurrentRequest\('quoteClosed10'\)/);
 assert.match(source, /삭제 대상 · 승인 대기 · 삭제 안 함'\);\s*await new Promise\(resolve => setTimeout\(resolve, 600\)\);\s*await returnToRequestList\(\);/);
 assert.match(source, /삭제 승인 대기\(봇은 삭제하지 않음\)/);
 assert.match(source, /if \(!dialog \|\| requestId\(\) !== currentId\) return false;/, '확인은 대화상자 안에서만');
-assert.equal(manifest.version, '0.4.26');
-assert.match(source, /요청봇 0\.4\.26/);
+assert.equal(manifest.version, '0.4.27');
+assert.match(source, /요청봇 0\.4\.27/);
 assert.match(source, /const REQUEST_REFRESH_MS = 20000;/, '목록 새로고침 20초');
 // 0.4.12: 탭 잠금·캐시 부족·계정 확인
 assert.match(source, /createGuard\(\{\s*role: 'request'/);
