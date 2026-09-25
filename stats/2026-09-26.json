@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-25T15:13:01.597Z",
+  "generatedAt": "2026-09-25T16:13:05.891Z",
   "kstDay": "2026-09-26",
   "funnel": {
-    "requests": 428,
-    "quotes": 221,
+    "requests": 430,
+    "quotes": 222,
     "customerReplies": 13,
     "humanConversations": 23,
     "byQuoteVersion": [
@@ -38,16 +38,16 @@
         "replyRate": 0
       },
       {
+        "version": "video_edit auto-v2-B",
+        "sent": 6,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
         "version": "document_writing v7",
         "sent": 6,
         "replied": 1,
         "replyRate": 16.7
-      },
-      {
-        "version": "video_edit auto-v2-B",
-        "sent": 5,
-        "replied": 0,
-        "replyRate": 0
       },
       {
         "version": "presentation v4",
@@ -127,8 +127,8 @@
   "serviceMix": [
     {
       "service": "영상 편집",
-      "requests": 133,
-      "quotes": 39,
+      "requests": 134,
+      "quotes": 40,
       "replies": 0,
       "replyRate": 0
     },
@@ -141,7 +141,7 @@
     },
     {
       "service": "문서/글 작성",
-      "requests": 78,
+      "requests": 79,
       "quotes": 52,
       "replies": 4,
       "replyRate": 7.7
@@ -269,16 +269,17 @@
   "extra": {
     "windowDays": 7,
     "leadsByDay": {
-      "2026-09-19": 117,
+      "2026-09-19": 111,
       "2026-09-24": 35,
       "2026-09-22": 33,
       "2026-09-25": 28,
       "2026-09-21": 27,
       "2026-09-23": 14,
-      "2026-09-20": 5
+      "2026-09-20": 5,
+      "2026-09-26": 2
     },
     "videoAutoDecision": {
-      "ok": 40,
+      "ok": 41,
       "(없음)": 5,
       "daily_cap": 2
     },
@@ -330,7 +331,7 @@
     "agreedDiscounts": 0,
     "jevGate": {},
     "videoRequestTypes": {
-      "other": 39,
+      "other": 40,
       "event": 3,
       "wedding": 2,
       "lecture": 2,
