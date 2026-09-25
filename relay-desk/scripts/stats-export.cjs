@@ -55,7 +55,18 @@ function extraCounts(state = {}, now = Date.now()) {
     honorificHeld: replies.filter(item => item.reply?.honorificHold).length,
     paymentClaims: replies.filter(item => item.reply?.paymentCheck).length,
     agreedDiscounts: replies.filter(item => Number(item.reply?.agreedAmount || 0) > 0).length,
-    jevGate: count(recent(state.jevGateLog), item => `${item.choice || '-'}:${item.action || '-'}`)
+    jevGate: count(recent(state.jevGateLog), item => `${item.choice || '-'}:${item.action || '-'}`),
+    // 9/25: 봇이 멈추면 알림(마지막 신호 뒤 몇 분). 상태 글은 올리지 않고 오류 낱말이 있는지만
+    botHealth: Object.fromEntries(Object.entries(state.botStatus && typeof state.botStatus === 'object' ? state.botStatus : {}).map(([role, item]) => [role, {
+      minutesSinceHeartbeat: Math.round((now - Number(item?.at || 0)) / 60000),
+      errorWord: /오류|실패|초과|quota|error|확인 필요/i.test(String(item?.status || ''))
+    }])),
+    // 9/25: 첫 고용부터 단계가 멈추면 알림(단계별 건수·가장 오래 멈춘 분)
+    workflows: (() => {
+      const open = (Array.isArray(state.soomgoWorkflows) ? state.soomgoWorkflows : []).filter(item => !['completed', 'cancelled', 'closed'].includes(String(item?.stage || '')) && !/SELFTEST|TEST|DEMO|SIMULATION/i.test(String(item?.id || '')));
+      const ages = open.map(item => Math.round((now - (Date.parse(item.updatedAt || item.stageUpdatedAt || item.createdAt || '') || now)) / 60000));
+      return { byStage: count(open, item => item.stage), oldestStuckMinutes: ages.length ? Math.max(...ages) : 0 };
+    })()
   };
 }
 

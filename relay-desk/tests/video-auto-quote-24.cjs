@@ -38,7 +38,7 @@ const toneOk = (name, message, amount) => {
   assert.doesNotMatch(message, /최선을 다하|고객님의 소중한|전문가가|퀄리티 보장|빠르고 정확하게|문의 주신|~~/, `${name}: 광고 문구 없음`);
   // 9/24 지시 25: 준희 예시 모양 — 질문·숨고페이 문장 없이 "수정은 N회까지 가능합니다!!"로 끝
   assert.equal((message.match(/\?/g) || []).length, 0, `${name}: 질문 없음`);
-  assert.match(message, /수정은 2회까지 가능합니다!!$/, `${name}: 끝 문장`);
+  assert.match(message, /수정은 2회까지 가능합니다!!(?: 원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!)?$/, `${name}: 끝 문장(B판은 날짜 한 줄 더)`);
   assert.doesNotMatch(message, /드릴게요|괜찮아요|있어요/, `${name}: 말투`);
   assert.equal((message.match(/\d[\d,]*원/g) || []).length, 1, `${name}: 금액은 하나`);
   assert.ok(message.includes(`${amount.toLocaleString('ko-KR')}원`), `${name}: 계산 금액`);
@@ -58,7 +58,7 @@ for (const [name, len, amount, days] of [['5분', '5분 이내', 69000, '1~2일'
   assert.equal(quote.days, days, `${name} 기간`);
   assert.equal(quote.serviceId, 'video_edit');
   assert.equal(quote.autoRule.ruleId, 'video_edit_auto');
-  assert.equal(quote.quoteMessageVersion, 'auto-v2');
+  assert.match(quote.quoteMessageVersion, /^auto-v2(?:-B)?$/); // 9/25 A/B 시험
   assert.equal(claudeQuote.eligible(quote), false, `${name}: Claude 판단 호출 없음`);
   assert.ok(quote.message.includes(`원본 ${len}`), `${name}: 고객이 고른 길이 되짚기`);
   toneOk(name, quote.message, amount);

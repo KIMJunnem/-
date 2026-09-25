@@ -17,16 +17,21 @@ const run = (input, state = {}) => {
 };
 // 0) 준희 예시와 글자 그대로(상업 영상 · 원본 5분 이내)
 {
-  const { quote } = run(mk('V25-EX', '5분 이내'));
+  // 9/25 A/B: A판(요청 번호 V25-EXA)은 준희 예시 그대로, B판(V25-EX)은 끝에 날짜 한 줄만 더
+  const { quote } = run(mk('V25-EXA', '5분 이내'));
   assert.equal(quote.autoSend, true);
   assert.equal(quote.message, '안녕하세요, 상업 영상 원본 5분 이내면 필요 없는 부분 정리하고 자막까지 넣어서 69,000원에 해 드릴 수 있습니다. 영상 받고 1~2일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!');
-  assert.equal(quote.quoteMessageVersion, 'auto-v2', '문구가 바뀌어 버전을 올림');
+  assert.equal(quote.quoteMessageVersion, 'auto-v2');
+  const b = run(mk('V25-EX', '5분 이내')).quote;
+  assert.equal(b.message, `${quote.message} 원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!`);
+  assert.equal(b.quoteMessageVersion, 'auto-v2-B');
+  assert.match(quote.quoteMessageVersion, /^auto-v2(?:-B)?$/, '문구가 바뀌어 버전을 올림(9/25 A/B)');
 }
 // 1) 45분 → 7-4 계산값(129,000 + 3×15,000 = 174,000), 작업 기간 3일
 {
   const { quote } = run(mk('V25-45', '45분'));
   assert.equal(quote.autoSend, true); assert.equal(quote.amount, 174000); assert.equal(quote.days, '3일');
-  assert.match(quote.message, /영상 받고 3일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!$/);
+  assert.match(quote.message, /영상 받고 3일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!(?: 원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!)?$/);
 }
 // 2) 컷·자막 + 모션그래픽 섞임 → 발송, 제외 문장 한 줄 / 모션그래픽만 → 알림
 {
@@ -42,7 +47,7 @@ const run = (input, state = {}) => {
 {
   const open = run(mk('V25-OPEN', '1시간 이상'));
   assert.equal(open.quote.autoSend, true); assert.equal(open.quote.amount, 249000); assert.equal(open.quote.days, '3~4일');
-  assert.match(open.quote.message, /원본 길이 확인하고 일정은 다시 말씀드릴 수 있습니다\. 영상 받고 3~4일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!$/);
+  assert.match(open.quote.message, /원본 길이 확인하고 일정은 다시 말씀드릴 수 있습니다\. 영상 받고 3~4일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!(?: 원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!)?$/);
   assert.ok(!/\?/.test(open.quote.message), '질문으로 끝내지 않음');
   const long = run(mk('V25-3H', '3시간 이상'));
   assert.equal(long.quote.autoSend, false); assert.equal(long.quote.videoEdit.autoDecision, 'length_open_ended');

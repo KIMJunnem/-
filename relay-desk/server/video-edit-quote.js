@@ -157,7 +157,14 @@ function autoQuoteDecision(parsed = {}, priced = null, config = {}) {
 }
 // 견적 설명(9/24 지시 25, 준희 지정 예시와 같은 모양): "안녕하세요, 상업 영상 원본 5분 이내면 필요 없는 부분 정리하고 자막까지 넣어서
 // 69,000원에 해 드릴 수 있습니다. 영상 받고 1~2일 안에 MP4로 보내드리고, 수정은 2회까지 가능합니다!!" 숨고페이 문장·질문 없음. 금액은 하나만.
-function autoQuoteMessage(parsed = {}, priced = {}, decision = {}) {
+// A/B: 요청 번호 글자 합이 짝수면 A(지금 문구), 홀수면 B(끝에 날짜 한 줄). 요청 번호가 없으면 A
+function abVariant(requestId) {
+  const id = String(requestId || '');
+  if (!id) return 'A';
+  let sum = 0; for (const ch of id) sum += ch.charCodeAt(0);
+  return sum % 2 === 0 ? 'A' : 'B';
+}
+function autoQuoteMessage(parsed = {}, priced = {}, decision = {}, opts = {}) {
   const def = DEFINITION || {};
   const amount = decision.override?.amount || priced.amount;
   const days = decision.override?.days || priced.days;
@@ -180,7 +187,12 @@ function autoQuoteMessage(parsed = {}, priced = {}, decision = {}) {
   if (decision.storyboard) lines.push('금액은 이대로 두고, 세부 구성은 스토리보드 보고 확정하겠습니다.');
   if (decision.openEnded) lines.push('원본 길이 확인하고 일정은 다시 말씀드릴 수 있습니다.');
   lines.push(`${priced.materialsBased ? '자료 받고' : '영상 받고'} ${days} 안에 MP4로 보내드리고, 수정은 ${priced.revisions || def.includedRevisions || 2}회까지 가능합니다!!`);
+  // B판: 준희 검증 문장(9/24 "훨씬 낫다")의 끝맺음 — 날짜만 물어 다음 행동을 쉽게
+  if (opts.variant === 'B') lines.push('원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!');
+  // 샘플 영상 링크(유튜브 일부공개). services/video_edit.json quoteCopy.sampleUrl이 있을 때만
+  const sampleUrl = String(def.quoteCopy?.sampleUrl || '').trim();
+  if (/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//.test(sampleUrl)) lines.push(`작업 예시 영상: ${sampleUrl}`);
   return lines.join(' ');
 }
 
-module.exports = { videoEditQuote, sourceMinutes, sourceLengthOpenEnded, openEndedLowerMinutes, detectOptions, autoQuoteDecision, autoQuoteMessage, customerWords, DEFINITION, DEFINITION_PATH };
+module.exports = { abVariant, videoEditQuote, sourceMinutes, sourceLengthOpenEnded, openEndedLowerMinutes, detectOptions, autoQuoteDecision, autoQuoteMessage, customerWords, DEFINITION, DEFINITION_PATH };

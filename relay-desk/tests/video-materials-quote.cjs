@@ -38,3 +38,22 @@ assert.strictEqual(v.autoQuoteDecision(wedding, v.videoEditQuote(wedding), { sen
 assert.strictEqual(v.autoQuoteDecision({ text: '식전영상 3D 애니메이션 제작' }, v.videoEditQuote({ text: '식전영상 3D 애니메이션 제작' }), { sentToday: 0 }).reason, 'excluded_work');
 assert.strictEqual(v.autoQuoteDecision({ text: '돌잔치 현장 촬영 해주세요' }, v.videoEditQuote({ text: '돌잔치 현장 촬영 해주세요' }), { sentToday: 0 }).reason, 'visit_or_shoot');
 console.log('식전영상·길이 모름 자동 견적 통과');
+
+// 9/25 A/B·샘플 링크
+{
+  const req = { text: '강의 영상 컷편집', volume: '10분 이내' };
+  const p = v.videoEditQuote(req); const d = v.autoQuoteDecision(req, p, { sentToday: 0 });
+  const a = v.autoQuoteMessage(req, p, d, { variant: 'A' });
+  const b = v.autoQuoteMessage(req, p, d, { variant: 'B' });
+  assert.ok(!/원하시는 완성 날짜/.test(a)); assert.match(b, /원하시는 완성 날짜만 알려주시면/);
+  assert.ok(checkHonorific(b).ok);
+  assert.ok(!/작업 예시 영상/.test(a), '링크가 비어 있으면 안 붙임');
+  const saved = v.DEFINITION.quoteCopy.sampleUrl;
+  v.DEFINITION.quoteCopy.sampleUrl = 'https://youtu.be/abc123';
+  assert.match(v.autoQuoteMessage(req, p, d, { variant: 'A' }), /작업 예시 영상: https:\/\/youtu\.be\/abc123$/);
+  v.DEFINITION.quoteCopy.sampleUrl = 'https://evil.example.com/x';
+  assert.ok(!/작업 예시 영상/.test(v.autoQuoteMessage(req, p, d, { variant: 'A' })), '유튜브 링크만');
+  v.DEFINITION.quoteCopy.sampleUrl = saved;
+  assert.strictEqual(v.abVariant(''), 'A');
+  console.log('A/B·샘플 링크 통과');
+}
