@@ -157,7 +157,7 @@ async function tick(deps) {
           log.krw = costKrw(cfg, log.inputTokens, log.outputTokens);
           const text = deps.cleanText(result.text);
           // 9/24 지시 28: 보내기 직전 AI 티 점검(이모지·점 나열·금지 말투·기계 말투·앞 답장과 같은 문장). 걸리면 보내지 않고 준희 알림
-          const valid = deps.validReply(text, det.factsText ? `${det.text}\n${det.factsText}` : det.text, { requireNumbers: det.requireNumbers !== false });
+          const valid = deps.validReply(text, det.factsText ? `${det.text}\n${det.factsText}` : det.text, { requireNumbers: det.requireNumbers !== false, amountRange: det.amountRange || null });
           const tell = valid ? chatTiming.aiTellCheck(text, event.payload?.conversationText || '') : '';
           if (!valid) { claudeFailure = 'claude_reply_validation_failed'; log.passed = false; }
           else if (tell) { claudeFailure = `ai_tell:${tell}`; log.passed = false; log.tell = tell; }

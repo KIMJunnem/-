@@ -61,7 +61,7 @@ const deps = (state = {}) => ({ readPolicy: () => on, readState: () => state, ha
     const { parsed, quote } = ruleQuote(input);
     answers['돌잔치 영상'] = '판단: 보내기 추천 — 스토리보드가 있어 범위가 분명함. 견적에 샘플 캡처 첨부\n견적 금액: 69,000원\n견적 설명:\n안녕하세요. 돌잔치 영상 건 확인했습니다. 콘티대로 만든 샘플 영상이 프로필 포트폴리오에 있고, 견적에 장면 캡처도 붙였습니다. 원본 10분 이내면 69,000원입니다. 원본 길이가 어느 정도일까요?';
     const out = await qj.attempt({ requestId: input.requestId, request: parsed, quote, deps: deps() });
-    assert.equal(out.action, 'hold'); assert.equal(out.judge.sendBlocked, 'no_server_amount');
+    assert.equal(out.action, 'hold'); assert.equal(out.judge.sendBlocked, 'amount_mismatch'); // 9/25: 돌잔치는 서버 시작가 89,000원이 생겨, Claude가 다른 금액(69,000원)을 쓰면 여전히 보류
     qj.applyResult(quote, out, parsed);
     assert.equal(quote.autoSend, false); assert.equal(quote.manualReview, true, '준희 알림');
     assert.match(quote.reason, /^견적 판단 · 영상 편집 · 69,000원 · 보내기 추천/);

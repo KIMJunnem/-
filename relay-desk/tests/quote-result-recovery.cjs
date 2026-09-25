@@ -121,7 +121,7 @@ function makeEnv({ fetchOk = true, fetchThrows = false } = {}) {
   // 견적 금액·문구는 건드리지 않는다: 예약 블록에 금액·메시지 필드가 없다
   assert.doesNotMatch(block, /quote\.amount|quote\.message/);
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'soomgo-bot-extension', 'manifest.json'), 'utf8'));
-  assert.equal(manifest.version, '0.4.21');
-  assert.match(source, /요청봇 0\.4\.21/);
+  assert.equal(manifest.version, '0.4.22');
+  assert.match(source, /요청봇 0\.4\.22/);
   console.log('quote-result-recovery: PASS');
 })().catch(error => { console.error(error); process.exit(1); });

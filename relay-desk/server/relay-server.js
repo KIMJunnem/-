@@ -28,6 +28,7 @@ const attentionDedupe = require('./attention-dedupe');
 const jevReview = require('./jev-review');
 const pipelineSim = require('./pipeline-sim');
 const jevSimulation = require('./jev-simulation');
+const jevGate = require('./jev-gate');
 // PPT 샘플 유형 고르기(2026-09-22): 고객이 샘플을 달라고 하면 맞는 예시 PDF를 고른다.
 const presentationDesign = require('./presentation-design');
 const codexProduction = require('./codex-production');
@@ -2104,8 +2105,10 @@ function isHumanSoomgoCustomerReply(record = {}, ourHeads = null) {
 }
 
 // 견적을 받은 뒤의 짧은 승낙. 문장 전체가 승낙일 때만 참(질문·거절·'확인해 주세요'류 제외).
+// 9/25 지시 32: "25일까지 해주세요"·"다음 주 월요일로 진행해 주세요"처럼 날짜가 앞에 붙은 진행 의사도 고용 요청으로 본다.
+const SOOMGO_PROCEED_DATE_LEAD = /^(?:(?:\d{1,2}\s*월\s*)?\d{1,2}\s*일|내일|모레|이번\s*주(?:\s*[월화수목금토일]요일)?|다음\s*주(?:\s*[월화수목금토일]요일)?|[월화수목금토일]요일)\s*(?:까지|로|에|안에|전까지)?\s*/;
 function isSoomgoShortProceed(value) {
-  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  const text = String(value || '').replace(/\s+/g, ' ').trim().replace(SOOMGO_PROCEED_DATE_LEAD, '');
   if (!text || text.length > 40 || /[?？]/.test(text)) return false;
   if (/(?:확인|검토|설명|연락|답장|답변|수정|알려|전달|보내|메일)\s*(?:해\s*)?주세/.test(text)) return false;
   if (isSoomgoDecline(text)) return false;
@@ -5803,7 +5806,11 @@ function soomgoReply(body = {}) {
     && Boolean(String(quote?.extraScope || '').trim() || /(?:추가\s*(?:금|비용)|수정\s*\d+\s*회|사전\s*동의|별도\s*(?:안내|비용|견적))/i.test(conversationText));
   const hireOfferAlreadyMade = alreadyAskedSoomgoHire(conversationText);
   if ((explicitProceed || shortProceed) && (quoteHasEnoughTerms || hireOfferAlreadyMade)) {
+    // 9/25 지시 32: 채팅에서 할인한 방이면 결제 요청 금액(보낸 견적 기준)과 달라진다 — 고용 요청은 그대로 하되 준희에게 금액 확인 알림
+    const agreed = chatAmountRange({ quote, conversationText });
+    const discountNote = agreed?.discountUsed ? { attention: true, agreedAmount: agreed.discountUsed, reason: `채팅에서 ${agreed.discountUsed.toLocaleString('ko-KR')}원으로 할인 합의 · 결제 요청 금액 확인 필요` } : {};
     return {
+      ...discountNote,
       autoSend: true,
       manualReview: false,
       hireRequest: true,
@@ -6331,7 +6338,13 @@ function validSoomgoAiReply(text, authoritativeText, options = {}) {
   const candidateFlat = candidate.replace(/\s+/g, '').replace(/,/g, '');
   // 2026-09-24 지시 17: 초안에 없는 원 단위 금액을 새로 쓰면 불합격(금액은 서버 값만).
   const authoritativeFlat = String(authoritativeText || '').replace(/\s+/g, '').replace(/,/g, '');
-  const newAmounts = (candidateFlat.match(/\d+원/g) || []).filter(amount => !authoritativeFlat.includes(amount));
+  const range = options.amountRange;
+  const inRange = amount => {
+    if (!range) return false;
+    const n = Number(String(amount).replace(/원$/, ''));
+    return n % 1000 === 0 && n >= Number(range.min) && n <= Number(range.max);
+  };
+  const newAmounts = (candidateFlat.match(/\d+원/g) || []).filter(amount => !authoritativeFlat.includes(amount) && !inRange(amount));
   if (newAmounts.length) return false;
   if (options.requireNumbers === false) return true;
   return soomgoReplyNumbers(authoritativeText).every(number => candidateFlat.includes(number));
@@ -6340,12 +6353,38 @@ function validSoomgoAiReply(text, authoritativeText, options = {}) {
 // 2026-09-24 지시 17(decisions 7-5): 채팅봇 재가동 때 자동 답장하지 않는 주제. 결제·환불·취소·분쟁·가격 협상·파일 납품·AI 사용 질문은
 // 결정형 답이 자동 발송 대상이어도 보내지 않고 준희 확인(알림)으로 둔다. 영상 편집 문의는 서버 견적값(services/video_edit.json)으로 답을 만든다.
 const CHAT_FORBIDDEN_TOPICS = [
-  ['payment', /결제|입금|계좌|환불|취소|분쟁|신고|보상\s*(?:해|받)|현금\s*영수증|세금\s*계산서|카드\s*결제/],
-  ['negotiation', /깎아|깎을|할인|싸게|저렴하게|네고|가격\s*(?:조정|협상)|더\s*낮춰|디씨|\bdc\b/i],
+  // 9/25 지시 32(decisions 7-18): 결제 진행·가격 흥정은 챗봇이 한다. 환불·취소·분쟁·계좌(숨고 밖 거래)·세금 서류는 그대로 준희.
+  ['payment', /계좌|환불|취소|분쟁|신고|보상\s*(?:해|받)|현금\s*영수증|세금\s*계산서/],
   ['file_delivery', /(?:완성본|결과물|최종\s*파일|원본\s*파일)\s*(?:을|를)?\s*(?:보내\s*주|전달해\s*주|주세요|언제\s*보내)/],
   ['ai_question', /\bai\b|에이\s*아이|인공\s*지능|챗\s*gpt|chat\s*gpt|\bgpt\b|클로드|claude|사람이\s*(?:직접\s*)?(?:하|작업|쓰|만드|답)|자동\s*(?:응답|답장|답변)|봇(?:이|인가|이에요|인가요|이세요)|로봇/i]
 ];
-const CHAT_FORBIDDEN_TEMPLATES = new Set(['guard_price_negotiation', 'ai_identity_disclosure', 'ai_workflow_disclosure']);
+const CHAT_FORBIDDEN_TEMPLATES = new Set(['ai_identity_disclosure', 'ai_workflow_disclosure']);
+
+// 9/25 지시 32 1-1(준희 "좀 싸게 팔든 비싸게 팔든 상관없어"): 흥정·할인은 방마다 한 번, 보낸 견적의 85%까지(1,000원 단위).
+// 가격표 밖 추가 작업은 처음 견적의 150%까지 챗봇이 제시. 이 범위 안의 금액만 새 금액 검사를 통과한다(밖이면 지금처럼 막고 준희 알림).
+const CHAT_DISCOUNT_FLOOR_RATE = 0.85;
+const CHAT_EXTRA_CAP_RATE = 1.5;
+function chatAmountRange(body = {}) {
+  const quoteAmount = Number(body.quote?.amount || 0);
+  if (!(quoteAmount > 0)) return null;
+  const floor = Math.ceil((quoteAmount * CHAT_DISCOUNT_FLOOR_RATE) / 1000) * 1000;
+  const max = Math.floor((quoteAmount * CHAT_EXTRA_CAP_RATE) / 1000) * 1000;
+  // 우리 쪽 말([내 답변]·[고수])에 이미 견적보다 낮은 금액이 나갔으면 할인은 쓴 것 — 그 금액 아래로는 더 내리지 않는다.
+  const ours = String(body.conversationText || body.history || '').split(/\r?\n/).filter(line => /^\s*\[(?:내 답변|고수)\]/.test(line)).join('\n');
+  const offered = [...ours.replace(/,/g, '').matchAll(/(\d{4,7})\s*원/g)].map(m => Number(m[1])).filter(n => n >= floor && n < quoteAmount);
+  const used = offered.length ? Math.min(...offered) : null;
+  return { quote: quoteAmount, min: used || floor, max, discountUsed: used };
+}
+function chatAmountRangeFacts(range) {
+  if (!range) return '';
+  const won = n => `${Number(n).toLocaleString('ko-KR')}원`;
+  const discount = range.discountUsed
+    ? `가격 조정: 이 방에서는 이미 ${won(range.discountUsed)}으로 한 번 낮췄다. 더 낮추지 않는다(더 깎아 달라고 하면 이 금액이 최선이라고 답한다).`
+    : `가격 조정: 할인·흥정 요청이면 이 방에서 한 번만, 최저 ${won(range.min)}까지 낮춰 줄 수 있다(1,000원 단위, 할인 이유는 말하지 않는다). 그보다 낮게는 안 된다고 답한다.`;
+  return `${discount}\n범위가 늘면 위 가격표로 다시 계산한 금액을 쓴다. 가격표에 없는 추가 작업은 최대 ${won(range.max)}까지 제시할 수 있다(넘으면 금액을 쓰지 말고 확인 후 알려드리겠다고 답한다).\n결제 진행: 날짜가 정해지면 숨고페이로 결제, 결과물 확인 뒤 거래 확정. 고객이 진행 의사와 날짜를 말하면 고용 요청을 보내드린다고 답한다.`;
+}
+// 고객이 결제했다고 말함 → 답장은 그대로 하고 준희에게 "결제 확인 필요" 알림(막지 않음)
+const SOOMGO_PAID_CLAIM = /결제\s*(?:했|완료|끝났|끝냈|드렸|하였)|입금\s*(?:했|완료|드렸)|숨고\s*페이로\s*(?:보냈|결제)/;
 function chatForbiddenTopic(message = '', reply = {}) {
   if (CHAT_FORBIDDEN_TEMPLATES.has(String(reply.templateKey || ''))) return String(reply.templateKey);
   const text = String(message || '');
@@ -6365,10 +6404,12 @@ function applyChatReplyPolicy(body = {}, reply = {}) {
   if (videoQuestion && !pricedQuote && reply.autoSend && !reply.manualReview && !reply.workflowHandled) {
     let priced = null;
     try { priced = require('./video-edit-quote').videoEditQuote({ volume: message, topic: message, text: message }); } catch (_) { priced = null; }
-    if (priced && priced.amount) {
+    if (priced && priced.amount && !priced.materialsBased) {
       const days = priced.days ? `작업 기간은 ${priced.days}이고` : '작업 기간은 영상을 받아 본 뒤 날짜로 알려드리고';
       return { ...reply, templateKey: 'video_edit_price', messageId: 'video_edit.chat_price.v1', text: `영상 편집은 원본 ${priced.minutes}분 기준 ${priced.amount.toLocaleString('ko-KR')}원입니다. ${days}, 수정 ${priced.revisions}회가 포함됩니다.`, videoEdit: { amount: priced.amount, minutes: priced.minutes } };
     }
+    // 9/25: 식전영상처럼 사진 위주 요청은 길이 대신 "자료 보고 확정" + 시작가
+    if (priced && priced.materialsBased === 'photo') return { ...reply, templateKey: 'video_edit_materials', messageId: 'video_edit.chat_materials.v1', text: `보내주실 사진·영상 자료를 보고 금액을 확정해 드리겠습니다. 기본 구성 기준으로 ${priced.amount.toLocaleString('ko-KR')}원부터이고, 자료 받고 ${priced.days} 안에 보내드릴 수 있습니다!` };
     return { ...reply, templateKey: 'video_edit_length', messageId: 'video_edit.chat_length.v1', text: '영상 편집 가능합니다. 원본 영상 길이를 알려주시면 금액을 바로 안내해 드리겠습니다.' };
   }
   return reply;
@@ -6425,6 +6466,8 @@ function soomgoChatFactsText(body = {}) {
   lines.push('안 하는 일: 모션그래픽, 3D, 더빙, 촬영, 방문, 광고 연출, 자소서·이력서 대필, 논문·학위 원고, 설계 도면·물량 산출.');
   lines.push('결제는 숨고페이 안전결제, 결과물 확인 뒤 거래 확정. 작업 방식을 물으면 작업 도구로 초안을 만들고 결과물은 직접 확인하고 고친다고 말한다. AI 사용 여부 질문은 여기로 오지 않는다(준희가 직접 답함).');
   if (body.hiredConversation) lines.push(`이 방은 숨고 고용이 이미 확정됐다. 작업 단계: ${String(body.workflowStage || '기록 없음')}.`);
+  const rangeFacts = chatAmountRangeFacts(chatAmountRange(body));
+  if (rangeFacts) lines.push(rangeFacts);
   return lines.join('\n');
 }
 function buildSoomgoAiReplyPrompt(body = {}, reply = {}) {
@@ -6624,7 +6667,7 @@ function astraRoomCustomerReply(event, deterministicReply) {
   }
   const generated = cleanSoomgoAiText(parsed.reply);
   const authoritative = [deterministicReply.text, deterministicReply.factsText || event.payload?.deterministicReply?.factsText].filter(Boolean).join('\n');
-  if (!validSoomgoAiReply(generated, authoritative, { requireNumbers: deterministicReply.humanViaClaude !== true && event.payload?.deterministicReply?.requireNumbers !== false })) {
+  if (!validSoomgoAiReply(generated, authoritative, { requireNumbers: deterministicReply.humanViaClaude !== true && event.payload?.deterministicReply?.requireNumbers !== false, amountRange: deterministicReply.amountRange || event.payload?.deterministicReply?.amountRange || null })) {
     try { astraRoomBridge.markDelivery(event.eventId, 'skipped', { reason: 'reply_validation_failed', at: new Date().toISOString() }); } catch (_) {}
     return {
       ...deterministicReply,
@@ -6700,9 +6743,40 @@ function humanChatViaClaude(body = {}, det = {}, opts = {}) {
   }
   const facts = soomgoChatFactsText(body);
   const enqueue = typeof opts.enqueue === 'function' ? opts.enqueue : enqueueAstraRoomCustomerReply;
-  const roomReply = enqueue(body, { ...det, text: det.text || '(정해진 문구 없음 — [사실]로만 답한다)', autoSend: false, humanViaClaude: true, factsText: facts });
+  const amountRange = chatAmountRange(body);
+  const roomReply = enqueue(body, { ...det, text: det.text || '(정해진 문구 없음 — [사실]로만 답한다)', autoSend: false, humanViaClaude: true, factsText: facts, amountRange });
   if (!roomReply) return { ...det, autoSend: false, manualReview: true, templateKey: 'human_chat_no_room', reason: 'Claude 답장 대기열이 꺼져 있어 준희 확인' };
-  return { ...roomReply, humanViaClaude: true, templateOff: det.templateKey || '' };
+  const paidClaim = SOOMGO_PAID_CLAIM.test(text);
+  return { ...roomReply, humanViaClaude: true, templateOff: det.templateKey || '', ...(paidClaim ? { attention: true, paymentCheck: true, reason: `${roomReply.reason ? `${roomReply.reason} · ` : ''}고객이 결제했다고 함 · 결제 확인 필요` } : {}) };
+}
+
+// 9/25 지시 31(decisions 7-17): 제브 문지기. 규칙이 못 정해서 Claude로 가려는 고객 말만 제브에 먼저 묻는다.
+// 확률 0.9 이상: 숨고 알림 → 답장 안 함 · 짧은 감사 → 정해진 감사 문구 · 금지 주제 → 준희 알림. 그 밖·실패·꺼짐 → null(지금처럼 Claude)
+// opts는 시험용(policy·deps·templatesForHumanMessages·writeLog). 서버는 넘기지 않는다.
+async function jevGateReply(body = {}, det = {}, state = {}, opts = {}) {
+  let policy = opts.policy || null;
+  if (!policy) { try { policy = readOperatingPolicy(); } catch (_) { policy = {}; } }
+  if (!jevGate.config(policy).enabled) return null;
+  const probe = humanChatViaClaude(body, det, { templatesForHumanMessages: opts.templatesForHumanMessages, enqueue: () => ({ jevProbe: true }) });
+  if (!probe || !probe.jevProbe) return null; // 규칙이 먼저 정한 것은 그대로
+  const deps = opts.deps || {
+    getKey: () => runtimeProviderKeys.Jev || process.env.TYPESAFE_API_KEY || '',
+    callJev: args => jevSimulation.callJev({ ...args, fetchImpl: global.fetch })
+  };
+  const decision = await jevGate.decide({ message: String(body.message || body.text || ''), body, policy, state, deps });
+  if (decision.log) {
+    const write = typeof opts.writeLog === 'function' ? opts.writeLog : entry => {
+      const current = readState();
+      current.jevGateLog = [entry, ...(Array.isArray(current.jevGateLog) ? current.jevGateLog : [])].slice(0, 5000);
+      writeState(current);
+    };
+    try { write({ ...decision.log, conversationId: String(body.conversationId || '').slice(0, 80) }); } catch (_) {}
+  }
+  const gate = { choice: decision.choice || '', confidence: decision.confidence ?? null };
+  if (decision.action === 'skip') return { ...det, autoSend: false, manualReview: false, skip: true, templateKey: 'jev_gate_system_notice', jevGate: gate, reason: `${decision.reason} · 숨고 알림으로 보고 답장 안 함` };
+  if (decision.action === 'thanks') return { autoSend: true, manualReview: false, templateKey: 'later_contact_thanks', text: SOOMGO_LATER_CONTACT_TEXT, jevGate: gate, reason: decision.reason };
+  if (decision.action === 'alert') return { ...det, autoSend: false, manualReview: true, attention: true, templateKey: 'jev_gate_alert', jevGate: gate, reason: `${decision.reason} · 금지 주제로 보고 준희 확인` };
+  return null;
 }
 
 // 9/24 지시 20(decisions 7-7): 고객 첨부 판단 결과로 이번 답을 정한다.
@@ -6767,6 +6841,8 @@ function enqueueAstraRoomCustomerReply(body = {}, deterministicReply = {}) {
         // 9/24 지시 29·30: 금액 검사 근거로 [사실]도 같이 넘긴다(서버가 뽑은 값)
         factsText: String(deterministicReply.factsText || '').slice(0, 4000),
         requireNumbers: deterministicReply.humanViaClaude !== true,
+        // 9/25 지시 32: 흥정·추가 작업 금액 허용 범위(보낸 견적의 85%~150%)
+        amountRange: deterministicReply.amountRange || null,
         // PPT 디자인 샘플처럼 파일이 붙는 답이면 파일 이름을 남겨, 대체 응답(Claude·정해진 문구)도 같은 파일을 붙이게 한다.
         attachment: path.basename(String(deterministicReply.attachment?.fileUrl || '')).slice(0, 200)
       },
@@ -9306,9 +9382,10 @@ async function route(req, res) {
         ? soomgoQuoteReadFollowupReply(before, replyBody)
         : applyChatReplyPolicy(replyBody, workflowReply(before, replyBody) || soomgoReply(replyBody));
       // 9/24 지시 30: 고객이 직접 쓴 말은 정해진 문구 대신 Claude(붙여넣기 방식). 링크·첨부·비상 판정은 그대로 먼저
-      const humanViaClaude = body.quoteReadFollowup === true || linkReply || attachmentReply || judgeReply || isSoomgoEmergencySignal(replyBody, deterministicReply)
-        ? null
-        : humanChatViaClaude(replyBody, deterministicReply);
+      const claudeBound = !(body.quoteReadFollowup === true || linkReply || attachmentReply || judgeReply || isSoomgoEmergencySignal(replyBody, deterministicReply));
+      // 9/25 지시 31: 제브 문지기(스위치 jevGate.enabled, 기본 꺼짐). 규칙이 못 정한 것만, 확실할 때만 Claude 대신 처리
+      const jevReply = claudeBound ? await jevGateReply(replyBody, deterministicReply, before) : null;
+      const humanViaClaude = !claudeBound ? null : (jevReply || humanChatViaClaude(replyBody, deterministicReply));
       let reply = body.quoteReadFollowup === true
         ? deterministicReply
         : linkReply || attachmentReply || judgeReply || humanViaClaude || (isSoomgoEmergencySignal(replyBody, deterministicReply)
@@ -10355,7 +10432,7 @@ if (require.main === module) {
   setInterval(() => runCustomerRoomFallback().catch(error => console.error(`Customer room fallback error: ${error.message}`)), 15000);
 }
 
-module.exports = { SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
+module.exports = { SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
 
 
 

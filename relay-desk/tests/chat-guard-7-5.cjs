@@ -39,8 +39,10 @@ const cases = [
   ['환불 요청', '환불해 주세요', sq, 'attention'],
   ['첫 인사', '안녕하세요', sq, 'auto'],
   ['AI 질문', '혹시 AI로 만드시는 건가요?', sq, 'attention'],
-  ['가격 흥정', '좀 더 싸게 안될까요?', sq, 'attention'],
-  ['결제 문의', '숨고페이로 결제하면 되나요?', sq, 'attention'],
+  // 9/25 지시 32: 흥정·결제 진행은 챗봇이(자세한 확인은 tests/chat-payment-32.cjs). 계좌(숨고 밖 거래)는 그대로 준희
+  ['가격 흥정', '좀 더 싸게 안될까요?', sq, 'auto'],
+  ['결제 문의', '숨고페이로 결제하면 되나요?', sq, 'auto'],
+  ['계좌 거래', '계좌로 바로 보내도 될까요?', sq, 'attention'],
   ['파일 요청', '완성본 보내주세요', sq, 'attention']
 ];
 cases.forEach(([name, message, quote, want, textPattern], n) => {

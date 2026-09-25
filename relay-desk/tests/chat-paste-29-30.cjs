@@ -109,7 +109,7 @@ const videoCtx = { quote: { serviceId: 'video_edit', amount: 69000, days: '1~2�
   assert.equal(R.isHumanSoomgoCustomerReply({ conversationId: '235901007', incoming: '네 5분짜리 영상 보낼게요' }, heads), true, '고객 말은 그대로');
 }
 // 2-7 금지 주제 → 그대로 준희 알림(Claude로 안 보냄)
-for (const msg of ['환불해 주세요', 'AI로 하시는 거예요?', '조금만 깎아 주세요', '결과물 보내 주세요']) {
+for (const msg of ['환불해 주세요', 'AI로 하시는 거예요?', '결과물 보내 주세요']) { // 9/25 지시 32: 흥정은 챗봇이(tests/chat-payment-32.cjs)
   const before = enqueued.length;
   const { det, reply } = route({ conversationId: '235901008', message: msg, ...videoCtx });
   assert.equal(det.autoSend, false, `${msg}: 자동 답장 없음`); assert.equal(reply, null, `${msg}: 정해진 알림 흐름 그대로`);
