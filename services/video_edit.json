@@ -1,0 +1,55 @@
+{
+  "id": "video_edit",
+  "label": "영상 편집",
+  "_source": "decisions.md 7-4 (2026-09-24 준희 \"켜놔봐\" · 단가 초안 \"ㅇ\"), docs/audit/video-edit-price-draft-20260924.md",
+  "priority": 10,
+  "matchKeywords": [],
+  "excludeKeywords": [],
+  "_matchNote": "글자 분류(classify)로는 고르지 않는다. 숨고 카테고리 '영상 편집' 요청만 자동 규칙(retain_review)에서 이 계산을 붙인다. 다른 서비스 분류가 바뀌지 않게 하려는 것",
+  "pricing": {
+    "basis": "원본 영상 길이",
+    "packages": [
+      { "when": { "minutesLte": 10 }, "saleAmount": 69000, "days": "1~2일" },
+      { "when": { "minutesLte": 30 }, "saleAmount": 129000, "days": "2~3일" },
+      { "when": { "minutesGt": 30 }, "saleAmount": 129000, "unit": { "sizeMinutes": 5, "saleAmount": 15000 }, "days": "3일", "_note": "30분 넘으면 5분마다 15,000원. 작업 기간 3일(9/24 지시 25 감독 결정: 30분 이내 2~3일과 70분 이상 3~4일 사이). 70분 이상은 cap(249,000원·3~4일)" }
+    ],
+    "cap": { "saleAmount": 249000, "fromMinutes": 70, "days": "3~4일", "_note": "decisions 7-4(준희 9/24 15시대): 원본이 길어도 영상 편집 견적은 249,000원을 넘기지 않는다. 원본 70분 이상은 249,000원·3~4일. 번역·배경음악·색 옵션을 더해도 상한 그대로" },
+    "shorts": { "match": "쇼츠|숏츠|숏폼|릴스|shorts|reels", "saleAmount": 39000, "days": "당일~1일", "resultMaxMinutes": 1, "maxSourceMinutes": 10, "_note": "쇼츠 1개(결과 1분 이내·원본 10분 이내). 원본이 10분을 넘으면 금액 없이 범위 확인" },
+    "additionalFees": [
+      { "id": "translation", "rate": 0.2, "rounding": 1000, "match": "번역|외국어|영어|일본어|중국어|불어|프랑스어|베트남어", "_note": "번역 자막(외국어→한국어): 자막 가격 규칙과 같게 +20%, 천 원 단위 반올림" },
+      { "id": "bgm", "amount": 10000, "match": "배경\\s*음악|bgm", "onRequestOnly": true },
+      { "id": "color", "amount": 10000, "match": "밝기|색\\s*(?:보정|맞추|맞춰|조정)|컬러\\s*보정", "onRequestOnly": true }
+    ],
+    "minimumAmount": 15000
+  },
+  "includedRevisions": 2,
+  "deliverFormats": ["mp4"],
+  "scope": "말하는 영상(강의·인터뷰·유튜브 토크·행사 발언) 컷편집 + 한국어 자막 입히기(번역 자막 가능), 결과물 MP4, 수정 2회",
+  "notIncluded": ["모션그래픽", "3D", "더빙", "촬영·방문", "광고 영상 연출"],
+  "experienceLine": "33분 분량 영상의 번역 자막을 실제로 제작해 납품했습니다.",
+  "quoteMessageVersion": "v1",
+  "autoQuote": { "enabled": true, "dailyMaxSends": 10, "messageVersion": "auto-v2", "_note": "decisions 7-10(9/24 준희 \"숨고 견적 내가 허락한다고\") · 개발방 지시 24: 규칙 기반 자동 견적(지시 19 전 임시판). 켜기·끄기는 video-quote-on.bat / video-quote-off.bat(scripts/video-quote-switch.cjs)만 바꾼다. 원본 길이(구간이면 최댓값)가 있고 작업 기간이 정해진 요청만, 하루 10건까지. 모션그래픽·3D·더빙·촬영·방문이 들어 있으면 보내지 않고 준희 알림" },
+  "quoteCopy": {
+    "_note": "v1 초안(지시 16). 첫 2주는 준희가 골라서 수동으로만 보낸다(자동 발송 없음). 추가금·제외 조건은 처음부터 나열하지 않는다",
+    "workLine": "말하는 영상에서 필요 없는 부분을 잘라 내고, 한국어 자막을 입혀 MP4로 보내드립니다.",
+    "shortsWorkLine": "보내주신 영상에서 1분 이내 쇼츠 1개를 만들어 한국어 자막을 입혀 MP4로 보내드립니다.",
+    "translationLine": "외국어로 말하는 부분은 한국어 자막으로 옮겨 드립니다.",
+    "daysLater": "작업 기간은 영상을 받아 본 뒤 날짜로 알려드립니다",
+    "safeLine": "결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.",
+    "experienceLine": "33분 분량 영상의 번역 자막을 실제로 제작해 납품했습니다.",
+    "questionKnown": "원본 영상 파일이 몇 개인지만 알려주실 수 있을까요?",
+    "questionLengthUnknown": "원본 영상이 전체 몇 분인지 알려주시면 금액을 바로 확정해 드리겠습니다.",
+    "questionShortsLongSource": "원본 영상이 10분을 넘어서, 어느 부분을 쇼츠로 만들지 먼저 여쭤봐도 될까요?"
+  },
+  "intakeQuestions": [
+    "원본 영상이 전체 몇 분인지 알려주실 수 있을까요?",
+    "영상에서 쓰는 언어가 무엇인지 알려주세요.",
+    "원본 영상 파일이 몇 개인지 알려주세요."
+  ],
+  "channels": {
+    "soomgo": false,
+    "kmong": false,
+    "_note": "숨고에서 판매하지만(7-4) 첫 2주는 견적을 수동으로만 보낸다. 자동 판매 목록(listServices soomgo)에 넣지 않아 자동 견적·Claude 견적 판단 대상이 되지 않게 한다"
+  },
+  "manualSaleChannels": ["soomgo"]
+}

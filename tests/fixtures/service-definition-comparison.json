@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "definitions": [
+    "document_writing",
+    "presentation",
+    "subtitle",
+    "translation_en",
+    "video_edit"
+  ],
+  "baselineComparison": [
+    {
+      "caseId": "subtitle-basic-5m",
+      "service": "subtitle",
+      "status": "accepted_design_change",
+      "differences": [
+        {
+          "field": "quoteText",
+          "before": "안녕하세요. 문의 주신 ‘한국어 인터뷰 SRT 자막’ 건으로 연락드립니다.\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 32,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n자막 파일(SRT)만 필요하신가요, 영상에 자막을 입혀 드릴까요?",
+          "after": "\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 32,000원 · 작업 기간  · 수정 회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n"
+        }
+      ]
+    },
+    {
+      "caseId": "subtitle-basic-10m",
+      "service": "subtitle",
+      "status": "accepted_design_change",
+      "differences": [
+        {
+          "field": "quoteText",
+          "before": "안녕하세요. 문의 주신 ‘한국어 강의 영상 자막’ 건으로 연락드립니다.\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 49,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n자막 파일(SRT)만 필요하신가요, 영상에 자막을 입혀 드릴까요?",
+          "after": "\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 49,000원 · 작업 기간  · 수정 회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n"
+        }
+      ]
+    },
+    {
+      "caseId": "subtitle-long-30m",
+      "service": "subtitle",
+      "status": "accepted_design_change",
+      "differences": [
+        {
+          "field": "quoteText",
+          "before": "안녕하세요. 문의 주신 ‘한국어 발표 영상 자막’ 건으로 연락드립니다.\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 89,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n자막 파일(SRT)만 필요하신가요, 영상에 자막을 입혀 드릴까요?",
+          "after": "\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 89,000원 · 작업 기간  · 수정 회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n"
+        }
+      ]
+    },
+    {
+      "caseId": "subtitle-long-35m",
+      "service": "subtitle",
+      "status": "accepted_design_change",
+      "differences": [
+        {
+          "field": "quoteText",
+          "before": "안녕하세요. 문의 주신 ‘한국어 인터뷰 발화 타이밍 자막’ 건으로 연락드립니다.\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 99,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n자막 파일(SRT)만 필요하신가요, 영상에 자막을 입혀 드릴까요?",
+          "after": "\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 99,000원 · 작업 기간  · 수정 회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n"
+        }
+      ]
+    },
+    {
+      "caseId": "subtitle-urgent-5m",
+      "service": "subtitle",
+      "status": "accepted_design_change",
+      "differences": [
+        {
+          "field": "quoteText",
+          "before": "안녕하세요. 문의 주신 ‘한국어 영상 SRT 자막’ 건으로 연락드립니다.\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 32,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n자막 파일(SRT)만 필요하신가요, 영상에 자막을 입혀 드릴까요?",
+          "after": "\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 32,000원 · 작업 기간  · 수정 회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n"
+        }
+      ]
+    },
+    {
+      "caseId": "document-basic-1500",
+      "service": "document_writing",
+      "status": "identical",
+      "differences": []
+    },
+    {
+      "caseId": "document-one-page",
+      "service": "document_writing",
+      "status": "identical",
+      "differences": []
+    },
+    {
+      "caseId": "document-three-pages",
+      "service": "document_writing",
+      "status": "identical",
+      "differences": []
+    },
+    {
+      "caseId": "document-expanded",
+      "service": "document_writing",
+      "status": "identical",
+      "differences": []
+    },
+    {
+      "caseId": "document-urgent",
+      "service": "document_writing",
+      "status": "identical",
+      "differences": []
+    },
+    {
+      "caseId": "presentation-3-slides",
+      "service": "presentation",
+      "status": "accepted_design_change",
+      "differences": [
+        {
+          "field": "classificationId",
+          "before": "document_writing",
+          "after": "presentation"
+        },
+        {
+          "field": "quoteText",
+          "before": "안녕하세요. 문의 주신 ‘제공 원고를 발표자료로 변환’ 건으로 연락드립니다.\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 39,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\nPPT로 옮길 원고나 자료가 있으신가요? 자료 없이 내용 조사부터 필요하시면 10,000원이 추가됩니다.",
+          "after": "\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 39,000원 · 작업 기간  · 수정 회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\n"
+        }
+      ]
+    },
+    {
+      "caseId": "presentation-7-slides",
+      "service": "presentation",
+      "status": "accepted_design_change",
+      "differences": [
+        {
+          "field": "classificationId",
+          "before": "document_writing",
+          "after": "presentation"
+        },
+        {
+          "field": "quoteText",
+          "before": "안녕하세요. 문의 주신 ‘제공 보고서를 발표자료로 변환’ 건으로 연락드립니다.\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 39,000원 · 작업 기간 1~2일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\nPPT로 옮길 원고나 자료가 있으신가요? 자료 없이 내용 조사부터 필요하시면 10,000원이 추가됩니다.",
+          "after": "\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 39,000원 · 작업 기간  · 수정 회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\n"
+        }
+      ]
+    },
+    {
+      "caseId": "presentation-10-slides",
+      "service": "presentation",
+      "status": "accepted_design_change",
+      "differences": [
+        {
+          "field": "classificationId",
+          "before": "document_writing",
+          "after": "presentation"
+        },
+        {
+          "field": "quoteText",
+          "before": "안녕하세요. 문의 주신 ‘제공 원고를 발표자료로 변환’ 건으로 연락드립니다.\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 51,000원 · 작업 기간 1~2일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\nPPT로 옮길 원고나 자료가 있으신가요? 자료 없이 내용 조사부터 필요하시면 10,000원이 추가됩니다.",
+          "after": "\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 51,000원 · 작업 기간  · 수정 회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\n"
+        }
+      ]
+    },
+    {
+      "caseId": "presentation-13-slides",
+      "service": "presentation",
+      "status": "accepted_design_change",
+      "differences": [
+        {
+          "field": "classificationId",
+          "before": "document_writing",
+          "after": "presentation"
+        },
+        {
+          "field": "quoteText",
+          "before": "안녕하세요. 문의 주신 ‘보고서 내용을 슬라이드로 변환’ 건으로 연락드립니다.\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 63,000원 · 작업 기간 1~2일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\nPPT로 옮길 원고나 자료가 있으신가요? 자료 없이 내용 조사부터 필요하시면 10,000원이 추가됩니다.",
+          "after": "\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 63,000원 · 작업 기간  · 수정 회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\n"
+        }
+      ]
+    },
+    {
+      "caseId": "presentation-urgent-7-slides",
+      "service": "presentation",
+      "status": "accepted_design_change",
+      "differences": [
+        {
+          "field": "classificationId",
+          "before": "document_writing",
+          "after": "presentation"
+        },
+        {
+          "field": "quoteText",
+          "before": "안녕하세요. 문의 주신 ‘제공 원고를 발표자료로 변환’ 건으로 연락드립니다.\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 39,000원 · 작업 기간 1~2일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\nPPT로 옮길 원고나 자료가 있으신가요? 자료 없이 내용 조사부터 필요하시면 10,000원이 추가됩니다.",
+          "after": "\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 39,000원 · 작업 기간  · 수정 회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\n"
+        }
+      ]
+    }
+  ],
+  "classificationChecks": [
+    {
+      "input": "영어 자막",
+      "id": "subtitle",
+      "candidates": [
+        "subtitle"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "PPT 보고서 변환",
+      "id": "presentation",
+      "candidates": [
+        "presentation"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "영어 문서 번역",
+      "id": "translation_en",
+      "candidates": [
+        "translation_en"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "일반 문서 작성",
+      "id": "document_writing",
+      "candidates": [
+        "document_writing"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "문서 / 글 작성",
+      "id": "document_writing",
+      "candidates": [
+        "document_writing"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "발표자료 원고 정리",
+      "id": "presentation",
+      "candidates": [
+        "presentation"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "영상 자막 번역",
+      "id": "subtitle",
+      "candidates": [
+        "subtitle"
+      ],
+      "usedPriority": false
+    }
+  ],
+  "priorityIndependent": true
+}

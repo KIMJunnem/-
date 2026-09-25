@@ -1,0 +1,240 @@
+{
+  "segments": [
+    {
+      "start": -0.1,
+      "end": 1.9,
+      "text": "This is the first notice",
+      "words": [
+        {
+          "word": "This",
+          "start": -0.1,
+          "end": 0.3
+        },
+        {
+          "word": "is",
+          "start": 0.3,
+          "end": 0.7
+        },
+        {
+          "word": "the",
+          "start": 0.7,
+          "end": 1.1
+        },
+        {
+          "word": "first",
+          "start": 1.1,
+          "end": 1.5
+        },
+        {
+          "word": "notice",
+          "start": 1.5,
+          "end": 1.9
+        }
+      ]
+    },
+    {
+      "start": 2.9,
+      "end": 4.9,
+      "text": "Here is the second part",
+      "words": [
+        {
+          "word": "Here",
+          "start": 2.9,
+          "end": 3.3
+        },
+        {
+          "word": "is",
+          "start": 3.3,
+          "end": 3.7
+        },
+        {
+          "word": "the",
+          "start": 3.7,
+          "end": 4.1
+        },
+        {
+          "word": "second",
+          "start": 4.1,
+          "end": 4.5
+        },
+        {
+          "word": "part",
+          "start": 4.5,
+          "end": 4.9
+        }
+      ]
+    },
+    {
+      "start": 5.9,
+      "end": 7.9,
+      "text": "Now the third explanation",
+      "words": [
+        {
+          "word": "Now",
+          "start": 5.9,
+          "end": 6.4
+        },
+        {
+          "word": "the",
+          "start": 6.4,
+          "end": 6.9
+        },
+        {
+          "word": "third",
+          "start": 6.9,
+          "end": 7.4
+        },
+        {
+          "word": "explanation",
+          "start": 7.4,
+          "end": 7.9
+        }
+      ]
+    },
+    {
+      "start": 8.9,
+      "end": 10.9,
+      "text": "The fourth sentence follows",
+      "words": [
+        {
+          "word": "The",
+          "start": 8.9,
+          "end": 9.4
+        },
+        {
+          "word": "fourth",
+          "start": 9.4,
+          "end": 9.9
+        },
+        {
+          "word": "sentence",
+          "start": 9.9,
+          "end": 10.4
+        },
+        {
+          "word": "follows",
+          "start": 10.4,
+          "end": 10.9
+        }
+      ]
+    },
+    {
+      "start": 11.9,
+      "end": 13.9,
+      "text": "Fifth section starts here",
+      "words": [
+        {
+          "word": "Fifth",
+          "start": 11.9,
+          "end": 12.4
+        },
+        {
+          "word": "section",
+          "start": 12.4,
+          "end": 12.9
+        },
+        {
+          "word": "starts",
+          "start": 12.9,
+          "end": 13.4
+        },
+        {
+          "word": "here",
+          "start": 13.4,
+          "end": 13.9
+        }
+      ]
+    },
+    {
+      "start": 14.9,
+      "end": 16.9,
+      "text": "Sixth part of the talk",
+      "words": [
+        {
+          "word": "Sixth",
+          "start": 14.9,
+          "end": 15.3
+        },
+        {
+          "word": "part",
+          "start": 15.3,
+          "end": 15.7
+        },
+        {
+          "word": "of",
+          "start": 15.7,
+          "end": 16.1
+        },
+        {
+          "word": "the",
+          "start": 16.1,
+          "end": 16.5
+        },
+        {
+          "word": "talk",
+          "start": 16.5,
+          "end": 16.9
+        }
+      ]
+    },
+    {
+      "start": 17.9,
+      "end": 19.9,
+      "text": "Seventh line of dialogue",
+      "words": [
+        {
+          "word": "Seventh",
+          "start": 17.9,
+          "end": 18.4
+        },
+        {
+          "word": "line",
+          "start": 18.4,
+          "end": 18.9
+        },
+        {
+          "word": "of",
+          "start": 18.9,
+          "end": 19.4
+        },
+        {
+          "word": "dialogue",
+          "start": 19.4,
+          "end": 19.9
+        }
+      ]
+    },
+    {
+      "start": 20.9,
+      "end": 22.9,
+      "text": "Eighth and final wrap up",
+      "words": [
+        {
+          "word": "Eighth",
+          "start": 20.9,
+          "end": 21.3
+        },
+        {
+          "word": "and",
+          "start": 21.3,
+          "end": 21.7
+        },
+        {
+          "word": "final",
+          "start": 21.7,
+          "end": 22.1
+        },
+        {
+          "word": "wrap",
+          "start": 22.1,
+          "end": 22.5
+        },
+        {
+          "word": "up",
+          "start": 22.5,
+          "end": 22.9
+        }
+      ]
+    }
+  ]
+}

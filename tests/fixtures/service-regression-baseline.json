@@ -1,0 +1,318 @@
+{
+  "schemaVersion": 2,
+  "purpose": "0단계 현재 동작 회귀 기준: 자막·일반 문서·PPT 각 5건",
+  "source": {
+    "entrypoint": "server/relay-server.js#buildSoomgoQuote",
+    "classificationRule": "server/relay-server.js:6929-6930",
+    "sha256": "880e49036079650fe3d1506e51c014ae5659fce203403d812015cb222bd9473e"
+  },
+  "cases": [
+    {
+      "caseId": "subtitle-basic-5m",
+      "service": "subtitle",
+      "input": {
+        "purpose": "자막 제작",
+        "volume": "5분",
+        "topic": "한국어 인터뷰 SRT 자막",
+        "format": "SRT"
+      },
+      "output": {
+        "classificationId": "subtitle",
+        "label": "자막 제작",
+        "amount": 32000,
+        "leadDays": "당일~1일",
+        "quoteText": "안녕하세요. 문의 주신 ‘한국어 인터뷰 SRT 자막’ 건으로 연락드립니다.\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 32,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n자막 파일(SRT)만 필요하신가요, 영상에 자막을 입혀 드릴까요?",
+        "deliverFormats": [
+          "srt"
+        ]
+      }
+    },
+    {
+      "caseId": "subtitle-basic-10m",
+      "service": "subtitle",
+      "input": {
+        "purpose": "자막 제작",
+        "volume": "10분",
+        "topic": "한국어 강의 영상 자막",
+        "format": "SRT"
+      },
+      "output": {
+        "classificationId": "subtitle",
+        "label": "자막 제작",
+        "amount": 49000,
+        "leadDays": "당일~1일",
+        "quoteText": "안녕하세요. 문의 주신 ‘한국어 강의 영상 자막’ 건으로 연락드립니다.\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 49,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n자막 파일(SRT)만 필요하신가요, 영상에 자막을 입혀 드릴까요?",
+        "deliverFormats": [
+          "srt"
+        ]
+      }
+    },
+    {
+      "caseId": "subtitle-long-30m",
+      "service": "subtitle",
+      "input": {
+        "purpose": "자막 제작",
+        "volume": "30분",
+        "topic": "한국어 발표 영상 자막",
+        "format": "SRT"
+      },
+      "output": {
+        "classificationId": "subtitle",
+        "label": "자막 제작",
+        "amount": 89000,
+        "leadDays": "당일~1일",
+        "quoteText": "안녕하세요. 문의 주신 ‘한국어 발표 영상 자막’ 건으로 연락드립니다.\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 89,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n자막 파일(SRT)만 필요하신가요, 영상에 자막을 입혀 드릴까요?",
+        "deliverFormats": [
+          "srt"
+        ]
+      }
+    },
+    {
+      "caseId": "subtitle-long-35m",
+      "service": "subtitle",
+      "input": {
+        "purpose": "자막 제작",
+        "volume": "35분",
+        "topic": "한국어 인터뷰 발화 타이밍 자막",
+        "format": "SRT"
+      },
+      "output": {
+        "classificationId": "subtitle",
+        "label": "자막 제작",
+        "amount": 99000,
+        "leadDays": "당일~1일",
+        "quoteText": "안녕하세요. 문의 주신 ‘한국어 인터뷰 발화 타이밍 자막’ 건으로 연락드립니다.\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 99,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n자막 파일(SRT)만 필요하신가요, 영상에 자막을 입혀 드릴까요?",
+        "deliverFormats": [
+          "srt"
+        ]
+      }
+    },
+    {
+      "caseId": "subtitle-urgent-5m",
+      "service": "subtitle",
+      "input": {
+        "purpose": "자막 제작",
+        "volume": "5분",
+        "topic": "한국어 영상 SRT 자막",
+        "deadline": "오늘 급하게"
+      },
+      "output": {
+        "classificationId": "subtitle",
+        "label": "자막 제작",
+        "amount": 32000,
+        "leadDays": "당일~1일",
+        "quoteText": "안녕하세요. 문의 주신 ‘한국어 영상 SRT 자막’ 건으로 연락드립니다.\n영상의 말소리에 맞춰 자막을 정리하고, 읽기 편하게 줄을 나눠 드립니다.\n견적 32,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n자막이 말과 어떻게 맞는지는 제 프로필의 포트폴리오 영상에서 먼저 보실 수 있습니다.\n자막 파일(SRT)만 필요하신가요, 영상에 자막을 입혀 드릴까요?",
+        "deliverFormats": [
+          "srt"
+        ]
+      }
+    },
+    {
+      "caseId": "document-basic-1500",
+      "service": "document_writing",
+      "input": {
+        "purpose": "문서 / 글 작성",
+        "volume": "1,500자",
+        "topic": "회사 안내문 작성"
+      },
+      "output": {
+        "classificationId": "document_writing",
+        "label": "문서 작성",
+        "amount": 21000,
+        "leadDays": "당일~1일",
+        "quoteText": "안녕하세요. 문의 주신 ‘회사 안내문 작성’ 건으로 연락드립니다.\n현재 견적은 A4 1쪽 기준이며, 보내주실 자료를 바탕으로 글을 정리해 드립니다. 별도 자료조사는 포함되지 않습니다.\n견적 21,000원 · 작업 기간 당일~1일 · 수정 3회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n분량이 늘어나면 작업 전에 먼저 여쭤보겠습니다.\n전체 분량이 A4 몇 쪽인지 알려주시면 금액을 바로 확정해 드리겠습니다.",
+        "deliverFormats": [
+          "docx",
+          "hwp",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "caseId": "document-one-page",
+      "service": "document_writing",
+      "input": {
+        "purpose": "일반 문서 작성",
+        "volume": "A4 1쪽",
+        "topic": "서비스 소개문 정리"
+      },
+      "output": {
+        "classificationId": "document_writing",
+        "label": "문서 작성",
+        "amount": 21000,
+        "leadDays": "당일~1일",
+        "quoteText": "안녕하세요. 문의 주신 ‘서비스 소개문 정리’ 건으로 연락드립니다.\nA4 1쪽 분량으로 보내주실 자료를 바탕으로 글을 정리해 드립니다. 별도 자료조사는 포함되지 않습니다.\n견적 21,000원 · 작업 기간 당일~1일 · 수정 3회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n분량이 늘어나면 작업 전에 먼저 여쭤보겠습니다.\n참고할 자료는 준비되어 있으신가요? 자료 없이 내용 조사부터 필요하시면 알려주세요.",
+        "deliverFormats": [
+          "docx",
+          "hwp",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "caseId": "document-three-pages",
+      "service": "document_writing",
+      "input": {
+        "purpose": "문서 / 글 작성",
+        "volume": "A4 3쪽",
+        "topic": "행사 결과 정리 문서"
+      },
+      "output": {
+        "classificationId": "document_writing",
+        "label": "문서 작성",
+        "amount": 30000,
+        "leadDays": "당일~1일",
+        "quoteText": "안녕하세요. 문의 주신 ‘행사 결과 정리 문서’ 건으로 연락드립니다.\nA4 3쪽 분량으로 보내주실 자료를 바탕으로 글을 정리해 드립니다. 별도 자료조사는 포함되지 않습니다.\n견적 30,000원 · 작업 기간 당일~1일 · 수정 3회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n분량이 늘어나면 작업 전에 먼저 여쭤보겠습니다.\n참고할 자료는 준비되어 있으신가요? 자료 없이 내용 조사부터 필요하시면 알려주세요.",
+        "deliverFormats": [
+          "docx",
+          "hwp",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "caseId": "document-expanded",
+      "service": "document_writing",
+      "input": {
+        "purpose": "문서 / 글 작성",
+        "volume": "A4 3쪽",
+        "topic": "1. 현황\n2. 문제점\n3. 개선안"
+      },
+      "output": {
+        "classificationId": "document_writing",
+        "label": "문서 작성",
+        "amount": 30000,
+        "leadDays": "당일~1일",
+        "quoteText": "안녕하세요. 문의 주신 ‘1. 현황 2. 문제점 3. 개선안’ 건으로 연락드립니다.\nA4 3쪽 분량으로 보내주실 자료를 바탕으로 글을 정리해 드립니다. 별도 자료조사는 포함되지 않습니다.\n견적 30,000원 · 작업 기간 당일~1일 · 수정 3회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n분량이 늘어나면 작업 전에 먼저 여쭤보겠습니다.\n참고할 자료는 준비되어 있으신가요? 자료 없이 내용 조사부터 필요하시면 알려주세요.",
+        "deliverFormats": [
+          "docx",
+          "hwp",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "caseId": "document-urgent",
+      "service": "document_writing",
+      "input": {
+        "purpose": "문서 / 글 작성",
+        "volume": "A4 1쪽",
+        "topic": "업무 안내문",
+        "deadline": "오늘"
+      },
+      "output": {
+        "classificationId": "document_writing",
+        "label": "문서 작성",
+        "amount": 21000,
+        "leadDays": "당일~1일",
+        "quoteText": "안녕하세요. 문의 주신 ‘업무 안내문’ 건으로 연락드립니다.\nA4 1쪽 분량으로 보내주실 자료를 바탕으로 글을 정리해 드립니다. 별도 자료조사는 포함되지 않습니다.\n견적 21,000원 · 작업 기간 당일~1일 · 수정 3회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n분량이 늘어나면 작업 전에 먼저 여쭤보겠습니다.\n참고할 자료는 준비되어 있으신가요? 자료 없이 내용 조사부터 필요하시면 알려주세요.",
+        "deliverFormats": [
+          "docx",
+          "hwp",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "caseId": "presentation-3-slides",
+      "service": "presentation",
+      "input": {
+        "purpose": "PPT 제작",
+        "volume": "3장",
+        "topic": "제공 원고를 발표자료로 변환",
+        "format": "PPTX"
+      },
+      "output": {
+        "classificationId": "document_writing",
+        "label": "보고서·원고 PPT 변환",
+        "amount": 39000,
+        "leadDays": "당일~1일",
+        "quoteText": "안녕하세요. 문의 주신 ‘제공 원고를 발표자료로 변환’ 건으로 연락드립니다.\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 39,000원 · 작업 기간 당일~1일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\nPPT로 옮길 원고나 자료가 있으신가요? 자료 없이 내용 조사부터 필요하시면 10,000원이 추가됩니다.",
+        "deliverFormats": [
+          "pptx"
+        ]
+      }
+    },
+    {
+      "caseId": "presentation-7-slides",
+      "service": "presentation",
+      "input": {
+        "purpose": "PPT 제작",
+        "volume": "7장",
+        "topic": "제공 보고서를 발표자료로 변환",
+        "format": "PPTX"
+      },
+      "output": {
+        "classificationId": "document_writing",
+        "label": "보고서·원고 PPT 변환",
+        "amount": 39000,
+        "leadDays": "1~2일",
+        "quoteText": "안녕하세요. 문의 주신 ‘제공 보고서를 발표자료로 변환’ 건으로 연락드립니다.\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 39,000원 · 작업 기간 1~2일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\nPPT로 옮길 원고나 자료가 있으신가요? 자료 없이 내용 조사부터 필요하시면 10,000원이 추가됩니다.",
+        "deliverFormats": [
+          "pptx"
+        ]
+      }
+    },
+    {
+      "caseId": "presentation-10-slides",
+      "service": "presentation",
+      "input": {
+        "purpose": "PPT 제작",
+        "volume": "10장",
+        "topic": "제공 원고를 발표자료로 변환",
+        "format": "PPTX"
+      },
+      "output": {
+        "classificationId": "document_writing",
+        "label": "보고서·원고 PPT 변환",
+        "amount": 51000,
+        "leadDays": "1~2일",
+        "quoteText": "안녕하세요. 문의 주신 ‘제공 원고를 발표자료로 변환’ 건으로 연락드립니다.\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 51,000원 · 작업 기간 1~2일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\nPPT로 옮길 원고나 자료가 있으신가요? 자료 없이 내용 조사부터 필요하시면 10,000원이 추가됩니다.",
+        "deliverFormats": [
+          "pptx"
+        ]
+      }
+    },
+    {
+      "caseId": "presentation-13-slides",
+      "service": "presentation",
+      "input": {
+        "purpose": "프레젠테이션 제작",
+        "volume": "13장",
+        "topic": "보고서 내용을 슬라이드로 변환",
+        "format": "PPTX"
+      },
+      "output": {
+        "classificationId": "document_writing",
+        "label": "보고서·원고 PPT 변환",
+        "amount": 63000,
+        "leadDays": "1~2일",
+        "quoteText": "안녕하세요. 문의 주신 ‘보고서 내용을 슬라이드로 변환’ 건으로 연락드립니다.\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 63,000원 · 작업 기간 1~2일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\nPPT로 옮길 원고나 자료가 있으신가요? 자료 없이 내용 조사부터 필요하시면 10,000원이 추가됩니다.",
+        "deliverFormats": [
+          "pptx"
+        ]
+      }
+    },
+    {
+      "caseId": "presentation-urgent-7-slides",
+      "service": "presentation",
+      "input": {
+        "purpose": "PPT 제작",
+        "volume": "7장",
+        "topic": "제공 원고를 발표자료로 변환",
+        "format": "PPTX",
+        "deadline": "오늘 급하게"
+      },
+      "output": {
+        "classificationId": "document_writing",
+        "label": "보고서·원고 PPT 변환",
+        "amount": 39000,
+        "leadDays": "1~2일",
+        "quoteText": "안녕하세요. 문의 주신 ‘제공 원고를 발표자료로 변환’ 건으로 연락드립니다.\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 39,000원 · 작업 기간 1~2일 · 수정 2회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\nPPT로 옮길 원고나 자료가 있으신가요? 자료 없이 내용 조사부터 필요하시면 10,000원이 추가됩니다.",
+        "deliverFormats": [
+          "pptx"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "effectiveAt": "2026-09-20T00:00:00+09:00",
+  "source": "Astra Relay Desk 2-round debate e4c9b1b7-8c12-4eaf-9484-98171534e948",
+  "objective": "confirmed_contribution_profit",
+  "trial": {
+    "serviceId": "document_writing",
+    "channel": "soomgo",
+    "reason": "현재 기록상 판매 중인 두 상품 가운데 문서/글 작성의 견적 후 답변률이 자막보다 높음. 결제 표본이 없어 임시 시험 대상으로만 지정",
+    "templateMode": "fixed-by-category"
+  },
+  "limits": {
+    "maxConcurrentPaidOrders": 2,
+    "maxDailyNewQuotes": 20,
+    "maxDailyFollowups": 3,
+    "maxFollowupsPerCustomer": 1,
+    "maxAstraUsdPerOrder": 0.35,
+    "maxAstraRetriesPerState": 0,
+    "maxTrialQuoteSpendKrw": 50000,
+    "maxTrialLossKrw": 100000
+  },
+  "commercialValidation": {
+    "windowHours": 48,
+    "minimumQuotes": 10,
+    "minimumPaidOrders": 2,
+    "minimumPaidAmountKrw": 64000,
+    "prices": {
+      "documentWritingUpTo1500CharsKrw": 21000,
+      "koreanSrtUpTo5MinutesKrw": 32000
+    },
+    "ifBelowThreshold": [
+      "checkExposurePath",
+      "checkReadAndReplyPath",
+      "reviseQuoteOpeningSentence"
+    ],
+    "discountOnFirstFailure": false
+  },
+  "spendControls": {
+    "automaticPaidQuotesPaused": true,
+    "additionalTopUpAllowed": false,
+    "advertisingAllowed": false,
+    "externalSpamPromotionAllowed": false,
+    "_note": "2026-09-22 준희 결정: automaticPaidQuotesPaused=true면 버튼 호출(파이버 답장 초안 등 trigger:'manual')을 뺀 모든 자동 유료 API 호출(Claude·OpenAI·Gemini·Jev 자동 검수)을 공용 호출 함수에서 막는다. 기본 true."
+  },
+  "astraGate": {
+    "routineQuote": false,
+    "routineChat": false,
+    "paymentStateTransition": false,
+    "deliveryStateTransition": false,
+    "paidProduction": false,
+    "finalArtifactReview": true,
+    "exceptionInterpretation": true
+  },
+  "finalGrade": {
+    "mode": "manual"
+  },
+  "production": {
+    "provider": "codex_room",
+    "changedAt": "2026-09-23T16:10:00+09:00",
+    "reason": "9/23 준희 결정(next-dev 지시 5): PPT만 Codex 대화방(아스트라, 구독)으로 제작. API 제작 lane은 hold와 똑같이 막힘(유료 호출 0). 결과는 준희 확인 대기(finalGrade manual). 이전: 사용자 결정(C-2a) hold",
+    "previousProvider": "hold (그 전: paused, Claude)"
+  },
+  "delivery": {
+    "minimumAstraScore": 90,
+    "requirePaymentEvidence": true,
+    "requireArtifactIntegrity": true,
+    "requireRequestedFormats": true,
+    "unknownIsSuccess": false
+  },
+  "attachmentRead": {
+    "enabled": false,
+    "changedAt": "2026-09-22T00:00:00+09:00",
+    "reason": "사용자 결정: 고객 첨부·링크 판독(Claude API, 유료)은 기본 꺼짐. 꺼져 있으면 판독 없이 알림만"
+  },
+  "attachmentJudge": {
+    "enabled": false,
+    "model": "claude-opus-5-5",
+    "maxOutputTokens": 600,
+    "timeoutMs": 45000,
+    "probeTimeoutMs": 20000,
+    "workDir": "server/storage/attachment-judge",
+    "changedAt": "2026-09-24T23:59:00+09:00",
+    "reason": "9/24 개발방 지시 20(decisions 7-7): 고객 첨부 판단. 사진·PDF·문서는 1건당 Claude 1번(고객 이름·연락처 빼고), 영상 파일은 API로 보내지 않고 PC에서 ffprobe로 길이만 재서 7-4 계산, 링크는 유튜브 공개 정보(제목·길이)만·단축 주소는 한 번 펼쳐 봄·실행 파일·모르는 사이트는 열지 않고 알림. 범위 밖·금지 주제·불확실·서버가 확인 못 한 금액은 준희 알림. 하루 호출·월 금액은 7-5 상한(customerRoomFallback)에 합쳐 셈. 켜면 attachmentRead 대신 이 판단이 첨부를 맡음. 켜기·끄기는 attachment-judge-on/off.bat(scripts/attachment-judge-switch.cjs)만"
+  },
+  "jevSimulation": {
+    "dailyBudgetKrw": 10000,
+    "krwPerUsd": 1500,
+    "usdPerMillionInputTokens": 0.042,
+    "runMaxCalls": 10000,
+    "translatedSyncTokensPerCall": 367,
+    "timezone": "Asia/Seoul",
+    "changedAt": "2026-09-22T00:00:00+09:00",
+    "reason": "준희 지시(9/22 두 번째): 하루 한도를 금액 기준 10,000원으로. 토큰 한도 = 10,000원 ÷ 환율 ÷ 단가. 환율 1,500원은 넉넉히 잡은 값(실제보다 높게 잡을수록 덜 쓰고 멈춤). 출력 토큰은 무료. 1회 실행 상한 10,000건. 한국 시간 0시 초기화"
+  },
+  "claudeQuote": {
+    "enabled": false,
+    "dailyMaxCalls": 30,
+    "dailyBudgetKrw": 6000,
+    "krwPerUsd": 1500,
+    "usdPerMillionInputTokens": 10,
+    "usdPerMillionOutputTokens": 50,
+    "maxOutputTokens": 700,
+    "timeoutMs": 45000,
+    "changedAt": "2026-09-22T00:00:00+09:00",
+    "reason": "준희 지시(9/22): 규칙이 사람 확인으로 남긴 숨고 요청만 Claude가 판단, 검사 6개 통과 시 자동 발송. 단가는 Claude Fable 5.1 공식 가격(입력 $10, 출력 $50 / 100만 토큰), 환율 1,500원은 넉넉히 잡은 값. enabled:false면 즉시 기존 흐름 9/22 준희 결정: 충전 전까지 끔(enabled:false)."
+  },
+  "pipelineSim": {
+    "enabled": false,
+    "changedAt": "2026-09-22T00:00:00+09:00",
+    "reason": "준희 지시(9/22): 파이프라인 A/B/C 시뮬레이터 뼈대. 이번 단계는 가짜 응답만. false면 실제 모델·Jev 호출을 시작 전에 거절한다(true로 바꿔도 실제 제공자는 아직 연결 안 됨)."
+  },
+  "jevReview": {
+    "enabled": false,
+    "blockOnFlags": false,
+    "maxCallsPerDelivery": 800,
+    "flagThreshold": 0.5,
+    "services": {
+      "subtitle": [
+        "translated_sync"
+      ]
+    },
+    "changedAt": "2026-09-22T00:00:00+09:00",
+    "reason": "준희 지시(9/22) Jev 검수 1단계: 번역 자막 한국어·원어 블록 내용 대조. 결과는 workflow.jevReview에만 기록하고 납품을 막지 않는다. 켜는 건 준희. 예산은 jevSimulation과 같은 하루 주머니."
+  },
+  "soomgoChat": {
+    "sendEnabled": true,
+    "changedAt": "2026-09-23T16:05:00+09:00",
+    "reason": "9/23 준희 결정(decisions.md 6번): 숨고 고객 채팅 답장은 아스트라만. Relay Desk 채팅봇은 대화를 읽고 서버에 기록만 하고 고객에게 아무것도 보내지 않는다(자동 답장·P4 A·B·C·정해진 문구·첨부 모두). 읽기·기록·심박은 그대로."
+  },
+  "quoteJudge": {
+    "enabled": false,
+    "model": "claude-opus-5-5",
+    "dailyMaxCalls": 40,
+    "dailyMaxAutoSends": 10,
+    "maxOutputTokens": 700,
+    "timeoutMs": 45000,
+    "changedAt": "2026-09-24T23:40:00+09:00",
+    "reason": "9/24 개발방 지시 19(decisions 7-10): 숨고 새 요청 중 규칙이 사람 확인으로 남긴 것을 Claude가 docs/quote-judge-prompt.md로 판단. 보내기 추천(서버 금액과 같을 때)은 자동 발송 하루 10건, 보류는 준희 알림, 보내지 않음은 삭제 판정. 하루 호출 40회(채팅봇과 따로), 월 금액은 채팅봇과 합쳐 customerRoomFallback.monthlyBudgetKrw 안. 단가는 customerRoomFallback 값을 씀. 켜기·끄기는 quote-judge-on/off.bat(scripts/quote-judge-switch.cjs)만"
+  },
+  "chatReply": {
+    "templatesForHumanMessages": false,
+    "changedAt": "2026-09-24T22:40:00+09:00",
+    "reason": "9/24 개발방 지시 30(준희 \"채팅이 제일 중요\"): 고객이 직접 쓴 말에는 정해진 문구 답장을 쓰지 않고 Claude(붙여넣기 방식, 지시 29)가 답한다. 정해진 문구는 숨고 시스템 알림 처리·안부 멘트·금지 주제 알림에만. 기존 auto_* 문구는 지우지 않고 꺼 둠. 켜기·끄기는 chat-template-on/off.bat(scripts/chat-template-switch.cjs)만. 하루 40건·월 15,000원 한도 그대로"
+  },
+  "customerRoomFallback": {
+    "enabled": true,
+    "waitSeconds": 60,
+    "staleDispatchMinutes": 10,
+    "maxAgeHours": 3,
+    "perTick": 3,
+    "claudeEnabled": true,
+    "model": "claude-opus-5-5",
+    "dailyMaxCalls": 40,
+    "dailyBudgetKrw": 3000,
+    "monthlyBudgetKrw": 15000,
+    "krwPerUsd": 1500,
+    "usdPerMillionInputTokens": 4,
+    "usdPerMillionOutputTokens": 20,
+    "maxOutputTokens": 1200,
+    "timeoutMs": 30000,
+    "changedAt": "2026-09-23T16:05:00+09:00",
+    "reason": "9/23 준희 A — 답장은 아스트라 전담(claudeEnabled:false). 이전: 9/23 준희 지시: 모델 Fable 5.1 → Opus 5.5(claude-opus-5-5, 공식가 입력 $4·출력 $20 /100만 토큰, platform.claude.com 모델 표 9/23 확인). Opus 5.5는 생각 단계가 항상 켜져 있어 답이 잘리지 않게 출력 한도 400→1200. 1건 약 40~60원 [추정]. 하루 30건·3,000원 한도 그대로. 9/23 준희 결정: Claude 단계 다시 켬(claudeEnabled:true, 채팅봇이 못 정한 답을 Claude가 대신 씀). 공용 자동 유료 차단(spendControls)은 그대로 두고 이 기능 호출만 예외(trigger customer_room_fallback). 이전: 준희 승인(9/22): Astra 고객응대실이 60초 안에 안 받으면 Claude가 답(확정 초안 숫자 일치 검사), Claude가 안 되면 검증된 정해진 문구로 발송. 하루 30건·3,000원 한도. 단가는 claudeQuote와 같은 Fable 5.1 공식가, 1건 약 100원 [추정]. 2주 뒤 채팅 이후 거래 기록 보고 유지 여부 결정. enabled:false면 즉시 기존 흐름 9/22 준희 결정: Claude 단계는 끔(claudeEnabled:false) — Astra가 안 받으면 정해진 문구, 안 되면 사람 확인."
+  },
+  "globalReply": {
+    "enabled": true,
+    "dailyMaxCalls": 20,
+    "dailyBudgetKrw": 1400,
+    "krwPerUsd": 1500,
+    "usdPerMillionInputTokens": 1,
+    "usdPerMillionOutputTokens": 5,
+    "maxOutputTokens": 900,
+    "timeoutMs": 45000,
+    "changedAt": "2026-09-22T00:00:00+09:00",
+    "reason": "준희 승인(9/22, G-1 3단계 (가)): 파이버 영어 답장 초안을 기존 Claude API 키로 만든다. 준희가 로컬 화면에서 버튼을 누를 때만 1회 호출, 하루 20건·1,400원 상한. 보내기 기능 없음(복사만). enabled:false면 즉시 꺼짐. 9/22 준희 지시: 모델을 Fable 5.1 → claude-haiku-4-5로(단가 입력 $1·출력 $5 / 100만 토큰). 상한 20건·1,400원 그대로. 잔액 부족·인증 실패면 재시도 없이 안내 한 줄.",
+    "model": "claude-haiku-4-5"
+  },
+  "queueProviders": {
+    "claude": false,
+    "changedAt": "2026-09-22T00:00:00+09:00",
+    "reason": "준희 결정(9/22): 일반 작업 대기열(제작 lane 아닌 게시물)은 Claude로 보내지 않는다. true일 때만 허용. 제작 lane은 production.provider가 따로 정함."
+  },
+  "transcribe": {
+    "enabled": true,
+    "engine": "faster-whisper",
+    "pythonPath": "C:\\RelayDeskTools\\venv\\Scripts\\python.exe",
+    "modelDir": "C:\\RelayDeskTools\\models\\small",
+    "modelDirs": {
+      "small": "C:\\RelayDeskTools\\models\\small",
+      "medium": "C:\\RelayDeskTools\\models\\medium"
+    },
+    "model": "small",
+    "ffmpegRoot": "C:\\RelayDeskTools\\ffmpeg",
+    "computeType": "int8",
+    "threads": 4,
+    "maxThreads": 6,
+    "vad": true,
+    "priority": "below_normal",
+    "maxConcurrent": 1,
+    "timeoutMinutes": 120,
+    "outputDir": "server/data/transcripts",
+    "translationProvider": "hold",
+    "allowedInputRoots": [
+      "C:\\RelayDeskTools\\samples",
+      "server/storage",
+      "server/data/transcripts"
+    ],
+    "changedAt": "2026-09-22T00:00:00+09:00",
+    "reason": "준희 승인(9/22, T-3): 로컬 전사(faster-whisper small, CPU INT8, VAD 켬). 유료 API·외부 업로드 없음. 한 번에 1건, 낮은 우선순위(below_normal). 스레드는 최대 6개 허용 중 4개로 시작 — 3700X 물리 코어 8개 중 절반만 써서 숨고 봇(크롬)·서버 여유를 남김. T-5 실측 뒤 조정."
+  }
+}

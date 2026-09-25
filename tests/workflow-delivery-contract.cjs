@@ -1,0 +1,64 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+
+const server = fs.readFileSync('server/relay-server.js', 'utf8');
+const { extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename } = require('../server/relay-server');
+const chat = fs.readFileSync('soomgo-chat-bot/chat-content.js', 'utf8');
+const detail = fs.readFileSync('dist/soomgo-workflow.html', 'utf8');
+
+for (const protectedText of ['automation_context', 'isSoomgoAutomationContext', 'consentDeclined', 'soomgo_hire_not_confirmed', 'swan']) {
+  assert.ok(server.includes(protectedText), `required existing behavior/branding missing: ${protectedText}`);
+}
+for (const format of ['docx', 'xlsx', 'py', 'exe']) assert.ok(server.includes(`'${format}'`), `format support missing: ${format}`);
+assert.ok(server.includes("formatKey === 'word'"), 'Word must be rendered as DOCX');
+assert.ok(server.includes("formatKey === 'excel'"), 'Excel must be rendered as XLSX');
+assert.ok(server.includes("formatKey === 'python'"), 'Python requests must create a real .py artifact');
+assert.ok(server.includes("text/x-python; charset=utf-8"), 'Python files must receive the correct MIME type');
+assert.ok(server.includes('workflow_delivery_format_blocked'), 'format mismatch must block delivery');
+assert.ok(server.includes('confirmSafeRetry !== true'), 'rebuilding must require old-file non-delivery confirmation');
+assert.ok(server.includes('confirmExeTested !== true'), 'EXE delivery must require build/runtime-test confirmation');
+assert.ok(server.includes('set_required_formats'), 'owner must be able to correct requested formats');
+assert.ok(server.includes('workflowAvailableFiles'), 'format validation must include pre-delivery artifacts');
+assert.ok(server.includes('workflowCanChangeFormatsBeforeFirstDelivery'), 'format corrections must be allowed before the first delivery');
+assert.ok(server.includes('author_build_pending'), 'real EXE author/build blocker must raise a visible hold');
+assert.ok(server.includes('고객 미전달 결과 형식 재제작 큐 등록'), 'confirmed format repair must enqueue a fresh authoring and review chain');
+assert.ok(server.includes('동료 AI와 대화하거나 검수 보고서를 쓰는 역할이 아니다'), 'each review must edit the same customer artifact, not exchange reviewer chatter');
+assert.ok(server.includes('artifact_rebuild_pending'), 'invalid prior artifacts must block customer delivery');
+const smallTalk = '고객님의 요청을 확인했습니다. 필요한 자료를 보내주시면 범위와 일정을 다시 안내하겠습니다.\n\n검토 의견: 본문 작성 전 질문이 필요합니다.';
+assert.equal(validSoomgoDeliverable(smallTalk, { soomgoRequest: { requiredFormats: ['docx'] } }).ok, false, 'chat/planning responses must not count as deliverables');
+const artifact = `검수 의견 보고서\n\n[[DELIVERABLE_START]]\n${'실제 문서 본문입니다. '.repeat(100)}\n[[DELIVERABLE_END]]`;
+assert.equal(validSoomgoDeliverable(artifact, { soomgoRequest: { requiredFormats: ['docx'] } }).ok, true, 'a substantive marked artifact should pass');
+assert.equal(extractSoomgoDeliverable(artifact).startsWith('검수 의견'), false, 'review chatter must be stripped from saved artifacts');
+assert.ok(workflowArtifactSection(artifact, 'word').startsWith('실제 문서 본문'), 'the saved Word file must contain the artifact body only');
+const pythonDeliverable = '[[DELIVERABLE_START]]\n## Python (.py)\n```python\ndef main():\n    print("hello")\n\nif __name__ == "__main__":\n    main()\n```\n\n사용법: python app.py\n[[DELIVERABLE_END]]';
+const pythonSection = workflowArtifactSection(pythonDeliverable, 'python');
+assert.match(pythonWorkflowSource(pythonSection), /^def main\(\):/);
+assert.doesNotMatch(pythonWorkflowSource(pythonSection), /```|사용법/);
+assert.deepEqual(requestedWorkflowFormats({ requiredFormats: ['py'] }).map(item => [item.key, item.extension, item.supported]), [['python', 'py', true]]);
+assert.deepEqual(requestedWorkflowFormats({ format: '파이썬 (.py)' }).map(item => item.key), ['python']);
+assert.deepEqual(requestedWorkflowFormats({ purpose: 'PPT 제작', topic: '보고서를 발표자료로 변환', format: 'PPTX' }).map(item => item.extension), ['pptx']);
+assert.deepEqual(requestedWorkflowFormats({ purpose: '자막 제작', topic: '영상 자막', format: 'SRT' }).map(item => item.extension), ['srt']);
+assert.deepEqual(requestedWorkflowFormats({ purpose: '자막 제작', topic: '영상에 자막 삽입', volume: '5분' }).map(item => item.extension), ['srt', 'mp4']);
+assert.deepEqual(requestedWorkflowFormats({ purpose: '일반 문서 작성', topic: '안내문' }).map(item => item.extension), ['docx', 'hwp', 'pdf']);
+assert.throws(() => requestedWorkflowFormats({ purpose: '알 수 없는 요청', topic: '기타' }), error => error?.code === 'workflow_delivery_service_unknown');
+assert.equal(customerDeliveryFilename('김준희', 'first', 'docx'), '김준희_작업물_1차.docx');
+assert.equal(customerDeliveryFilename('김준희', 'final', 'xlsx'), '김준희_작업물_최종.xlsx');
+assert.equal(customerDeliveryFilename('A/B:고객', 'first', 'docx'), 'A_B_고객_작업물_1차.docx', 'filename must preserve Korean and strip reserved path characters');
+assert.equal(customerDeliveryFilename('', 'first', 'docx'), '고객님_작업물_1차.docx', 'missing customer names need a readable fallback');
+assert.equal(customerDeliveryFilename('김준희', 'check-1', 'docx'), null, 'intermediate QA files must not look like customer deliveries');
+assert.ok(server.includes('workflow.taskId}-FMT-'), 'format repair task must stay associated with its workflow');
+assert.ok(server.includes('ownerConfirmedNotSentAt: now'), 'format replacement must keep the owner confirmation audit');
+assert.ok(server.includes('post.autoContinue = Number(post.cycle || 1) < passes + 1'), 'in-flight review posts must continue after increasing the pass count');
+assert.ok(chat.includes('nearLowerLeft'), 'icon-only attachment button fallback missing');
+assert.ok(chat.includes('WORKFLOW_DELIVERY_HOLDS_KEY'), 'failed attachment must be deferred from chat queue');
+assert.ok(chat.includes('await returnToChatList();'), 'delivery failure must return the chat bot to its list');
+assert.ok(detail.includes('요청 형식 저장'), 'workflow detail must expose requested format correction');
+assert.ok(detail.includes('납품 파일 형식 선택'), 'format editor must remain visible on every workflow detail');
+for (const label of ['한글 HWP (.hwp)', '한글 HWPX (.hwpx)', 'Python (.py)', '실행 파일 (.exe)']) assert.ok(detail.includes(label), `format selector option missing: ${label}`);
+assert.ok(detail.includes('insertAdjacentHTML(\'afterbegin\',formatSetupPanel)'), 'format editor must render outside issue-only warnings');
+assert.ok(detail.includes('EXE 파일을 확인'), 'workflow detail must expose actual EXE upload path');
+assert.ok(detail.includes('EXE는 작성자 빌드·실행 검증 후 등록'), 'workflow detail must explain the real-build handoff and hold');
+assert.ok(detail.includes('고객 미전달 결과는 추가 검수 큐를 실행'), 'workflow detail must explain additional QC before unsent delivery');
+console.log('workflow-delivery-contract: mismatch, safe retry, file attachment, and handoff guards present');

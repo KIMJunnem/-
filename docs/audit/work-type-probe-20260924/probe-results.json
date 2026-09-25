@@ -1,0 +1,563 @@
+{
+  "syntheticInputs": true,
+  "summary": {
+    "total": 26,
+    "changed": 13,
+    "toScopeCheck": 8,
+    "toFormatting": 1,
+    "schoolReleased": 5,
+    "schoolAdded": 0,
+    "otherTypeChange": 0,
+    "priceBugs": 0,
+    "netCalls": 0
+  },
+  "rows": [
+    {
+      "id": "M1",
+      "note": "M03 인포그래픽",
+      "now": {
+        "type": "writing",
+        "amount": 21000,
+        "days": "당일~1일",
+        "revisions": 2,
+        "school": true
+      },
+      "next": {
+        "type": "scope_check",
+        "kind": "visual_design",
+        "amount": null,
+        "days": null,
+        "revisions": null,
+        "school": false
+      },
+      "change": [
+        "writing→scope_check",
+        "학교 과제 해제"
+      ]
+    },
+    {
+      "id": "M2",
+      "note": "M03 기존 보고서 디자인",
+      "now": {
+        "type": "writing",
+        "amount": 147000,
+        "days": "2~3일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "scope_check",
+        "kind": "existing_doc_redesign",
+        "amount": null,
+        "days": null,
+        "revisions": null,
+        "school": false
+      },
+      "change": [
+        "writing→scope_check"
+      ]
+    },
+    {
+      "id": "M3",
+      "note": "M03 내용 유지+레이아웃",
+      "now": {
+        "type": "formatting",
+        "amount": 32000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "formatting",
+        "kind": null,
+        "amount": 32000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": []
+    },
+    {
+      "id": "M4",
+      "note": "M03 글 작성 대조",
+      "now": {
+        "type": "writing",
+        "amount": 21000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "writing",
+        "kind": null,
+        "amount": 21000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": []
+    },
+    {
+      "id": "V1",
+      "note": "카드뉴스",
+      "now": {
+        "type": "writing",
+        "amount": 48000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "scope_check",
+        "kind": "visual_design",
+        "amount": null,
+        "days": null,
+        "revisions": null,
+        "school": false
+      },
+      "change": [
+        "writing→scope_check"
+      ]
+    },
+    {
+      "id": "V2",
+      "note": "포스터",
+      "now": {
+        "type": "writing",
+        "amount": 21000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "scope_check",
+        "kind": "visual_design",
+        "amount": null,
+        "days": null,
+        "revisions": null,
+        "school": false
+      },
+      "change": [
+        "writing→scope_check"
+      ]
+    },
+    {
+      "id": "V3",
+      "note": "도식",
+      "now": {
+        "type": "writing",
+        "amount": 21000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "scope_check",
+        "kind": "visual_design",
+        "amount": null,
+        "days": null,
+        "revisions": null,
+        "school": false
+      },
+      "change": [
+        "writing→scope_check"
+      ]
+    },
+    {
+      "id": "V4",
+      "note": "보고서 안 인포그래픽",
+      "now": {
+        "type": "writing",
+        "amount": 48000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "scope_check",
+        "kind": "visual_design",
+        "amount": null,
+        "days": null,
+        "revisions": null,
+        "school": false
+      },
+      "change": [
+        "writing→scope_check"
+      ]
+    },
+    {
+      "id": "F1",
+      "note": "기존+내용 그대로+디자인",
+      "now": {
+        "type": "writing",
+        "amount": 147000,
+        "days": "2~3일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "formatting",
+        "kind": null,
+        "amount": 32000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": [
+        "writing→formatting"
+      ]
+    },
+    {
+      "id": "F2",
+      "note": "작성된 제안서 깔끔하게",
+      "now": {
+        "type": "formatting",
+        "amount": 23000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "formatting",
+        "kind": null,
+        "amount": 23000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": []
+    },
+    {
+      "id": "F3",
+      "note": "내용 다 됨+디자인만",
+      "now": {
+        "type": "formatting",
+        "amount": 20000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "formatting",
+        "kind": null,
+        "amount": 20000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": []
+    },
+    {
+      "id": "F4",
+      "note": "원고 유지+양식 편집",
+      "now": {
+        "type": "formatting",
+        "amount": 17000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "formatting",
+        "kind": null,
+        "amount": 17000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": []
+    },
+    {
+      "id": "F5",
+      "note": "기존 문서 예쁘게(내용 유지 불명)",
+      "now": {
+        "type": "writing",
+        "amount": 30000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "scope_check",
+        "kind": "existing_doc_redesign",
+        "amount": null,
+        "days": null,
+        "revisions": null,
+        "school": false
+      },
+      "change": [
+        "writing→scope_check"
+      ]
+    },
+    {
+      "id": "F6",
+      "note": "교정+보기 좋게",
+      "now": {
+        "type": "proofreading",
+        "amount": 51000,
+        "days": "1~2일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "proofreading",
+        "kind": null,
+        "amount": 51000,
+        "days": "1~2일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": []
+    },
+    {
+      "id": "W1",
+      "note": "디자인 트렌드 보고서 작성",
+      "now": {
+        "type": "writing",
+        "amount": 48000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "writing",
+        "kind": null,
+        "amount": 48000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": []
+    },
+    {
+      "id": "W2",
+      "note": "포스터 주제 강의 원고(보수적 판정)",
+      "now": {
+        "type": "writing",
+        "amount": 30000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "scope_check",
+        "kind": "visual_design",
+        "amount": null,
+        "days": null,
+        "revisions": null,
+        "school": false
+      },
+      "change": [
+        "writing→scope_check"
+      ]
+    },
+    {
+      "id": "S1",
+      "note": "학교 과제 레포트",
+      "now": {
+        "type": "writing",
+        "amount": 30000,
+        "days": "당일~1일",
+        "revisions": 2,
+        "school": true
+      },
+      "next": {
+        "type": "writing",
+        "kind": null,
+        "amount": 30000,
+        "days": "당일~1일",
+        "revisions": 2,
+        "school": true
+      },
+      "change": []
+    },
+    {
+      "id": "S2",
+      "note": "기타: 과제(수업)",
+      "now": {
+        "type": "writing",
+        "amount": 39000,
+        "days": "당일~1일",
+        "revisions": 2,
+        "school": true
+      },
+      "next": {
+        "type": "writing",
+        "kind": null,
+        "amount": 39000,
+        "days": "당일~1일",
+        "revisions": 2,
+        "school": true
+      },
+      "change": []
+    },
+    {
+      "id": "S3",
+      "note": "수행평가",
+      "now": {
+        "type": "writing",
+        "amount": 21000,
+        "days": "당일~1일",
+        "revisions": 2,
+        "school": true
+      },
+      "next": {
+        "type": "writing",
+        "kind": null,
+        "amount": 21000,
+        "days": "당일~1일",
+        "revisions": 2,
+        "school": true
+      },
+      "change": []
+    },
+    {
+      "id": "S4",
+      "note": "대학교 교양 수업",
+      "now": {
+        "type": "writing",
+        "amount": 48000,
+        "days": "당일~1일",
+        "revisions": 2,
+        "school": true
+      },
+      "next": {
+        "type": "writing",
+        "kind": null,
+        "amount": 48000,
+        "days": "당일~1일",
+        "revisions": 2,
+        "school": true
+      },
+      "change": []
+    },
+    {
+      "id": "N1",
+      "note": "정부 과제",
+      "now": {
+        "type": "writing",
+        "amount": 93000,
+        "days": "1~2일",
+        "revisions": 2,
+        "school": true
+      },
+      "next": {
+        "type": "writing",
+        "kind": null,
+        "amount": 93000,
+        "days": "1~2일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": [
+        "학교 과제 해제"
+      ]
+    },
+    {
+      "id": "N2",
+      "note": "기업 과제",
+      "now": {
+        "type": "writing",
+        "amount": 57000,
+        "days": "1~2일",
+        "revisions": 2,
+        "school": true
+      },
+      "next": {
+        "type": "writing",
+        "kind": null,
+        "amount": 57000,
+        "days": "1~2일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": [
+        "학교 과제 해제"
+      ]
+    },
+    {
+      "id": "N3",
+      "note": "연구과제 교정",
+      "now": {
+        "type": "proofreading",
+        "amount": 61000,
+        "days": "1~2일",
+        "revisions": 2,
+        "school": true
+      },
+      "next": {
+        "type": "proofreading",
+        "kind": null,
+        "amount": 61000,
+        "days": "1~2일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": [
+        "학교 과제 해제"
+      ]
+    },
+    {
+      "id": "N4",
+      "note": "국책 연구 과제(띄어씀)",
+      "now": {
+        "type": "writing",
+        "amount": 75000,
+        "days": "1~2일",
+        "revisions": 2,
+        "school": true
+      },
+      "next": {
+        "type": "writing",
+        "kind": null,
+        "amount": 75000,
+        "days": "1~2일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": [
+        "학교 과제 해제"
+      ]
+    },
+    {
+      "id": "R1",
+      "note": "회사 시장 리포트(남는 문제)",
+      "now": {
+        "type": "writing",
+        "amount": 48000,
+        "days": "당일~1일",
+        "revisions": 2,
+        "school": true
+      },
+      "next": {
+        "type": "writing",
+        "kind": null,
+        "amount": 48000,
+        "days": "당일~1일",
+        "revisions": 2,
+        "school": true
+      },
+      "change": []
+    },
+    {
+      "id": "C1",
+      "note": "녹취 30분",
+      "now": {
+        "type": "stenography",
+        "amount": 57000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "next": {
+        "type": "stenography",
+        "kind": null,
+        "amount": 57000,
+        "days": "당일~1일",
+        "revisions": 3,
+        "school": false
+      },
+      "change": []
+    }
+  ]
+}

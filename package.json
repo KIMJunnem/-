@@ -1,0 +1,9 @@
+{
+  "name": "relay-desk-site",
+  "private": true,
+  "version": "0.2.0",
+  "description": "Relay Desk single-writer server and read-only viewer",
+  "scripts": {
+    "start": "node server/relay-server.js"
+  }
+}

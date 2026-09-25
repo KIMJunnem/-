@@ -1,0 +1,2206 @@
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const vm = require('vm');
+
+const ROOT = path.resolve(__dirname, '..');
+const DIST = path.join(ROOT, 'dist');
+const DATA_DIR = path.join(__dirname, 'data');
+const FILE_DIR = path.join(__dirname, 'storage');
+const STATE_FILE = path.join(DATA_DIR, 'state.json');
+const REPORT_FILE = path.join(DATA_DIR, 'relay-desk-report-for-astra.txt');
+const REPORT_MANIFEST_FILE = path.join(DATA_DIR, 'relay-desk-report-manifest.json');
+const HOST = process.env.RELAY_HOST || '0.0.0.0';
+const PORT = Number(process.env.RELAY_PORT || 8787);
+const MAX_BODY = 30 * 1024 * 1024;
+// Keep one document synchronized with the current Relay Desk state. The
+// interval is configurable for local testing, and defaults to 30 minutes.
+const REPORT_INTERVAL_MS = Math.max(60 * 1000, Number(process.env.RELAY_REPORT_INTERVAL_MS || 30 * 60 * 1000));
+// Provider calls can spend more than 45 seconds on a long handoff prompt.
+// Keep the timeout configurable, but give normal research runs enough time to
+// finish before the fallback provider is attempted.
+const PROVIDER_TIMEOUT_MS = Number(process.env.RELAY_PROVIDER_TIMEOUT_MS || 90000);
+const providerCooldownUntil = { OpenAI: 0, Gemini: 0 };
+const providerCooldownReason = { OpenAI: null, Gemini: null };
+// Keep the latest provider error visible to the dashboard.  The API key can be
+// configured while the provider is still unavailable because its API project
+// quota, rate limit, or billing state rejected the last call.
+const providerLastError = { OpenAI: null, Gemini: null };
+const IMPLEMENTATION_FILES = ['server/relay-server.js', 'dist/index.html', 'dist/reports.html', 'server/seed-team-tasks.ps1'];
+
+function hash(value) {
+  let h = 2166136261;
+  for (const character of String(value || '')) {
+    h ^= character.charCodeAt(0);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+fs.mkdirSync(DATA_DIR, { recursive: true });
+fs.mkdirSync(FILE_DIR, { recursive: true });
+
+function emptyState() {
+  return { version: 1, tasks: [], projects: [], workers: [], activities: [], files: [], promptPosts: [], resultPosts: [], progressPosts: [], soomgoLeads: [], soomgoReplies: [], soomgoBlocks: [], updatedAt: new Date().toISOString() };
+}
+
+function readState() {
+  try {
+    const next = { ...emptyState(), ...JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')) };
+    if (Array.isArray(next.activities)) next.activities = next.activities.filter(item => Array.isArray(item));
+    // OpenAI·Gemini·Claude are idea-development workers. Final insight and
+    // prioritization are intentionally reserved for a future Astra stage.
+    if (Array.isArray(next.tasks)) {
+      next.tasks = next.tasks.map(item => ({
+        ...item,
+        title: item.cycle ? String(item.title || '').replace(/ · 다음 개발 /g, ' · 아이디어 확장 ') : item.title,
+        lane: item.lane || 'idea_development',
+        decisionAuthority: false,
+        decisionOwner: item.decisionOwner || 'Astra (추후 연결)'
+      }));
+    }
+    if (Array.isArray(next.promptPosts)) {
+      next.promptPosts = next.promptPosts.map(item => ({
+        ...item,
+        lane: item.lane || 'idea_development',
+        decisionAuthority: false,
+        decisionOwner: item.decisionOwner || 'Astra (추후 연결)'
+      }));
+    }
+    if (Array.isArray(next.resultPosts)) {
+      next.resultPosts = next.resultPosts.map(item => ({
+        ...item,
+        lane: item.lane || 'idea_development',
+        insightPending: item.insightPending !== false,
+        decisionAuthority: false,
+        decisionOwner: item.decisionOwner || 'Astra (추후 연결)'
+      }));
+    }
+    return next;
+  } catch (_) {
+    return emptyState();
+  }
+}
+
+function writeState(next) {
+  const safe = { ...emptyState(), ...next, updatedAt: new Date().toISOString() };
+  const temp = `${STATE_FILE}.tmp`;
+  fs.writeFileSync(temp, JSON.stringify(safe, null, 2), 'utf8');
+  fs.renameSync(temp, STATE_FILE);
+  return safe;
+}
+
+function readReportManifest() {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(REPORT_MANIFEST_FILE, 'utf8'));
+    return manifest && typeof manifest === 'object' ? manifest : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeAtomicFile(target, body) {
+  const temp = `${target}.tmp`;
+  fs.writeFileSync(temp, body, 'utf8');
+  fs.renameSync(temp, target);
+}
+
+function reportTopicFingerprint(topic) {
+  return crypto.createHash('sha256').update(JSON.stringify({
+    status: topic.status,
+    statusCounts: topic.statusCounts,
+    taskCount: topic.taskCount,
+    resultCount: topic.resultCount,
+    handoffCount: topic.handoffCount,
+    progressCount: topic.progressCount,
+    providers: topic.providers,
+    entries: topic.entries,
+    recentProgress: topic.recentProgress
+  })).digest('hex');
+}
+
+function syncReportDocument(reason = 'scheduled') {
+  const snapshot = reportSnapshot();
+  const body = reportText(snapshot, 'Astra');
+  // The displayed generation time changes on every render. Exclude it from
+  // the content hash so an unchanged report is not rewritten every interval.
+  const stableBody = body.replace(/^생성 시각: .*$/m, '생성 시각: <자동 생성 시각>');
+  const contentHash = crypto.createHash('sha256').update(stableBody).digest('hex');
+  const previous = readReportManifest();
+  const previousTopics = previous?.topics && typeof previous.topics === 'object' ? previous.topics : {};
+  const currentTopics = Object.fromEntries((snapshot.topics || []).map(topic => [topic.key, reportTopicFingerprint(topic)]));
+  const currentKeys = Object.keys(currentTopics);
+  const previousKeys = Object.keys(previousTopics);
+  const addedTopics = currentKeys.filter(key => !Object.prototype.hasOwnProperty.call(previousTopics, key)).length;
+  const removedTopics = previousKeys.filter(key => !Object.prototype.hasOwnProperty.call(currentTopics, key)).length;
+  const updatedTopics = currentKeys.filter(key => Object.prototype.hasOwnProperty.call(previousTopics, key) && previousTopics[key] !== currentTopics[key]).length;
+  const fileExists = fs.existsSync(REPORT_FILE);
+  const changed = !fileExists || previous?.contentHash !== contentHash;
+  const generatedAt = snapshot.generatedAt || new Date().toISOString();
+  if (changed) writeAtomicFile(REPORT_FILE, body);
+  const manifest = {
+    version: 1,
+    filename: 'relay-desk-report-for-astra.txt',
+    file: REPORT_FILE,
+    intervalMs: REPORT_INTERVAL_MS,
+    generatedAt,
+    sourceUpdatedAt: snapshot.sourceUpdatedAt || null,
+    contentHash,
+    lastChange: changed ? (previous ? 'updated' : 'created') : 'unchanged',
+    reason,
+    diff: { addedTopics, updatedTopics, removedTopics },
+    totals: snapshot.totals || {},
+    topics: currentTopics,
+    nextRunAt: new Date(Date.now() + REPORT_INTERVAL_MS).toISOString()
+  };
+  writeAtomicFile(REPORT_MANIFEST_FILE, JSON.stringify(manifest, null, 2));
+  return manifest;
+}
+
+function startReportScheduler() {
+  try {
+    syncReportDocument('startup');
+  } catch (error) {
+    console.error(`Initial report document sync failed: ${error.message}`);
+  }
+  setInterval(() => {
+    try {
+      syncReportDocument('scheduled');
+    } catch (error) {
+      console.error(`Scheduled report document sync failed: ${error.message}`);
+    }
+  }, REPORT_INTERVAL_MS);
+}
+
+function recoverInterruptedRuns() {
+  const current = readState();
+  const posts = Array.isArray(current.promptPosts) ? current.promptPosts : [];
+  const progressPosts = Array.isArray(current.progressPosts) ? current.progressPosts : [];
+  let changed = false;
+  const failedAt = new Date().toISOString();
+  for (const post of posts) {
+    if (post.status !== '실행 중') continue;
+    const task = (Array.isArray(current.tasks) ? current.tasks : []).find(item => item.id === post.taskId);
+    if (continuousModeEnabled()) {
+      // A restart should pause the current call and put it back in the same
+      // idea-development queue instead of turning a transient interruption
+      // into a permanent block.
+      Object.assign(post, { status: '게시됨', error: 'server_restarted_requeued', failedAt });
+      const progress = progressPosts.find(item => item.postId === post.id && item.status === '실행 중');
+      if (progress) {
+        progress.phase = 'requeued';
+        progress.text = '서버 재시작 후 자동 재개 대기';
+        progress.error = 'server_restarted_requeued';
+        progress.events = [...(Array.isArray(progress.events) ? progress.events : []), { phase: 'requeued', status: '대기', text: progress.text, at: failedAt }];
+      }
+      if (task) Object.assign(task, { status: 'active', label: '재개 대기', tone: 'blue', dot: '', meta: '서버 재시작 후 자동 재개' });
+      changed = true;
+      continue;
+    }
+    Object.assign(post, { status: '실행 실패', error: 'server_restarted', failedAt });
+    const progress = progressPosts.find(item => item.postId === post.id && item.status === '실행 중');
+    if (progress) {
+      progress.status = '실패';
+      progress.phase = 'failed';
+      progress.text = '서버 재시작으로 실행이 중단됨';
+      progress.error = 'server_restarted';
+      progress.failedAt = failedAt;
+      progress.events = [...(Array.isArray(progress.events) ? progress.events : []), { phase: 'failed', status: '실패', text: progress.text, at: failedAt }];
+    }
+    if (task && task.status === 'active') {
+      Object.assign(task, { status: 'blocked', label: '실행 실패', tone: 'red', dot: 'block', meta: '실행 실패 · server_restarted' });
+    }
+    changed = true;
+  }
+  if (changed) writeState({ ...current, promptPosts: posts, progressPosts });
+}
+
+function requeueProviderKeyFailures() {
+  const current = readState();
+  const posts = Array.isArray(current.promptPosts) ? current.promptPosts : [];
+  const progressPosts = Array.isArray(current.progressPosts) ? current.progressPosts : [];
+  const tasks = Array.isArray(current.tasks) ? current.tasks : [];
+  let changed = false;
+  let resumed = 0;
+  for (const post of posts) {
+    const error = String(post.error || '');
+    const provider = String(post.nextAI || '');
+    const configured = providerConfigured(provider);
+    if (post.status !== '실행 실패' || !configured || !/(?:openai|gemini)_key_missing/i.test(error)) continue;
+    Object.assign(post, { status: '게시됨', error: null, failedAt: null, requeuedAt: new Date().toISOString() });
+    const task = tasks.find(item => item.id === post.taskId);
+    if (task) Object.assign(task, { status: 'active', label: '재개 대기', tone: 'blue', dot: '', meta: `${provider} 키 확인 후 자동 재개` });
+    const progress = progressPosts.find(item => item.postId === post.id);
+    if (progress) {
+      progress.status = '대기';
+      progress.phase = 'requeued';
+      progress.text = 'API 키 확인 후 자동 재개 대기';
+      progress.error = null;
+      progress.events = [...(Array.isArray(progress.events) ? progress.events : []), { phase: 'requeued', status: '대기', text: progress.text, at: post.requeuedAt }];
+    }
+    resumed += 1;
+    changed = true;
+  }
+  if (changed) writeState({ ...current, tasks, promptPosts: posts, progressPosts });
+  return resumed;
+}
+
+function isLoopback(req) {
+  const address = req.socket.remoteAddress || '';
+  return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1';
+}
+
+function providerSnapshot() {
+  const has = (...names) => names.some(name => Boolean(String(process.env[name] || '').trim()));
+  const state = readState();
+  const latestFailureFor = provider => (Array.isArray(state.promptPosts) ? state.promptPosts : [])
+    .filter(post => post && post.nextAI === provider && post.status === '실행 실패' && post.error)
+    .sort((a, b) => String(b.failedAt || b.createdAt || '').localeCompare(String(a.failedAt || a.createdAt || '')))[0] || null;
+  const status = (name, base) => {
+    const configured = Boolean(base.configured);
+    const latestFailure = latestFailureFor(name);
+    const lastError = providerLastError[name] || latestFailure?.error || null;
+    const cooldownUntil = Number(providerCooldownUntil[name] || 0);
+    const available = ['OpenAI', 'Gemini'].includes(name) ? configured && cooldownUntil <= Date.now() : configured;
+    const quotaError = /429|quota|rate_limit|rate limit|billing/i.test(String(lastError || ''));
+    return {
+      ...base,
+      configured,
+      available,
+      availability: !configured ? 'key_missing' : !available && cooldownUntil > Date.now() ? 'cooldown' : quotaError ? 'api_quota_or_billing' : 'ready',
+      cooldownUntil: cooldownUntil > Date.now() ? new Date(cooldownUntil).toISOString() : null,
+      lastError: lastError ? String(lastError).slice(0, 500) : null,
+      lastFailureAt: latestFailure?.failedAt || null
+    };
+  };
+  return {
+    generatedAt: new Date().toISOString(),
+    providers: {
+      OpenAI: status('OpenAI', { configured: has('OPENAI_API_KEY'), source: 'server_env', model: process.env.OPENAI_MODEL || 'gpt-5.6-luna', role: 'idea_development', decisionAuthority: false }),
+      Claude: status('Claude', { configured: has('ANTHROPIC_API_KEY'), source: 'server_env', role: 'idea_development', decisionAuthority: false }),
+      Gemini: status('Gemini', { configured: has('GEMINI_API_KEY', 'GOOGLE_API_KEY'), source: 'server_env', model: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite', role: 'idea_development', decisionAuthority: false }),
+      Astra: { configured: false, available: false, availability: 'reserved', source: 'reserved', role: 'insight_analysis', decisionAuthority: true, status: '추후 연결' }
+    }
+  };
+}
+
+function reportTopicRoot(taskId) {
+  const value = String(taskId || '').trim();
+  return (value.match(/^RLY-\d+/) || [value || 'unknown'])[0];
+}
+
+function reportTopicTitle(task) {
+  const title = String(task?.title || task?.id || '').replace(/\s+·\s+아이디어 확장\s+\d+/g, '').replace(/\s+확정$/g, '').trim();
+  return title || String(task?.id || '주제');
+}
+
+function reportSnapshot() {
+  const state = readState();
+  const tasks = Array.isArray(state.tasks) ? state.tasks : [];
+  const results = Array.isArray(state.resultPosts) ? state.resultPosts : [];
+  const prompts = Array.isArray(state.promptPosts) ? state.promptPosts : [];
+  const progress = Array.isArray(state.progressPosts) ? state.progressPosts : [];
+  const taskById = new Map(tasks.map(item => [item.id, item]));
+  const promptById = new Map(prompts.map(item => [item.id, item]));
+  const resultCycle = item => item?.cycle || promptById.get(item?.parentPostId)?.cycle || taskById.get(item?.taskId)?.cycle || null;
+  const groups = new Map();
+  const ensure = (task, root) => {
+    const category = String(task?.category || '기타');
+    const title = reportTopicTitle(task);
+    const key = `${category}|${title}`;
+    if (!groups.has(key)) groups.set(key, { key, title, category, roots: new Set(), tasks: [], results: [], handoffs: [], progress: [], rounds: new Set() });
+    const group = groups.get(key);
+    group.roots.add(root);
+    if (task && !group.tasks.some(item => item.id === task.id)) group.tasks.push(task);
+    if (task?.discussionRound) group.rounds.add(Number(task.discussionRound));
+    return group;
+  };
+  for (const task of tasks) ensure(task, reportTopicRoot(task?.id));
+  const findTask = taskId => tasks.find(item => item.id === taskId);
+  const findGroup = (taskId, fallback) => {
+    const task = findTask(taskId);
+    if (task) return ensure(task, reportTopicRoot(taskId));
+    const root = reportTopicRoot(taskId);
+    return [...groups.values()].find(item => item.roots.has(root)) || ensure({ id: root, title: fallback || root, category: '기타' }, root);
+  };
+  for (const result of results) findGroup(result.taskId, result.title).results.push(result);
+  for (const handoff of prompts) findGroup(handoff.taskId, handoff.title).handoffs.push(handoff);
+  for (const item of progress) findGroup(item.taskId, item.title).progress.push(item);
+  const topics = [...groups.values()].map(group => {
+    const sortDesc = (a, b) => String(b.createdAt || b.startedAt || '').localeCompare(String(a.createdAt || a.startedAt || ''));
+    const topicResults = group.results.sort(sortDesc);
+    const topicProgress = group.progress.sort(sortDesc);
+    const latest = topicResults[0] || null;
+    const providers = [...new Set(topicResults.map(item => item.provider).filter(Boolean))];
+    const statusCounts = group.tasks.reduce((acc, item) => { const status = String(item.status || 'unknown'); acc[status] = (acc[status] || 0) + 1; return acc; }, {});
+    return {
+      key: group.key,
+      title: group.title,
+      category: group.category,
+      roots: [...group.roots],
+      rounds: [...group.rounds].sort((a, b) => a - b),
+      status: statusCounts.active ? '진행 중' : latest ? '누적 기록 있음' : '대기',
+      statusCounts,
+      taskCount: group.tasks.length,
+      resultCount: topicResults.length,
+      handoffCount: group.handoffs.length,
+      progressCount: topicProgress.length,
+      providers,
+      latestAt: latest?.createdAt || topicProgress[0]?.createdAt || null,
+      latestProvider: latest?.provider || null,
+      latestCycle: resultCycle(latest),
+      latestText: latest?.text || '',
+      latestResultId: latest?.id || null,
+      entries: topicResults.map(item => ({ id: item.id, taskId: item.taskId, provider: item.provider, model: item.model, cycle: resultCycle(item), text: item.text || '', createdAt: item.createdAt, usage: item.usage || null, insightPending: item.insightPending !== false })),
+      recentProgress: topicProgress.slice(0, 8).map(item => ({ id: item.id, taskId: item.taskId, provider: item.provider || item.requestedProvider, cycle: item.cycle || promptById.get(item.postId)?.cycle || taskById.get(item.taskId)?.cycle || null, phase: item.phase, status: item.status, text: item.text || '', createdAt: item.createdAt, completedAt: item.completedAt, failedAt: item.failedAt }))
+    };
+  }).sort((a, b) => String(a.category).localeCompare(String(b.category), 'ko') || String(a.title).localeCompare(String(b.title), 'ko'));
+  const categories = [...new Set(topics.map(item => item.category))];
+  return {
+    generatedAt: new Date().toISOString(),
+    sourceUpdatedAt: state.updatedAt || null,
+    document: (() => {
+      const manifest = readReportManifest();
+      if (!manifest) return null;
+      return {
+        filename: manifest.filename,
+        generatedAt: manifest.generatedAt || null,
+        sourceUpdatedAt: manifest.sourceUpdatedAt || null,
+        lastChange: manifest.lastChange || 'unchanged',
+        reason: manifest.reason || null,
+        diff: manifest.diff || { addedTopics: 0, updatedTopics: 0, removedTopics: 0 },
+        intervalMs: manifest.intervalMs || REPORT_INTERVAL_MS,
+        nextRunAt: manifest.nextRunAt || null,
+        contentHash: manifest.contentHash || null
+      };
+    })(),
+    decisionOwner: 'Astra (추후 연결)',
+    insightStatus: 'Astra 연결 후 최종 인사이트 대기',
+    workerMode: 'OpenAI·Gemini·Claude는 아이디어 확장·검증만 수행',
+    totals: {
+      topics: topics.length,
+      results: results.length,
+      activeTasks: tasks.filter(item => item.status === 'active').length,
+      completedTasks: tasks.filter(item => item.status === 'completed').length,
+      handoffs: prompts.filter(item => String(item.status || '') !== '완료').length,
+      progressPosts: progress.length
+    },
+    categories,
+    topics
+  };
+}
+
+function reportText(snapshot, audience = '총괄') {
+  const lines = [
+    'Relay Desk 총괄 검토용 누적 보고서',
+    `생성 시각: ${new Date(snapshot.generatedAt || Date.now()).toLocaleString('ko-KR')}`,
+    `판단 담당: ${snapshot.decisionOwner || '총괄'}`,
+    `현재 상태: ${snapshot.insightStatus || '인사이트 검토 대기'}`,
+    '',
+    `[${audience}에게 보내는 실행 지시]`,
+    '아래 누적 기록을 기준으로 이미 수행된 조사를 반복하지 말고 핵심 인사이트를 도출하라.',
+    '각 주제마다 채택할 방향, 보류할 방향, 추가 검증이 필요한 근거를 구분하라.',
+    '인사이트를 바탕으로 실행 가능한 다음 단계를 정하고, 가능한 항목은 실제로 실행한 뒤 결과·산출물·실패 원인을 기록하라.',
+    '실행하지 않은 내용은 완료로 표시하지 말고, 다음 담당자가 이어갈 수 있는 후속 작업을 남겨라.',
+    '',
+    `누적 주제: ${snapshot.totals?.topics || 0}개`,
+    `저장된 결과: ${snapshot.totals?.results || 0}건`,
+    `진행 중 작업: ${snapshot.totals?.activeTasks || 0}개`,
+    ''
+  ];
+  for (const topic of snapshot.topics || []) {
+    lines.push(`===== [${topic.category}] ${topic.title} =====`);
+    lines.push(`주제 ID: ${(topic.roots || []).join(', ') || '없음'}`);
+    lines.push(`상태: ${topic.status || '대기'} · 결과 ${topic.resultCount || 0}건 · 작업 ${topic.taskCount || 0}개 · 실행 경과 ${topic.progressCount || 0}건`);
+    lines.push(`참여 AI: ${(topic.providers || []).join(', ') || '기록 없음'}`);
+    for (const entry of (topic.entries || []).slice().reverse()) {
+      lines.push(`\n--- 사이클 ${entry.cycle || '?'} · ${entry.provider || 'AI'} · ${entry.model || '모델 미기록'} · ${entry.createdAt ? new Date(entry.createdAt).toLocaleString('ko-KR') : '기록 없음'} ---`);
+      lines.push(entry.text || '응답 내용 없음');
+    }
+    for (const item of topic.recentProgress || []) {
+      lines.push(`\n--- 실행 경과 · ${item.provider || 'AI'} · ${item.phase || item.status || '상태 미기록'} · ${item.createdAt ? new Date(item.createdAt).toLocaleString('ko-KR') : '기록 없음'} ---`);
+      lines.push(item.text || '경과 내용 없음');
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+function sendJson(res, status, payload) {
+  const body = JSON.stringify(payload);
+  res.writeHead(status, {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    // 숨고 페이지에서 실행되는 로컬 확장이 견적 엔진을 호출할 수 있게 한다.
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-headers': 'content-type,x-relay-bot'
+  });
+  res.end(body);
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks = [];
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > MAX_BODY) {
+        reject(new Error('request_too_large'));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); }
+      catch (_) { reject(new Error('invalid_json')); }
+    });
+    req.on('error', reject);
+  });
+}
+
+function safeName(name) {
+  return String(name || 'relay-file').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 180);
+}
+
+function normalizeSearch(value) {
+  return String(value || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+
+function isDirectSoomgoRequest(value) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  // 온라인·비대면·원격·화상 진행과 대면·방문·현장 진행을 모두 제외한다.
+  if (/(온라인|비대면|원격|화상\s*(?:회의|상담|미팅|진행)?|줌|zoom|구글\s*미트)/i.test(text)) return true;
+  return /(대면|대면\s*상담|직접\s*(만나|만남|미팅|상담)|방문\s*(희망|필요|가능|요청)|출장|현장\s*(방문|작업|진행|미팅)|오프라인|자택\s*(방문|에서)|사무실\s*(방문|에서)|찾아\s*오|찾아와)/i.test(text);
+}
+
+// 대본·시나리오 계열 의뢰는 현재 제공 범위에서 제외한다.
+// 서버에서도 다시 확인해 구버전 확장 프로그램이 견적을 보내지 못하게 한다.
+function isScriptSoomgoRequest(value) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  return /(대본|시나리오|각본|스크립트|콘티)/i.test(text);
+}
+
+function isAcademicSoomgoRequest(value) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  if (/(논문|학위\s*논문|학술|연구\s*논문|학회|저널|석사|박사|졸업\s*논문|연구\s*프로젝트)/i.test(text)) return true;
+  // 자기소개서·이력서 작성 대행은 서비스 범위에 포함한다.
+  // 학술·학위 문서가 아닌 일반적인 "대필" 요청만 계속 수동 검토한다.
+  return /대필/i.test(text) && !/(자기소개서|자소서|이력서|경력기술서)/i.test(text);
+}
+
+function isSoomgoSystemMessage(value) {
+  const text = String(value || '').trim();
+  return !text || /(고객님이\s*견적을\s*읽었|거래\s*상세\s*정보|고객\s*요청|요청\s*상세|견적을\s*(?:보냈|읽었)|고용\s*요청|일정\s*등록|새\s*요청서|알림톡|시스템\s*메시지)/i.test(text);
+}
+
+function isSoomgoAcknowledgement(value) {
+  const text = String(value || '').trim();
+  return /^(?:네+|넵+|예+|좋아요|좋습니다|알겠습니다|확인했습니다|감사합니다|감사해요|고맙습니다|확인했어요|👍+|👌+)[\s.!?]*$/i.test(text);
+}
+
+function isHiredSoomgoConversation(value) {
+  const text = String(value || '').trim();
+  return /(고용\s*(?!요청)(?:완료|확정|되었습니다|됐|됨|된|함)|고용한\s*고객|거래\s*(?:중|확정|진행))/i.test(text);
+}
+
+function isKnownHiredSoomgoConversation(conversationId) {
+  const id = String(conversationId || '').trim();
+  if (!id) return false;
+  const leads = readState().soomgoLeads;
+  return Array.isArray(leads) && leads.some(lead => String(lead.conversationId || '') === id && (lead.hiredAt || /고용\s*요청·일정\s*등록\s*완료/.test(String(lead.status || ''))));
+}
+
+function isBlockedSoomgoConversation(conversationId) {
+  const id = String(conversationId || '').trim();
+  if (!id) return false;
+  const blocks = readState().soomgoBlocks;
+  return Array.isArray(blocks) && blocks.some(item => String(item.conversationId || '') === id && item.active !== false);
+}
+
+// 숨고 요청서에 바로 답할 때 쓰는 빠른 견적 엔진이다. 외부 AI 호출을
+// 기다리지 않고 먼저 안전한 기본 견적을 만들며, 실제 작업 범위가 큰
+// 요청은 기본·확장·제출형 세 가지 선택지로 나눈다.
+function parseSoomgoRequest(body = {}) {
+  const text = String(body.text || body.sourceText || '').replace(/\r/g, '').slice(0, 12000);
+  // 확장 프로그램은 추출한 필드를 최상위로 보내고, 다른 수집기는 fields
+  // 객체로 보낼 수 있으므로 두 입력 형식을 모두 허용한다.
+  const supplied = {
+    ...(body.fields && typeof body.fields === 'object' ? body.fields : {}),
+    purpose: body.purpose || body.service || body.usePurpose,
+    format: body.format || body.fileFormat,
+    volume: body.volume || body.amount,
+    topic: body.topic || body.subject,
+    scope: body.scope || body.workScope || body.process,
+    notes: body.notes || body.requestNotes || body.description,
+    deadline: body.deadline || body.dueDate
+  };
+  const pick = (name, patterns) => {
+    const value = String(supplied[name] || '').trim();
+    if (value) return value.slice(0, 500);
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match?.[1]) return String(match[1]).split('\n')[0].trim().slice(0, 500);
+    }
+    return '';
+  };
+  const purpose = pick('purpose', [
+    /(?:^|\n)\s*(PPT\s*제작|보고서|제안서|기술문서|계획서|통계\s*분석|데이터\s*분석|데이터\s*가공(?:\s*및\s*라벨링)?|자막\s*제작|번역|교정|이력서(?:\/|·)?자소서\s*컨설팅|문서\s*\/\s*글\s*작성)\s*(?=\n|$)/i,
+    /이용\s*목적\s*\n?\s*([^\n]+)/i
+  ]);
+  const format = pick('format', [/파일\s*형식\s*\n?\s*([^\n]+)/i]);
+  const volume = pick('volume', [/작업\s*분량\s*\n?\s*([^\n]+)/i]);
+  const scope = pick('scope', [
+    /(?:제작|작업)\s*범위\s*\n?\s*([^\n]+)/i,
+    /진행\s*방식\s*\n?\s*([^\n]+)/i,
+    /희망\s*서비스\s*\n?\s*([^\n]+)/i
+  ]);
+  const notes = pick('notes', [
+    /(?:문의\/희망사항|의뢰\s*내용)\s*\n?\s*([\s\S]{0,1200}?)(?=\n\s*(?:완료\s*희망일|고객\s*정보|견적\s*금액)|$)/i
+  ]);
+  const topic = pick('topic', [/작성\s*주제\s*\n?\s*([\s\S]{0,1200}?)(?=\n\s*완료\s*희망일|\n\s*고객\s*정보|$)/i]);
+  const deadline = pick('deadline', [/완료\s*희망일\s*\n?\s*([^\n]+)/i]);
+  const pagesMatch = `${volume} ${text}`.match(/(?:A4\s*(?:기준)?\s*)?(\d+)\s*(?:페이지|장|쪽)|A4\s*(?:기준)?\s*(\d+)/i);
+  const pages = Math.max(1, Math.min(200, Number(body.pages || pagesMatch?.[1] || pagesMatch?.[2] || 1)));
+  const numbered = (topic.match(/(?:^|\n)\s*(?:\d+\.|[①-⑳]|[-•])\s+/g) || []).length;
+  const subtopics = Math.max(Number(body.subtopics || 0), numbered, (topic.match(/[,·]/g) || []).length >= 3 ? 2 : 0);
+  // 페이지 원문에는 숨고의 '최근 작성한 견적' 예시가 포함될 수 있다.
+  // 분류에는 요청서에서 추출한 필드만 사용해 예시 문구가 오판을
+  // 일으키지 않도록 한다.
+  const combined = [purpose, format, volume, scope, notes, topic, deadline].filter(Boolean).join(' ').toLowerCase();
+  const urgent = /가능한\s*빨리|오늘|내일|24\s*시간|급\s*함|긴급|asap/.test(combined) || /빠르게/.test(deadline.toLowerCase());
+  const restricted = /영수증|수납|처방전|진단서|재직증명|졸업증명|위조|가짜|사기|범죄|허위|조작|fake|forgery/.test(combined);
+  const academic = isAcademicSoomgoRequest(combined);
+  const remoteRequest = /(온라인|비대면|원격|화상\s*(?:회의|상담|미팅|진행)?|줌|zoom|구글\s*미트)/i.test(combined);
+  const videoRequest = /(화상\s*(?:회의|상담|미팅|진행)?|줌|zoom|구글\s*미트)/i.test(combined);
+  const directRequest = isDirectSoomgoRequest(combined);
+  const scriptRequest = isScriptSoomgoRequest(combined);
+  return { text, purpose, format, volume, topic, scope, notes, deadline, pages, subtopics, urgent, restricted, academic, remoteRequest, videoRequest, directRequest, scriptRequest };
+}
+
+// 숨고 시작 기념 프로모션은 자동 견적에만 적용한다. 숨고 금액 입력란에는
+// 숨고 시장가 기준 정상가에서 20%를 할인한 금액을 1,000원 단위로 넣고,
+// 고객에게는 정상가·할인가·기본 범위·추가금 기준을 함께 보여준다.
+const SOOMGO_LAUNCH_DISCOUNT_RATE = 0.2;
+const SOOMGO_PRICE_BASIS = '숨고 시장가 기준(서비스별 내부 기준표)';
+function roundSoomgoPrice(value) {
+  const numeric = Math.max(0, Number(value) || 0);
+  return Math.max(1000, Math.round(numeric / 1000) * 1000);
+}
+function soomgoDiscountedPrice(value) {
+  return roundSoomgoPrice((Number(value) || 0) * (1 - SOOMGO_LAUNCH_DISCOUNT_RATE));
+}
+function soomgoPricePair(value) {
+  const regular = roundSoomgoPrice(value);
+  const discounted = soomgoDiscountedPrice(regular);
+  return { regular, discounted, saved: Math.max(0, regular - discounted) };
+}
+function soomgoQuoteLabel(quote) {
+  const amount = Number(quote?.amount || 0);
+  const regular = Number(quote?.regularAmount || quote?.originalAmount || 0);
+  if (regular > amount && amount > 0) {
+    return `정상가 ${regular.toLocaleString('ko-KR')}원 → 초기 작업 사례 수집 20% 할인 ${amount.toLocaleString('ko-KR')}원 · ${quote.days}`;
+  }
+  return `${amount.toLocaleString('ko-KR')}원 · ${quote.days}`;
+}
+
+function soomgoQuote(parsed) {
+  const purpose = `${parsed.purpose} ${parsed.topic}`.toLowerCase();
+  let base;
+  let label;
+  if (/기술|매뉴얼|매뉴얼|technical/.test(purpose)) { base = 69000; label = '기술문서'; }
+  else if (/제안서|proposal/.test(purpose)) { base = 79000; label = '제안서'; }
+  else if (/계획서|사업계획|plan/.test(purpose)) { base = 89000; label = '계획서'; }
+  else if (/보고서|리포트|report/.test(purpose)) { base = parsed.pages <= 3 ? 29000 : 59000 + Math.max(0, parsed.pages - 5) * 15000; label = '보고서'; }
+  else if (/통계|데이터\s*분석|분석\s*보고/.test(purpose)) { base = 59000; label = '통계·데이터 분석'; }
+  else if (/크롤링|스크래핑|데이터\s*수집/.test(purpose)) { base = 79000; label = '데이터 크롤링'; }
+  else if (/챗봇|대화형|상담봇/.test(purpose)) { base = 149000; label = '챗봇 개발'; }
+  else if (/인공지능|ai\s*개발|머신러닝|딥러닝/.test(purpose)) { base = 129000; label = 'AI 개발'; }
+  else if (/라벨링|데이터\s*가공/.test(purpose)) { base = 59000; label = '데이터 가공·라벨링'; }
+  else if (/데이터베이스|db\s*구축|database/.test(purpose)) { base = 149000; label = '데이터베이스 구축'; }
+  else if (/번역|영어/.test(purpose)) { base = 39000; label = '영어 번역'; }
+  else if (/ppt|파워포인트|프레젠테이션|발표자료/.test(purpose)) { base = 49000; label = 'PPT 제작'; }
+  else if (/경영|컨설팅|기획|전략/.test(purpose)) { base = 79000; label = '경영 컨설팅'; }
+  else if (/블로그\s*마케팅|콘텐츠\s*마케팅/.test(purpose)) { base = 39000; label = '블로그 마케팅'; }
+  else if (/카피라이팅|카피|네이밍|슬로건/.test(purpose)) { base = 29000; label = '카피라이팅'; }
+  else if (/자막|字幕/.test(purpose)) { base = 29000; label = '자막 제작'; }
+  else if (/sns|바이럴|인스타|유튜브\s*마케팅/.test(purpose)) { base = 49000; label = 'SNS·바이럴 마케팅'; }
+  else if (/이력서|자기소개서|자소서|경력기술서/.test(purpose)) { base = 39000; label = '이력서·자소서 컨설팅'; }
+  else if (/리서치|서베이|시장조사|설문/.test(purpose)) { base = 49000; label = '리서치·서베이'; }
+  else if (/에세이|감상문|소개서|자기소개|블로그|카페|원고/.test(purpose)) { base = 19000; label = '일반 문서'; }
+  else { base = 9900; label = '간단 문서'; }
+  const tier = parsed.subtopics >= 4 ? '제출형' : parsed.subtopics >= 2 ? '확장형' : '기본형';
+  const tierAdd = tier === '제출형' ? 50000 : tier === '확장형' ? 30000 : 0;
+  const urgentRate = parsed.urgent ? 0.3 : 0;
+  const regularAmount = roundSoomgoPrice((base + tierAdd) * (1 + urgentRate));
+  const amount = soomgoDiscountedPrice(regularAmount);
+  const savedAmount = Math.max(0, regularAmount - amount);
+  const days = parsed.urgent ? (parsed.pages >= 6 || parsed.subtopics >= 4 ? '2~3일' : '1~2일') : (parsed.pages >= 6 || parsed.subtopics >= 4 ? '3~4일' : parsed.pages >= 3 ? '2~3일' : '1~2일');
+  const basicPair = soomgoPricePair(base);
+  const extendedPair = soomgoPricePair(base + 30000);
+  const submissionPair = soomgoPricePair(base + 50000);
+  const optionLines = [
+    `기본형 정상가 ${basicPair.regular.toLocaleString('ko-KR')}원 → 할인 ${basicPair.discounted.toLocaleString('ko-KR')}원부터 · 제공 자료 정리·구성·1회 수정`,
+    `확장형 정상가 ${extendedPair.regular.toLocaleString('ko-KR')}원 → 할인 ${extendedPair.discounted.toLocaleString('ko-KR')}원부터 · 소주제 최대 3건 조사·표/목록 1개·2회 수정`,
+    `제출형 정상가 ${submissionPair.regular.toLocaleString('ko-KR')}원 → 할인 ${submissionPair.discounted.toLocaleString('ko-KR')}원부터 · 소주제 최대 5건 조사·표/이미지 최대 3개·요약 1쪽·2회 수정`
+  ];
+  const scope = parsed.academic ? '제공한 초안·자료를 바탕으로 구조화·교정·편집' : '요청 내용 확인 후 자료 정리·작성·교정';
+  const hasPageScope = /(페이지|쪽|장)/i.test(parsed.volume || '') || parsed.pages > 1;
+  const basicScope = hasPageScope
+    ? `기본 포함 범위: 요청하신 ${parsed.pages}페이지 이내, 고객 제공 자료 중심 정리·작성·교정 ${tier === '기본형' ? '1회' : '2회'}입니다.`
+    : `기본 포함 범위: 요청하신 ${label} 1건, 고객 제공 자료 중심 작업과 ${tier === '기본형' ? '1회' : '2회'} 수정입니다.`;
+  const extraScope = '추가금 기준: 문서 분량·작업 단위 초과(페이지 또는 단위당 10,000~15,000원), 기본 범위 초과 자료조사·소주제·표/이미지, 수정 횟수 초과(회당 10,000원), 긴급 납기(+30%)입니다.';
+  const message = [
+    `안녕하세요. 요청하신 ${label} 작업 확인했습니다.`,
+    `초기 작업 사례를 쌓는 기간이라 ${SOOMGO_PRICE_BASIS} 정상가 ${regularAmount.toLocaleString('ko-KR')}원에서 20% 할인해 ${amount.toLocaleString('ko-KR')}원으로 제안드립니다( ${savedAmount.toLocaleString('ko-KR')}원 절약 ).`,
+    `예상 견적은 ${amount.toLocaleString('ko-KR')}원, 예상 소요일은 ${days}입니다. (${tier})`,
+    `${scope}으로 진행하며, 최종 금액은 원문·자료·표/이미지·희망일 확인 후 확정합니다.`,
+    basicScope,
+    ...optionLines,
+    extraScope,
+    '자료와 원하는 형식을 보내주시면 시작일과 최종 범위를 바로 안내드리겠습니다.'
+  ].join('\n');
+  const reason = parsed.videoRequest
+    ? '화상회의·화상상담 진행 요청이라 자동 접수에서 제외했습니다.'
+    : parsed.remoteRequest
+      ? '온라인·비대면·원격 진행 요청이라 자동 접수에서 제외했습니다.'
+    : parsed.directRequest
+      ? '직접 대면·방문·현장 진행 요청이라 자동 접수에서 제외했습니다.'
+    : parsed.scriptRequest
+      ? '대본·시나리오·각본·스크립트 의뢰는 자동 접수에서 제외했습니다.'
+    : parsed.academic
+      ? '논문·학술·학위·연구 프로젝트 의뢰라 자동 접수에서 제외했습니다.'
+      : parsed.restricted
+        ? '증빙·영수증·위조·사기 관련 표현이 있어 자동 발송 대신 수동 검토가 필요합니다.'
+        : null;
+  return { amount, regularAmount, originalAmount: regularAmount, savedAmount, discountRate: SOOMGO_LAUNCH_DISCOUNT_RATE, discountLabel: '초기 작업 사례 수집 20% 할인', priceBasis: SOOMGO_PRICE_BASIS, days, label, tier, base, tierAdd, urgent: parsed.urgent, remoteRequest: parsed.remoteRequest, videoRequest: parsed.videoRequest, directRequest: parsed.directRequest, scriptRequest: parsed.scriptRequest, academic: parsed.academic, options: optionLines, basicScope, extraScope, message, autoSend: !parsed.restricted && !parsed.directRequest && !parsed.scriptRequest && !parsed.academic, manualReview: parsed.restricted || parsed.directRequest || parsed.scriptRequest || parsed.academic, reason };
+}
+
+function redactSoomgoPromptText(value) {
+  return String(value || '')
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[이메일 제거]')
+    .replace(/(?:01[016789]|070|02|0[3-6][1-5])[-\s.]?\d{3,4}[-\s.]?\d{4}/g, '[전화번호 제거]')
+    .replace(/\b(?:sk|pk|ghp|AIza|Bearer)[-_A-Za-z0-9.]+\b/gi, '[인증정보 제거]')
+    .slice(0, 12000);
+}
+
+function soomgoProject(current) {
+  const projects = Array.isArray(current.projects) ? current.projects : [];
+  const existing = projects.find(project => normalizeSearch(project.name) === normalizeSearch('숨고 의뢰 처리'));
+  if (existing) return { project: existing, added: false };
+  const now = new Date().toISOString();
+  const project = {
+    id: `PRJ-${crypto.createHash('sha1').update('숨고 의뢰 처리').digest('hex').slice(0, 10)}`,
+    name: '숨고 의뢰 처리',
+    description: '숨고 요청을 접수하고 AI 작성·검토 후 고객 응대용 결과를 준비하는 작업 공간',
+    createdAt: now,
+    updatedAt: now
+  };
+  current.projects = [project, ...projects];
+  return { project, added: true };
+}
+
+function buildSoomgoFulfillmentPrompt(task, request, quote) {
+  const source = redactSoomgoPromptText(request.text);
+  const topic = redactSoomgoPromptText(request.topic);
+  return `너는 Relay Desk의 숨고 의뢰 작성 담당 AI다. 고객 요청을 바탕으로 실제 납품 가능한 문서 초안을 작성하라.
+
+프로젝트: ${task.project}
+작업 ID: ${task.id}
+서비스: ${request.purpose || quote.label || '문서 작성'}
+파일 형식: ${request.format || '고객 협의'}
+분량: ${request.volume || `${request.pages}쪽`}
+희망일: ${request.deadline || '협의'}
+예상 견적: ${soomgoQuoteLabel(quote)}
+
+요청 주제:
+${topic || '[주제 확인 필요]'}
+
+원문 요청 기록(개인 연락처·인증정보는 제거됨):
+${source}
+
+작성 규칙:
+- 먼저 요청 조건, 제공된 자료, 빠진 정보를 분리해 정리하라.
+- 확인되지 않은 사실은 사실처럼 쓰지 말고 [확인 필요]로 표시하라.
+- 고객이 바로 검토할 수 있는 문서 초안을 충분한 본문으로 작성하라. 제목·목차·본문·표가 필요하면 포함하라.
+- 자료조사가 필요한 경우 조사할 항목과 근거가 필요한 지점을 표시하라. 출처를 확인하지 않고 인용을 만들지 마라.
+- 문서 작성이 아니라 상담·교육·현장 작업을 요구하는 내용은 실제 수행했다고 주장하지 말고, 제공 가능한 원격 문서 범위와 추가 확인 질문을 제시하라.
+- 결과 마지막에 품질 점검표, 고객에게 확인할 질문, 다음 담당자가 보완할 내용을 적어라.
+- API 키, 쿠키, 세션, 연락처 등 민감정보는 결과에 포함하지 마라.
+
+이 결과는 고객에게 바로 보내기 전 사용자가 검토할 초안이다. 실행하지 않은 조사나 파일 작업을 완료했다고 말하지 마라.`;
+}
+
+function buildSoomgoReviewPrompt(task, resultPost, nextProvider, cycle) {
+  const previous = redactSoomgoPromptText(resultPost.text);
+  return `너는 숨고 의뢰 처리 작업의 다음 담당자(${nextProvider})다. 이전 AI가 작성한 문서 초안을 검토하고 납품 품질을 높여라.
+
+프로젝트: ${task.project}
+작업 ID: ${task.id}
+검토 사이클: ${cycle}
+이전 담당 AI: ${resultPost.provider}
+
+이전 초안:
+${previous}
+
+검토 지시:
+- 원래 고객 요구와 초안이 빠짐없이 맞는지 확인하고 누락·모순·과장 표현을 표시하라.
+- 사실과 추정을 분리하고, 근거가 없는 수치·인용·출처는 만들어내지 마라.
+- 문서의 구조·가독성·맞춤법·실행 가능성을 개선한 수정본을 제시하라.
+- 고객이 추가로 제공해야 할 자료와 최종 확인 질문을 정리하라.
+- 실제로 확인하거나 수정하지 않은 파일·조사는 완료되었다고 쓰지 마라.
+- 결과 마지막에 최종 검토 체크리스트와 사용자 승인 후 다음 단계를 적어라.
+- API 키, 쿠키, 세션, 연락처 등 민감정보는 포함하지 마라.`;
+}
+
+function createSoomgoFulfillment(current, request, quote, requestId, sourceUrl) {
+  if (quote.manualReview || quote.directRequest || quote.scriptRequest || request.directRequest || request.scriptRequest) return null;
+  const leads = Array.isArray(current.soomgoLeads) ? current.soomgoLeads : [];
+  const existingLead = leads.find(item => item.requestId === requestId);
+  if (existingLead?.taskId) return null;
+  const projectInfo = soomgoProject(current);
+  const now = new Date().toISOString();
+  const taskId = `SOOMGO-${crypto.createHash('sha256').update(requestId).digest('hex').slice(0, 12)}`;
+  const titleBase = `${request.purpose || quote.label || '문서 의뢰'}${request.topic ? ` · ${request.topic}` : ''}`.replace(/\s+/g, ' ').trim();
+  const task = {
+    id: taskId,
+    title: titleBase.slice(0, 140),
+    description: `숨고 요청을 AI가 작성하고 다른 AI가 검토한다. 원본 요청 ID: ${requestId}`,
+    ai: providerConfigured('OpenAI') ? 'OpenAI' : 'Gemini',
+    priority: request.urgent ? '높음' : '중간',
+    status: 'active',
+    label: 'AI 작성 대기',
+    tone: 'blue',
+    dot: '',
+    meta: '숨고 요청 접수 · AI 작성 대기',
+    project: projectInfo.project.name,
+    category: '숨고 의뢰 처리',
+    lane: 'soomgo_fulfillment',
+    source: 'Soomgo',
+    sourceRequestId: requestId,
+    sourceUrl: String(sourceUrl || '').slice(0, 500),
+    quote: { amount: quote.amount, regularAmount: quote.regularAmount, originalAmount: quote.originalAmount, savedAmount: quote.savedAmount, discountRate: quote.discountRate, discountLabel: quote.discountLabel, priceBasis: quote.priceBasis, days: quote.days, label: quote.label, tier: quote.tier, basicScope: quote.basicScope, extraScope: quote.extraScope },
+    decisionAuthority: false,
+    decisionOwner: '사용자 승인',
+    createdAt: now,
+    updatedAt: now
+  };
+  const post = {
+    id: `POST-${taskId}`,
+    taskId,
+    title: `${task.title} · AI 작성 지시`,
+    source: 'Soomgo',
+    nextAI: task.ai,
+    prompt: buildSoomgoFulfillmentPrompt(task, request, quote),
+    status: '게시됨',
+    mode: 'analysis',
+    followUpMode: 'analysis',
+    autoContinue: true,
+    cycle: 1,
+    maxCycles: 2,
+    lane: 'soomgo_fulfillment',
+    decisionAuthority: false,
+    decisionOwner: '사용자 승인',
+    sourceRequestId: requestId,
+    createdAt: now
+  };
+  current.tasks = [task, ...(Array.isArray(current.tasks) ? current.tasks : [])];
+  current.promptPosts = [post, ...(Array.isArray(current.promptPosts) ? current.promptPosts : [])];
+  return { task, post, projectAdded: projectInfo.added };
+}
+
+function buildSoomgoQuote(body = {}) {
+  const parsed = parseSoomgoRequest(body);
+  return { parsed, quote: soomgoQuote(parsed) };
+}
+
+function soomgoReply(body = {}) {
+  const message = String(body.message || body.text || '').replace(/\r/g, '').trim().slice(0, 2000);
+  const conversationText = String(body.conversationText || body.history || '').replace(/\r/g, '').slice(0, 12000);
+  const quote = body.quote && typeof body.quote === 'object' ? body.quote : null;
+  const lower = message.toLowerCase();
+  if (!message) return { autoSend: false, manualReview: true, reason: '고객 메시지를 확인할 수 없습니다.' };
+  if (isKnownHiredSoomgoConversation(body.conversationId)) {
+    return { autoSend: false, manualReview: true, skip: true, templateKey: 'manual_hired', reason: '고용 요청이 등록된 고객은 자동 답변하지 않습니다.' };
+  }
+  if (isBlockedSoomgoConversation(body.conversationId)) {
+    return { autoSend: false, manualReview: true, skip: true, templateKey: 'manual_blocked', reason: '이 대화는 수동 관리 목록에 등록되어 있습니다.' };
+  }
+  if (isHiredSoomgoConversation(`${conversationText}\n${message}`)) {
+    return { autoSend: false, manualReview: true, skip: true, templateKey: 'manual_hired', reason: '고용이 확정된 고객은 자동 답변하지 않습니다.' };
+  }
+  if (isSoomgoSystemMessage(message)) {
+    return { autoSend: false, manualReview: false, skip: true, reason: '숨고 시스템 알림은 고객 답변으로 처리하지 않습니다.' };
+  }
+  if (isSoomgoAcknowledgement(message)) {
+    return { autoSend: false, manualReview: false, skip: true, reason: '확인성 메시지에는 추가 답변을 보내지 않습니다.' };
+  }
+  // 자동 고용 흐름보다 먼저 제외 조건을 적용한다. 대면·대본·학업
+  // 요청은 고객이 진행 의사를 밝혀도 자동 버튼 조작 대상이 아니다.
+  if (/(대본|시나리오|각본|스크립트|콘티)/i.test(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_script', reason: '대본·시나리오 계열 의뢰는 자동 답변하지 않습니다.' };
+  }
+  if (/(온라인|비대면|원격)/i.test(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_direct', reason: '온라인·비대면·원격 진행 요청은 자동 답변하지 않습니다.' };
+  }
+  if (/(화상\s*(?:회의|상담|미팅|진행)?|줌|zoom|구글\s*미트)/i.test(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_direct', reason: '화상회의·화상상담 진행 요청은 자동 답변하지 않습니다.' };
+  }
+  if (/(대면|방문|출장|현장|오프라인)/.test(lower) && !/(비대면|온라인|원격|줌|zoom|구글\s*미트)/.test(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_direct', reason: '대면·방문·현장 요청은 자동 답변하지 않습니다.' };
+  }
+  if (isAcademicSoomgoRequest(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_academic', reason: '논문·학술·학위·연구 프로젝트 요청은 자동 답변하지 않습니다.' };
+  }
+  // 고용 요청은 고객의 명시적인 진행 동의와 네 가지 조건 확인 뒤에만
+  // 확장 프로그램이 버튼을 누를 수 있도록 별도 신호를 반환한다.
+  // 결제·추가범위 같은 단어가 포함되어도 네 가지 확인 문장이 완성된
+  // 경우에는 이 안전한 고용 확인 흐름을 먼저 적용한다.
+  const customerHistory = `${conversationText}\n${message}`.trim();
+  const consent = /(진행\s*(?:하겠습니다|할게요?|부탁드릴게요|해주세요|하죠)|고용\s*(?:하겠습니다|할게요?|하죠)|맡길게요?|이대로\s*진행\s*(?:하겠습니다|할게요?|하죠)|결제\s*(?:하겠습니다|할게요?|하죠))/i.test(customerHistory);
+  if (consent) {
+    const confirmed = (topic, confirmation = /확인|동의|괜찮|문제없|맞습니다|좋습니다|알겠습니다|진행/i) => topic.test(customerHistory) && confirmation.test(customerHistory);
+    const priceConfirmed = confirmed(/가격|금액|견적|\d[\d,]*\s*원/i) || (Number(quote?.amount || 0) > 0 && new RegExp(String(Number(quote.amount)).replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')).test(customerHistory));
+    const scopeConfirmed = confirmed(/작업\s*범위|결과물|납품|포함\s*범위|페이지|자료|파일\s*형식|디자인/);
+    const scheduleConfirmed = confirmed(/시작일|완료일|납기|소요일|일정|날짜|\d+\s*일|\d+월\s*\d+일/);
+    const extraConfirmed = confirmed(/추가\s*(?:비용|금)|추가금|수정\s*(?:횟수|범위)|기본\s*(?:형|범위).*포함/);
+    const allConfirmed = /(네\s*가지|4\s*가지|가격[·,\s].{0,160}(?:범위|결과물).{0,160}(?:시작일|완료일|납기|일정).{0,160}(?:추가금|추가\s*비용|수정)).{0,80}(?:확인|동의|괜찮|문제없|진행)/is.test(customerHistory);
+    const missing = [];
+    if (!priceConfirmed && !allConfirmed) missing.push('가격');
+    if (!scopeConfirmed && !allConfirmed) missing.push('작업 범위·결과물');
+    if (!scheduleConfirmed && !allConfirmed) missing.push('시작일·완료일');
+    if (!extraConfirmed && !allConfirmed) missing.push('수정·추가비용');
+    if (missing.length) {
+      return {
+        autoSend: true,
+        manualReview: false,
+        hireRequest: false,
+        templateKey: 'confirm_hire_terms',
+        text: `진행 의사 확인했습니다. 고용 요청을 보내기 전에 ${missing.join(', ')}을(를) 먼저 확정해 주세요. 네 가지 조건이 모두 확인되면 “가격·범위·일정·수정/추가비용 모두 확인했고 진행하겠습니다”라고 남겨 주세요. 확인된 뒤 고용 요청과 일정 등록을 보내드리며, 고객님이 숨고 화면에서 고용하기를 눌러 최종 승인합니다.`
+      };
+    }
+    return {
+      autoSend: true,
+      manualReview: false,
+      hireRequest: true,
+      templateKey: 'hire_ready',
+      text: '가격, 작업 범위·결과물, 시작일·완료일, 수정·추가비용 조건을 모두 확인했습니다. 지금 고용 요청과 일정 등록을 보내드리겠습니다. 고객님은 숨고 화면에서 고용하기를 눌러 최종 승인해 주세요.'
+    };
+  }
+  // 고객이 진행 의사를 보였지만 네 가지 조건을 한 번에 확정하지 않은
+  // 단계에서는 먼저 고용 요청을 보내도 되는지 묻는다. 이 답변 뒤에
+  // 고객이 조건을 확정하고 진행하겠다고 답해야만 버튼을 누른다.
+  if (/(진행하고\s*싶|맡기고\s*싶|부탁드리고\s*싶|의뢰하(?:고|겠)|좋습니다[,.!\s]*진행|진행할게|진행하죠|진행해\s*주세요|이대로\s*할게)/i.test(customerHistory)) {
+    return {
+      autoSend: true,
+      manualReview: false,
+      hireRequest: false,
+      templateKey: 'ask_hire_consent',
+      text: '견적 확인 감사합니다. 안내드린 가격·작업 범위와 결과물·시작일과 완료일·수정 및 추가비용 조건으로 진행하실까요? 네 가지 조건을 모두 확인하셨다면 “진행하겠습니다”라고 답해 주세요. 확인 후 고용 요청과 일정 등록을 보내드려도 될까요?'
+    };
+  }
+  // 자기소개서·이력서 문의는 대화 앞부분의 지원 직무·회사 맥락까지
+  // 함께 읽어 방법과 기간을 바로 안내한다. 일반적인 "대필"은 위의
+  // 학술·수동 검토 규칙을 유지하되 자기소개서 작성은 자동 응답한다.
+  const selfIntroContext = /(자기소개서|자소서|이력서|경력기술서)/i.test(customerHistory);
+  if (selfIntroContext && /(기간|며칠|소요일|납기|완료|걸리|언제)/i.test(lower)) {
+    const selfIntroDays = String(quote?.days || '1~2일');
+    return {
+      autoSend: true,
+      manualReview: false,
+      templateKey: 'self_intro_deadline',
+      text: `자기소개서 작성은 필요한 자료와 문항을 모두 보내주시면 보통 ${selfIntroDays} 내 초안 작성이 가능합니다. 문항이 많거나 경험 정리가 필요한 경우에는 2~3일 정도 소요될 수 있으며, 문항과 분량을 확인하면 정확한 완료일을 바로 안내드리겠습니다.`
+    };
+  }
+  if (selfIntroContext && /(방법|진행|절차|과정|어떻게|대필|작성|가능)/i.test(lower)) {
+    return {
+      autoSend: true,
+      manualReview: false,
+      templateKey: 'self_intro_method',
+      text: '네, 자기소개서 작성 대행 방식으로 진행할 수 있습니다. 고객님의 실제 경험·경력·지원동기를 바탕으로 문항별 초안을 작성하고, 수정·보완까지 도와드립니다. 지원 회사와 직무, 자기소개서 문항, 경험 자료를 보내주시면 바로 진행 방법과 일정을 안내드리겠습니다.'
+    };
+  }
+  if (/결제|환불|현금영수증|세금계산서|계좌|입금|할인|가격\s*깎|분쟁|신고|취소/.test(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_billing', reason: '결제·환불·분쟁 관련 문의는 직접 확인이 필요합니다.' };
+  }
+  if (/(대본|시나리오|각본|스크립트|콘티)/i.test(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_script', reason: '대본·시나리오 계열 의뢰는 자동 답변하지 않습니다.' };
+  }
+  if (/(온라인|비대면|원격)/i.test(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_direct', reason: '온라인·비대면·원격 진행 요청은 자동 답변하지 않습니다.' };
+  }
+  if (/(화상\s*(?:회의|상담|미팅|진행)?|줌|zoom|구글\s*미트)/i.test(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_direct', reason: '화상회의·화상상담 진행 요청은 자동 답변하지 않습니다.' };
+  }
+  if (/(대면|방문|출장|현장|오프라인)/.test(lower) && !/(비대면|온라인|원격|줌|zoom|구글\s*미트)/.test(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_direct', reason: '대면·방문·현장 요청은 자동 답변하지 않습니다.' };
+  }
+  if (isAcademicSoomgoRequest(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_academic', reason: '논문·학술·학위·연구 프로젝트 요청은 자동 답변하지 않습니다.' };
+  }
+  if (/오늘|내일|긴급|급함|당일|가능한\s*빨리|마감/.test(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_urgent', reason: '긴급·마감 일정은 실제 가능 여부를 직접 확인해야 합니다.' };
+  }
+  if (/추가|변경|늘려|줄여|범위\s*(변경|추가)|수정\s*(더|추가)|페이지\s*(추가|변경)/.test(lower)) {
+    return { autoSend: false, manualReview: true, templateKey: 'manual_scope', reason: '작업 범위·추가 수정 문의는 직접 확인이 필요합니다.' };
+  }
+  const amount = Number(quote?.amount || 0);
+  const regularAmount = Number(quote?.regularAmount || quote?.originalAmount || 0);
+  const days = String(quote?.days || '1~3일');
+  const templates = [
+    { key: 'price', pattern: /가격|견적|얼마|비용|금액|예산/, build: () => amount
+      ? (regularAmount > amount
+        ? `문의 주신 작업은 ${SOOMGO_PRICE_BASIS} 정상가 ${regularAmount.toLocaleString('ko-KR')}원에서 초기 작업 사례를 쌓기 위한 20% 할인을 적용해 ${amount.toLocaleString('ko-KR')}원입니다. 예상 소요일은 ${days}이며, 원문과 자료를 확인한 뒤 최종 금액을 확정해 드리겠습니다.`
+        : `문의 주신 작업은 초기 작업 사례를 쌓기 위한 20% 할인 적용 예상 ${amount.toLocaleString('ko-KR')}원, 예상 소요일 ${days}입니다. 원문과 자료를 확인한 뒤 최종 금액을 확정해 드리겠습니다.`)
+      : '정확한 견적은 원문·분량·참고자료를 확인한 뒤 안내드리겠습니다. 초기 작업 사례를 쌓는 기간이라 숨고 시장가 기준에서 20% 할인해 안내드립니다. 자료를 보내 주세요.' },
+    { key: 'deadline', pattern: /언제|기간|소요일|며칠|납기|완료|걸리/, build: () => `현재 요청 기준 예상 소요일은 ${days}입니다. 자료를 받는 즉시 시작일과 납품 일정을 확정해 드리겠습니다.` },
+    { key: 'start_date', pattern: /시작|착수|언제부터|가능한\s*날짜/, build: () => '자료와 작업 조건을 확인하면 가능한 시작일을 바로 안내드리겠습니다. 원문과 희망 납기를 보내 주세요.' },
+    { key: 'materials', pattern: /자료|파일|원문|보내|전달|양식|첨부|참고자료/, build: () => '작업에 사용할 원문·참고자료·원하는 파일 형식을 보내 주세요. 자료 확인 후 범위와 일정을 확정해 드리겠습니다.' },
+    { key: 'process', pattern: /진행\s*방식|진행|절차|과정|어떻게|방법|순서/, build: () => '요청 내용과 자료를 먼저 확인한 뒤 구성안을 잡고, 초안 작성·검수·수정 순서로 진행합니다. 단계별 진행 상황을 안내드리겠습니다.' },
+    { key: 'format', pattern: /한글|워드|word|파워포인트|ppt|pdf|파일\s*형식|형식/, build: () => '한글·워드·파워포인트·PDF 형식으로 납품할 수 있습니다. 원하시는 형식과 편집 가능 여부를 알려 주세요.' },
+    { key: 'pages', pattern: /페이지|쪽수|몇\s*장|분량|길이/, build: () => '요청하신 분량에 맞춰 구성할 수 있습니다. 페이지 수와 반드시 포함할 항목을 알려 주시면 범위를 정확히 맞추겠습니다.' },
+    { key: 'revision_policy', pattern: /수정\s*횟수|몇\s*번|교정|퇴고/, build: () => '기본형은 1회, 확장형·제출형은 2회 수정 기준입니다. 수정 범위가 커지거나 횟수가 추가되면 사전에 안내드리겠습니다.' },
+    { key: 'research', pattern: /자료조사|리서치|조사|출처|참고문헌|근거|인용/, build: () => '필요한 자료조사 항목과 근거가 필요한 부분을 먼저 확인합니다. 확인 가능한 출처를 기준으로 정리하고, 검증되지 않은 내용은 따로 표시하겠습니다.' },
+    { key: 'table_image', pattern: /표|이미지|사진|도표|그래프/, build: () => '표·목록·이미지 구성도 가능합니다. 사용할 자료와 원하는 개수·형식을 보내 주시면 포함 범위를 안내드리겠습니다.' },
+    { key: 'summary_outline', pattern: /요약|목차|개요|핵심/, build: () => '목차와 핵심 요약을 함께 구성할 수 있습니다. 요약 분량과 강조할 내용을 알려 주시면 문서 구조에 반영하겠습니다.' },
+    { key: 'tone', pattern: /문체|말투|톤|분위기|스타일/, build: () => '원하시는 문체·톤·대상 독자를 알려 주시면 그 기준에 맞춰 작성하겠습니다. 참고할 예시가 있으면 함께 보내 주세요.' },
+    { key: 'sample', pattern: /샘플|포트폴리오|예시|사례|이전\s*작업/, build: () => '원하시는 결과물의 예시나 참고 형식을 보내 주시면 구성과 문체를 맞춰 안내드리겠습니다.' },
+    { key: 'confidentiality', pattern: /비밀|보안|개인정보|외부\s*공개|유출/, build: () => '전달받은 자료는 작업 목적에 한해 사용하고, 결과물에는 연락처·인증정보 등 민감한 내용을 포함하지 않습니다. 필요한 보안 조건이 있으면 미리 알려 주세요.' },
+    { key: 'remote', pattern: /비대면|온라인|원격|줌|zoom|구글\s*미트/, build: () => '온라인·비대면 방식으로 진행할 수 있습니다. 자료는 숨고 채팅으로 보내 주시면 확인 후 일정과 범위를 안내드리겠습니다.' },
+    { key: 'language', pattern: /영어|일본어|중국어|번역|다국어|한국어\s*교정/, build: () => '네, 요청하신 언어 작업은 현재 안내된 범위에서 가능합니다. 원문과 원하는 결과 언어를 보내 주시면 바로 작업 범위와 20% 할인 적용 견적을 안내드리겠습니다.' },
+    { key: 'delivery', pattern: /납품|전달|다운로드|받을\s*수|완성본/, build: () => '검수된 최종 파일을 협의한 형식으로 전달해 드립니다. 원하시는 파일 형식과 전달 방법을 알려 주세요.' },
+    { key: 'contact', pattern: /전화|연락|통화|카톡|카카오|문자/, build: () => '세부 협의는 우선 숨고 채팅으로 진행합니다. 작업 조건을 채팅으로 남겨 주시면 확인 후 답변드리겠습니다.' },
+    { key: 'availability', pattern: /가능|할\s*수|진행\s*할|신청/, build: () => `네, 요청하신 업무는 현재 요청에 적힌 범위 기준으로 진행 가능합니다. 예상 소요일은 ${days}이며, 원문과 참고자료를 보내 주시면 바로 착수 조건과 결과물 범위를 안내하겠습니다.` },
+    { key: 'thanks', pattern: /감사|고맙|확인했|알겠/, build: () => '확인해 주셔서 감사합니다. 자료와 희망 일정을 보내 주시면 다음 진행 단계와 일정을 안내드리겠습니다.' }
+  ];
+  const selected = templates.find(template => template.pattern.test(lower)) || { key: 'general', build: () => '문의 주신 내용 확인했습니다. 작업 범위와 원하는 결과물, 희망 일정을 알려 주시면 정확한 견적과 진행 방법을 안내드리겠습니다.' };
+  const baseText = selected.build();
+  // 같은 문구를 반복하지 않도록 문의 유형별 기본 답변에 다양한 마무리를
+  // 결정적으로 조합한다. 같은 메시지는 같은 문구를 유지하고, 다른 메시지는
+  // 자연스럽게 다른 표현을 선택해 수백 가지 답변 조합을 만든다.
+  const requestClosers = [
+    '필요한 내용을 보내 주시면 바로 확인하겠습니다.',
+    '조건을 알려 주시면 정확하게 안내드리겠습니다.',
+    '추가로 궁금한 점이 있으면 편하게 남겨 주세요.',
+    '확인 후 가능한 일정과 범위를 안내드리겠습니다.',
+    '자료를 확인한 뒤 최종 내용을 정리해 드리겠습니다.',
+    '원하시는 방향을 알려 주시면 그 기준에 맞추겠습니다.',
+    '숨고 채팅으로 내용을 남겨 주시면 빠르게 확인하겠습니다.',
+    '가능한 범위부터 먼저 안내드리겠습니다.',
+    '요청 조건을 기준으로 순서대로 안내드리겠습니다.',
+    '필요한 사항을 확인해 다음 단계까지 정리해 드리겠습니다.',
+    '참고할 예시가 있으면 함께 보내 주세요.',
+    '확인할 내용을 보내 주시면 진행 방법을 제안드리겠습니다.',
+    '원하시는 형식과 일정을 알려 주시면 맞춰 보겠습니다.',
+    '자료를 받는 즉시 검토를 시작하겠습니다.',
+    '협의가 필요한 부분은 미리 안내드리겠습니다.',
+    '편하신 방식으로 요청 내용을 남겨 주세요.',
+    '확인된 내용부터 빠르게 답변드리겠습니다.',
+    '추가 조건이 있으면 함께 알려 주시면 반영하겠습니다.',
+    '요청하신 목적에 맞는 범위를 먼저 확인하겠습니다.',
+    '내용을 확인한 뒤 최종 안내를 드리겠습니다.'
+  ];
+  const courtesyClosers = [
+    '확인해 주셔서 감사합니다.',
+    '필요한 내용이 생기면 언제든 남겨 주세요.',
+    '추가 질문도 편하게 보내 주세요.',
+    '확인되는 대로 이어서 안내드리겠습니다.',
+    '좋은 결과물로 준비할 수 있도록 확인하겠습니다.',
+    '남겨 주신 내용을 기준으로 도와드리겠습니다.'
+  ];
+  const closingPool = selected.key === 'thanks' ? courtesyClosers : requestClosers;
+  const variantIndex = Number.parseInt(hash(`${selected.key}|${message}`), 16) % closingPool.length;
+  const text = `${baseText} ${closingPool[variantIndex]}`.trim();
+  return { autoSend: true, manualReview: false, templateKey: `auto_${selected.key}_${variantIndex + 1}`, variant: variantIndex + 1, text };
+}
+
+function duplicateMatches(state, query) {
+  const title = normalizeSearch(query.title);
+  if (!title) return [];
+  const category = normalizeSearch(query.category);
+  const project = normalizeSearch(query.project);
+  const excludeId = String(query.excludeId || '');
+  const titleTokens = new Set(title.split(/\s+/).filter(token => token.length > 1));
+  return (Array.isArray(state.tasks) ? state.tasks : []).map(task => {
+    if (!task || task.id === excludeId) return null;
+    const candidate = normalizeSearch(task.title);
+    if (!candidate) return null;
+    const exact = candidate === title || candidate.includes(title) || title.includes(candidate);
+    const candidateTokens = new Set(candidate.split(/\s+/).filter(token => token.length > 1));
+    const overlap = [...titleTokens].filter(token => candidateTokens.has(token)).length;
+    const score = exact ? 1 : overlap / Math.max(titleTokens.size, candidateTokens.size, 1);
+    const sameCategory = category && normalizeSearch(task.category) === category;
+    const sameProject = project && normalizeSearch(task.project) === project;
+    if (exact || score >= 0.6 || (sameCategory && score >= 0.45) || (sameProject && score >= 0.45)) {
+      return { id: task.id, title: task.title, category: task.category || null, project: task.project || null, status: task.status || null, score: Number(score.toFixed(2)) };
+    }
+    return null;
+  }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 8);
+}
+
+function fileVersionInfo(state, name) {
+  const normalized = safeName(name).toLowerCase();
+  const files = Array.isArray(state.files) ? state.files : [];
+  const versions = files.filter(file => String(file.name || '').toLowerCase() === normalized);
+  const version = versions.reduce((max, file) => Math.max(max, Number(file.version) || 0), 0) + 1;
+  const versionGroup = versions[0]?.versionGroup || `FILEGROUP-${crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16)}`;
+  return { version, versionGroup };
+}
+
+function importFileRecord(body, buffer, hash, storedName, state = emptyState()) {
+  const source = String(body.source || 'Bridge').slice(0, 80);
+  const name = safeName(body.name);
+  const versionInfo = fileVersionInfo(state, name);
+  return {
+    id: `FILE-${hash.slice(0, 12)}`,
+    originalName: String(body.name || name).slice(0, 240),
+    name,
+    version: versionInfo.version,
+    versionGroup: versionInfo.versionGroup,
+    source,
+    size: buffer.length,
+    sha256: hash,
+    mimeType: String(body.mimeType || body.mime || 'application/octet-stream').slice(0, 120),
+    project: String(body.project || '').slice(0, 160) || null,
+    taskId: String(body.taskId || '').slice(0, 120) || null,
+    capturedAt: String(body.capturedAt || new Date().toISOString()),
+    uploadedAt: new Date().toISOString(),
+    status: String(body.status || '원본').slice(0, 40),
+    artifact: body.artifact || { label: '브리지 자동 수집', tone: 'green' },
+    serverPath: `/api/files/${encodeURIComponent(storedName)}`
+  };
+}
+
+function openAiText(payload) {
+  if (typeof payload?.output_text === 'string') return payload.output_text;
+  return (payload?.output || []).flatMap(item => item.content || []).filter(item => typeof item.text === 'string').map(item => item.text).join('\n').trim();
+}
+
+async function runOpenAI(prompt) {
+  const key = String(process.env.OPENAI_API_KEY || '').trim();
+  if (!key) throw new Error('openai_key_missing');
+  const model = process.env.OPENAI_MODEL || 'gpt-5.6-luna';
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ model, input: prompt, store: false }),
+    signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS)
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(`openai_${response.status}_${payload?.error?.code || 'request_failed'}`);
+  return { provider: 'OpenAI', model, text: openAiText(payload), usage: payload.usage || null, providerResponseId: payload.id || null };
+}
+
+function geminiText(payload) {
+  return (payload?.candidates || []).flatMap(candidate => candidate.content?.parts || []).filter(part => typeof part.text === 'string').map(part => part.text).join('\n').trim();
+}
+
+async function runGemini(prompt) {
+  const key = String(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
+  if (!key) throw new Error('gemini_key_missing');
+  const model = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: 'POST',
+    headers: { 'x-goog-api-key': key, 'content-type': 'application/json' },
+    body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }),
+    signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS)
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = String(payload?.error?.message || payload?.error?.status || 'request_failed').replace(/[^a-zA-Z0-9_. -]/g, '').slice(0, 160).trim().replace(/\s+/g, '_');
+    throw new Error(`gemini_${response.status}_${detail || 'request_failed'}`);
+  }
+  return { provider: 'Gemini', model, text: geminiText(payload), usage: payload.usageMetadata || null, providerResponseId: payload.responseId || null };
+}
+
+async function runProvider(provider, prompt) {
+  if (provider === 'OpenAI') return runOpenAI(prompt);
+  if (provider === 'Gemini') return runGemini(prompt);
+  throw new Error('provider_not_supported');
+}
+
+function providerConfigured(provider) {
+  if (provider === 'OpenAI') return Boolean(String(process.env.OPENAI_API_KEY || '').trim());
+  if (provider === 'Gemini') return Boolean(String(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim());
+  return false;
+}
+
+function providerAvailable(provider) {
+  return providerConfigured(provider) && Number(providerCooldownUntil[provider] || 0) <= Date.now();
+}
+
+function markProviderCooldown(provider, error) {
+  if (Object.prototype.hasOwnProperty.call(providerLastError, provider)) {
+    providerLastError[provider] = String(error?.message || error || '').slice(0, 500);
+  }
+  const message = String(error?.message || error || '').toLowerCase();
+  let duration = 0;
+  if (/429|quota|rate_limit|rate limit/.test(message)) duration = 30 * 60 * 1000;
+  else if (/timeout|aborted/.test(message)) duration = 2 * 60 * 1000;
+  if (!duration || !Object.prototype.hasOwnProperty.call(providerCooldownUntil, provider)) return;
+  providerCooldownUntil[provider] = Date.now() + duration;
+  providerCooldownReason[provider] = String(error?.message || error || '').slice(0, 500);
+}
+
+function markProviderSuccess(provider) {
+  if (Object.prototype.hasOwnProperty.call(providerLastError, provider)) providerLastError[provider] = null;
+  if (Object.prototype.hasOwnProperty.call(providerCooldownUntil, provider)) {
+    providerCooldownUntil[provider] = 0;
+    providerCooldownReason[provider] = null;
+  }
+}
+
+function shouldFallback(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  return /429|credit_balance_exhausted|rate_limit|5\d\d|timeout|key_missing|not_found|temporarily_unavailable/.test(message);
+}
+
+function isRetryableRunError(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  return /429|rate_limit|5\d\d|timeout|temporarily_unavailable|aborted/.test(message);
+}
+
+async function runWithFallback(provider, prompt) {
+  const requestedProvider = provider;
+  const alternate = provider === 'OpenAI' ? 'Gemini' : 'OpenAI';
+  const initialProvider = providerAvailable(provider) ? provider : (providerAvailable(alternate) ? alternate : provider);
+  const preflightFallback = initialProvider !== provider;
+  try {
+    const result = await runProvider(initialProvider, prompt);
+    markProviderSuccess(initialProvider);
+    return {
+      result,
+      requestedProvider,
+      fallbackFrom: preflightFallback ? provider : null,
+      primaryError: preflightFallback ? providerCooldownReason[provider] : null
+    };
+  } catch (primaryError) {
+    markProviderCooldown(initialProvider, primaryError);
+    if (!shouldFallback(primaryError) || !providerAvailable(alternate) || alternate === initialProvider) throw primaryError;
+    try {
+      const result = await runProvider(alternate, prompt);
+      markProviderSuccess(alternate);
+      return {
+        result,
+        requestedProvider,
+        fallbackFrom: initialProvider,
+        primaryError: primaryError.message
+      };
+    } catch (fallbackError) {
+      markProviderCooldown(alternate, fallbackError);
+      throw new Error(`${primaryError.message}; fallback_${alternate.toLowerCase()}_${fallbackError.message}`);
+    }
+  }
+}
+
+function implementationContext() {
+  return IMPLEMENTATION_FILES.map(relative => {
+    const target = path.join(ROOT, relative);
+    if (!fs.existsSync(target)) return `### ${relative}\n[파일 없음]`;
+    const content = fs.readFileSync(target, 'utf8');
+    return `### ${relative}\n\`\`\`\n${content.slice(0, 60000)}\n\`\`\``;
+  }).join('\n\n');
+}
+
+function buildImplementationPrompt(postPrompt) {
+  return `${postPrompt}\n\n[실제 개발 실행 지시]\n아래는 현재 Relay Desk 프로젝트의 파일 문맥이다. 이번 사이클에서는 가능한 변경을 실제 패치로 제시하라.\n\n${implementationContext()}\n\n응답 형식:\n1) 변경 요약과 검증 방법을 짧게 작성한다.\n2) 이어서 반드시 git이 적용할 수 있는 unified diff를 \`\`\`diff 코드 블록으로 출력한다. 첫 줄은 \`diff --git a/파일경로 b/파일경로\`로 시작하고, 각 파일의 \`--- a/경로\`, \`+++ b/경로\`, 정확한 줄 번호가 있는 \`@@\` 문맥을 포함해야 한다.\n3) 위에 제공된 파일만 수정하고, 존재하지 않는 줄 번호나 생략 기호를 사용하지 마라.\n4) 안전하게 적용할 변경이 없으면 diff 대신 마지막 줄에 RELAY_STOP을 적어라.`;
+}
+
+function extractUnifiedPatch(text) {
+  const value = String(text || '');
+  const fenced = value.match(/```(?:diff|patch)\s*([\s\S]*?)```/i);
+  let patch = (fenced ? fenced[1] : value).trim();
+  patch = patch.replace(/^--- (?!a\/|\/dev\/null)([^\n]+)$/gm, '--- a/$1');
+  patch = patch.replace(/^\+\+\+ (?!b\/|\/dev\/null)([^\n]+)$/gm, '+++ b/$1');
+  if (!patch || (!/^diff --git /m.test(patch) && !/^--- [ab]\//m.test(patch))) return null;
+  const paths = [];
+  for (const match of patch.matchAll(/^(?:diff --git a\/([^\n]+) b\/([^\n]+)|--- a\/([^\n]+)|\+\+\+ b\/([^\n]+))/gm)) {
+    const candidate = match[1] || match[2] || match[3] || match[4];
+    if (candidate) paths.push(candidate.trim());
+  }
+  const unique = [...new Set(paths)];
+  for (const relative of unique) {
+    if (!relative || path.isAbsolute(relative) || relative.split(/[\\/]/).includes('..')) return null;
+    if (!IMPLEMENTATION_FILES.includes(relative)) return null;
+    const target = path.resolve(ROOT, relative);
+    if (target !== ROOT && !target.startsWith(`${ROOT}${path.sep}`)) return null;
+  }
+  return { patch, files: unique };
+}
+
+function applyImplementationPatch(text) {
+  const extracted = extractUnifiedPatch(text);
+  if (!extracted) return { status: /\bRELAY_STOP\b/i.test(String(text || '')) ? 'stopped' : 'no_patch', files: [] };
+  const patchLines = extracted.patch.split(/\r?\n/);
+  const changes = [];
+  try {
+    let current = null;
+    for (let i = 0; i < patchLines.length; i += 1) {
+      const line = patchLines[i];
+      const header = line.match(/^\+\+\+ (?:b\/)?([^\t]+)(?:\t.*)?$/);
+      if (header) {
+        const relative = header[1].trim();
+        if (!IMPLEMENTATION_FILES.includes(relative)) throw new Error(`file_not_allowed:${relative}`);
+        const target = path.join(ROOT, relative);
+        if (!fs.existsSync(target)) throw new Error(`file_not_found:${relative}`);
+        current = { relative, target, original: fs.readFileSync(target, 'utf8'), hunks: [] };
+        changes.push(current);
+        continue;
+      }
+      const hunk = line.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+      if (hunk) {
+        if (!current) throw new Error('patch_missing_file_header');
+        const body = [];
+        i += 1;
+        while (i < patchLines.length && !/^@@ |^--- |^\+\+\+ |^diff --git /.test(patchLines[i])) {
+          if (patchLines[i] !== '\\ No newline at end of file') body.push(patchLines[i]);
+          i += 1;
+        }
+        i -= 1;
+        current.hunks.push({ start: Number(hunk[1]), lines: body });
+      }
+    }
+    if (!changes.length || changes.some(item => !item.hunks.length)) throw new Error('patch_missing_hunk');
+    const nextContents = changes.map(change => {
+      const original = change.original.split(/\r?\n/);
+      const output = [];
+      let cursor = 0;
+      for (const hunk of change.hunks) {
+        const index = hunk.start - 1;
+        if (index < cursor || index > original.length) throw new Error(`patch_line_out_of_range:${change.relative}`);
+        output.push(...original.slice(cursor, index));
+        let sourceIndex = index;
+        for (const hunkLine of hunk.lines) {
+          const kind = hunkLine[0];
+          const value = hunkLine.slice(1);
+          if (kind === ' ') {
+            if (original[sourceIndex] !== value) throw new Error(`patch_context_mismatch:${change.relative}`);
+            output.push(original[sourceIndex]);
+            sourceIndex += 1;
+          } else if (kind === '-') {
+            if (original[sourceIndex] !== value) throw new Error(`patch_delete_mismatch:${change.relative}`);
+            sourceIndex += 1;
+          } else if (kind === '+') {
+            output.push(value);
+          } else {
+            throw new Error(`patch_invalid_line:${change.relative}`);
+          }
+        }
+        cursor = sourceIndex;
+      }
+      output.push(...original.slice(cursor));
+      const hadFinalNewline = /\r?\n$/.test(change.original);
+      return { change, content: output.join('\n') + (hadFinalNewline ? '\n' : '') };
+    });
+    for (const item of nextContents) fs.writeFileSync(item.change.target, item.content, 'utf8');
+    if (changes.some(item => item.relative === 'server/relay-server.js')) {
+      const source = fs.readFileSync(path.join(ROOT, 'server/relay-server.js'), 'utf8');
+      new vm.Script(source, { filename: 'server/relay-server.js' });
+    }
+    return { status: 'applied', files: changes.map(item => item.relative), validation: ['unified diff check', 'context check', 'node syntax check'] };
+  } catch (error) {
+    return { status: 'failed', files: extracted.files, error: String(error.message || 'patch_apply_failed').slice(0, 1200) };
+  }
+}
+
+function nextProviderFor(provider) {
+  return provider === 'OpenAI' ? 'Gemini' : 'OpenAI';
+}
+
+function continuousModeEnabled() {
+  return !['0', 'false', 'off', 'no'].includes(String(process.env.RELAY_CONTINUOUS_MODE || 'true').trim().toLowerCase());
+}
+
+function followUpDirection(text) {
+  const value = String(text || '').trim();
+  if (!value) return '이전 결과가 비어 있으므로 작업 범위를 다시 확인하고 진행하라.';
+  const heading = value.search(/(?:다음 단계|향후 계획|next steps?|후속 작업|next direction)/i);
+  if (heading >= 0) return value.slice(heading, heading + 6000);
+  return value.slice(-6000);
+}
+
+function buildFollowUpPrompt(task, resultPost, nextProvider, cycle) {
+  if (task.lane === 'soomgo_fulfillment') return buildSoomgoReviewPrompt(task, resultPost, nextProvider, cycle);
+  const direction = followUpDirection(resultPost.text);
+  return `너는 Relay Desk의 아이디어 확장·검증 담당자다. 이전 담당자의 결과를 바탕으로 같은 주제를 한 사이클 더 발전시켜라.\n\n프로젝트: ${task.project || 'AI 연구 운영 허브'}\n이전 작업 ID: ${task.parentTaskId || task.id}\n이번 작업 ID: ${task.id}\n아이디어 사이클: ${cycle}\n현재 담당 AI: ${nextProvider}\n판단 담당: Astra (추후 연결)\n\n이전 담당자(${resultPost.provider}) 결과의 다음 방향:\n${direction}\n\n역할 경계:\n- 너는 아이디어 후보를 넓히고 검증 방법을 제안하는 역할이다. 최종 인사이트, 채택 여부, 우선순위 확정, 사업 판단을 내리지 마라.\n- 확인된 사실·가설·추가로 필요한 근거를 분리하라. 근거가 없으면 추정이라고 표시하라.\n- 결과는 다음 담당자가 바로 이어갈 수 있도록 후보 아이디어, 반례·리스크, 검증 실험, 다음 질문을 남겨라.\n\n지시:\n- 이미 완료된 조사나 결론을 반복하지 말고 새로운 관점이나 개선안을 최소 2개 제시하라.\n- 각 아이디어에 기대효과, 필요한 검증, 실패 조건을 붙여라.\n- 실제로 수정하지 않은 파일이나 실행하지 않은 실험을 했다고 주장하지 마라.\n- 결과 마지막에 다음 아이디어 사이클이 다룰 질문과 방향을 반드시 적어라.\n- 이 순환은 의미 있는 후속 질문이 있는 동안 계속한다.\n- 민감한 인증정보, API 키, 쿠키, 세션 값은 기록하지 마라.`;
+}
+
+function createFollowUp(latest, post, resultPost) {
+  if (!post.autoContinue) return null;
+  if (post.mode === 'implement' && resultPost.implementation?.status !== 'applied') return null;
+  const parentTask = (Array.isArray(latest.tasks) ? latest.tasks : []).find(item => item.id === post.taskId);
+  if (!parentTask) return null;
+  const cycle = Number(post.cycle || 1) + 1;
+  const maxCycles = Number(post.maxCycles || process.env.RELAY_MAX_AUTO_CYCLES || 0);
+  if (Number.isFinite(maxCycles) && maxCycles > 0 && cycle > maxCycles) return null;
+  if (!continuousModeEnabled() && /\bRELAY_STOP\b/i.test(String(resultPost.text || ''))) return null;
+  const nextProvider = nextProviderFor(resultPost.provider);
+  const followUpMode = post.followUpMode || (post.mode === 'implement' ? 'implement' : 'analysis');
+  const nextTaskId = `${post.taskId}-N${cycle}`;
+  const now = new Date().toISOString();
+  const stableTitle = reportTopicTitle(parentTask);
+  const fulfillment = parentTask.lane === 'soomgo_fulfillment';
+  const nextTask = {
+    ...parentTask,
+    id: nextTaskId,
+    // Keep the bulletin/report title stable across cycles. The cycle remains
+    // in the task id and metadata, so prompts and dashboard rows do not grow
+    // indefinitely as the same topic is developed.
+    title: fulfillment ? `${stableTitle} · AI 검토 ${cycle}` : `${stableTitle} · 아이디어 확장 ${cycle}`,
+    ai: nextProvider,
+    description: fulfillment
+      ? `이전 초안(${post.taskId})을 검토하고 누락·오류를 보완한다. 최종 고객 전달은 사용자 승인 후 진행한다.`
+      : `이전 사이클(${post.taskId}) 결과를 바탕으로 아이디어를 확장하고 검증한다. 최종 판단은 Astra 단계에서 수행한다.`,
+    parentTaskId: parentTask.id,
+    cycle,
+    lane: fulfillment ? 'soomgo_fulfillment' : 'idea_development',
+    decisionAuthority: false,
+    decisionOwner: fulfillment ? '사용자 승인' : 'Astra (추후 연결)',
+    status: 'active',
+    label: fulfillment ? 'AI 검토 대기' : '다음 아이디어 대기',
+    tone: 'blue',
+    dot: '',
+    meta: fulfillment ? `${nextProvider} 초안 검토 대기` : `${nextProvider} 아이디어 확장·검증 대기`,
+    lockedBy: null,
+    lockExpiresAt: null,
+    createdAt: now,
+    updatedAt: now
+  };
+  const nextPost = {
+    id: `POST-${nextTaskId}-${Date.now()}`,
+    taskId: nextTaskId,
+    title: fulfillment ? `${nextTaskId} AI 검토 인수인계` : `${nextTaskId} 다음 방향 인수인계`,
+    source: resultPost.provider,
+    nextAI: nextProvider,
+    prompt: buildFollowUpPrompt(nextTask, resultPost, nextProvider, cycle),
+    status: '게시됨',
+    mode: followUpMode,
+    followUpMode,
+    cycle,
+    maxCycles,
+    lane: fulfillment ? 'soomgo_fulfillment' : 'idea_development',
+    decisionAuthority: false,
+    decisionOwner: fulfillment ? '사용자 승인' : 'Astra (추후 연결)',
+    parentPostId: post.id,
+    autoContinue: true,
+    createdAt: now
+  };
+  latest.tasks = [nextTask, ...(Array.isArray(latest.tasks) ? latest.tasks : [])];
+  latest.promptPosts = [nextPost, ...(Array.isArray(latest.promptPosts) ? latest.promptPosts : [])];
+  latest.activities = [['방금 전', resultPost.provider, nextTaskId, `${resultPost.provider} 결과에서 다음 방향 생성 · ${nextProvider} 인수인계 게시`], ...(Array.isArray(latest.activities) ? latest.activities : [])];
+  return nextPost;
+}
+
+function resumeContinuousQueue() {
+  if (!continuousModeEnabled()) return 0;
+  const latest = readState();
+  const posts = Array.isArray(latest.promptPosts) ? latest.promptPosts : [];
+  const results = Array.isArray(latest.resultPosts) ? latest.resultPosts : [];
+  const childPostIds = new Set(posts.map(item => item.parentPostId).filter(Boolean));
+  let resumed = 0;
+  for (const post of posts) {
+    if (!post.autoContinue || post.status !== '완료' || childPostIds.has(post.id)) continue;
+    const resultPost = results.find(item => item.parentPostId === post.id);
+    if (!resultPost) continue;
+    const nextPost = createFollowUp(latest, post, resultPost);
+    if (nextPost) {
+      childPostIds.add(post.id);
+      resumed += 1;
+    }
+  }
+  if (resumed) writeState(latest);
+  return resumed;
+}
+
+function backupPayload() {
+  const state = readState();
+  const exportedAt = new Date().toISOString();
+  const canonical = JSON.stringify(state);
+  return {
+    schema: 'relay-desk-backup',
+    schemaVersion: 1,
+    exportedAt,
+    stateHash: crypto.createHash('sha256').update(canonical).digest('hex'),
+    state
+  };
+}
+
+function isValidRestoreState(value) {
+  if (!value || typeof value !== 'object') return false;
+  if (!Array.isArray(value.tasks) || !Array.isArray(value.activities)) return false;
+  const arrays = ['tasks', 'projects', 'workers', 'activities', 'files', 'promptPosts', 'resultPosts', 'progressPosts'];
+  return arrays.every(name => value[name] === undefined || Array.isArray(value[name]));
+}
+
+function currentActor(req, body = {}) {
+  return String(body.actor || req.headers['x-relay-actor'] || '현재 사용자').slice(0, 100);
+}
+
+function mergeStateUpdate(current, body) {
+  const next = { ...current, ...body };
+  const mergeCollection = (field, key) => {
+    if (!Array.isArray(body[field])) return;
+    const existing = Array.isArray(current[field]) ? current[field] : [];
+    const byKey = new Map(existing.map(item => [String(item?.[key] ?? JSON.stringify(item)), item]));
+    const incomingKeys = new Set();
+    for (const item of body[field]) {
+      const itemKey = String(item?.[key] ?? JSON.stringify(item));
+      incomingKeys.add(itemKey);
+      const previous = byKey.get(itemKey);
+      const incomingTime = Date.parse(item?.updatedAt || item?.completedAt || item?.createdAt || item?.capturedAt || '') || 0;
+      const previousTime = Date.parse(previous?.updatedAt || previous?.completedAt || previous?.createdAt || previous?.capturedAt || '') || 0;
+      if (!previous || !previousTime || !incomingTime || incomingTime >= previousTime) byKey.set(itemKey, item);
+    }
+    const ordered = [];
+    for (const item of body[field]) ordered.push(byKey.get(String(item?.[key] ?? JSON.stringify(item))));
+    for (const item of existing) {
+      const itemKey = String(item?.[key] ?? JSON.stringify(item));
+      if (!incomingKeys.has(itemKey)) ordered.push(item);
+    }
+    next[field] = ordered;
+  };
+  mergeCollection('tasks', 'id');
+  mergeCollection('files', 'id');
+  mergeCollection('promptPosts', 'id');
+  mergeCollection('resultPosts', 'id');
+  mergeCollection('progressPosts', 'id');
+  if (Array.isArray(body.activities)) {
+    const seen = new Set();
+    next.activities = [...body.activities, ...(Array.isArray(current.activities) ? current.activities : [])].filter(item => {
+      const key = JSON.stringify(item);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 2000);
+  }
+  return next;
+}
+
+async function route(req, res) {
+  const parsed = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const pathname = parsed.pathname;
+  const local = isLoopback(req);
+
+  if (req.method === 'OPTIONS' && pathname.startsWith('/api/')) {
+    res.writeHead(204, {
+      'access-control-allow-origin': '*',
+      'access-control-allow-methods': 'GET,POST,OPTIONS',
+      'access-control-allow-headers': 'content-type,x-relay-bot',
+      'access-control-max-age': '600'
+    });
+    return res.end();
+  }
+
+  if (pathname === '/api/health' && req.method === 'GET') {
+    return sendJson(res, 200, { ok: true, writeServer: local, time: new Date().toISOString() });
+  }
+
+  if (pathname === '/api/providers' && req.method === 'GET') {
+    return sendJson(res, 200, { ...providerSnapshot(), readOnly: !local });
+  }
+
+  // 요청·채팅 확장 프로그램이 주기적으로 보내는 상태를 저장한다.
+  // 대시보드는 숨고 페이지의 localStorage를 직접 읽을 수 없으므로
+  // 로컬 Relay Desk 서버를 동기화 지점으로 사용한다.
+  if (pathname === '/api/soomgo/bot-status' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
+    try {
+      const body = await readBody(req);
+      const role = body.role === 'chat' ? 'chat' : body.role === 'request' ? 'request' : '';
+      if (!role) return sendJson(res, 400, { error: 'bot_role_required' });
+      const current = readState();
+      const botStatus = current.botStatus && typeof current.botStatus === 'object' ? current.botStatus : {};
+      botStatus[role] = { at: Number(body.at) || Date.now(), status: String(body.status || '').slice(0, 160), stats: body.stats && typeof body.stats === 'object' ? body.stats : {} };
+      current.botStatus = botStatus;
+      writeState(current);
+      return sendJson(res, 200, { ok: true, botStatus });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  // 숨고 요청 상세 화면에서 추출한 내용을 받아 즉시 견적을 계산한다.
+  // 같은 requestId는 한 번만 기록해 중복 견적과 캐시 차감을 막는다.
+  if (pathname === '/api/soomgo/quote' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
+    try {
+      const body = await readBody(req);
+      const { parsed: request, quote } = buildSoomgoQuote(body);
+      const fingerprint = crypto.createHash('sha256').update(`${body.requestId || ''}|${request.text}`).digest('hex').slice(0, 16);
+      const requestId = String(body.requestId || `SOOMGO-${fingerprint}`).slice(0, 160);
+      const current = readState();
+      const leads = Array.isArray(current.soomgoLeads) ? current.soomgoLeads : [];
+      const existing = leads.find(item => item.requestId === requestId);
+      if (existing) return sendJson(res, 200, { ok: true, duplicate: true, lead: existing, request, quote });
+      const lead = {
+        id: `LEAD-${Date.now()}`,
+        requestId,
+        source: 'Soomgo',
+        sourceUrl: String(body.sourceUrl || '').slice(0, 500),
+        request,
+        quote,
+        status: quote.autoSend ? '견적 자동 발송 완료 · 고용 요청 대기' : request.videoRequest ? '화상회의 요청 자동 제외' : request.remoteRequest ? '온라인 요청 자동 제외' : request.directRequest ? '대면 요청 자동 제외' : request.scriptRequest ? '대본·시나리오 요청 자동 제외' : request.academic ? '논문·학술 요청 자동 제외' : '수동 검토 필요',
+        taskId: null,
+        promptPostId: null,
+        createdAt: new Date().toISOString()
+      };
+      current.soomgoLeads = [lead, ...leads].slice(0, 2000);
+      const activity = quote.autoSend ? `요청 분석 · ${soomgoQuoteLabel(quote)}` : `자동 발송 보류 · ${quote.reason}`;
+      current.activities = [[lead.createdAt, 'Soomgo Bot', lead.id, activity], ...(Array.isArray(current.activities) ? current.activities : [])];
+      writeState(current);
+      return sendJson(res, 200, { ok: true, duplicate: false, lead, request, quote: { ...quote, sourceRequestId: requestId }, task: null, promptPost: null, queued: false });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  // 확장 프로그램이 실제 숨고 화면에서 확인한 발송 결과를 별도로 남긴다.
+  // 견적 계산 기록과 실제 전송 결과를 분리해 누락·중복 원인을 추적한다.
+  if (pathname === '/api/soomgo/quote-result' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
+    try {
+      const body = await readBody(req);
+      const requestId = String(body.requestId || '').slice(0, 160);
+      const resultStatus = ['sent', 'blocked', 'uncertain', 'skipped'].includes(String(body.status)) ? String(body.status) : 'uncertain';
+      if (!requestId) return sendJson(res, 400, { error: 'soomgo_request_id_required' });
+      const current = readState();
+      const lead = (Array.isArray(current.soomgoLeads) ? current.soomgoLeads : []).find(item => item.requestId === requestId);
+      if (!lead) return sendJson(res, 404, { error: 'soomgo_lead_not_found' });
+      const evidence = { status: resultStatus, at: String(body.at || new Date().toISOString()), url: String(body.url || '').slice(0, 500), note: String(body.note || '').slice(0, 300) };
+      lead.quoteEvidence = evidence;
+      lead.status = resultStatus === 'sent' ? '견적 발송 확인 · 고용 요청 대기' : resultStatus === 'blocked' ? '숨고 발송 제한' : resultStatus === 'skipped' ? '자동 발송 제외' : '발송 확인 필요';
+      current.activities = [[evidence.at, 'Soomgo Bot', lead.id, `견적 발송 결과 기록 · ${resultStatus}`], ...(Array.isArray(current.activities) ? current.activities : [])];
+      writeState(current);
+      return sendJson(res, 200, { ok: true, evidence, lead });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  // 고객별 자동 답변 제외 목록. 확장 프로그램에서 수동 인계할 때 사용한다.
+  if (pathname === '/api/soomgo/block' && (req.method === 'POST' || req.method === 'DELETE')) {
+    if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
+    try {
+      const body = await readBody(req);
+      const conversationId = String(body.conversationId || '').slice(0, 160);
+      if (!conversationId) return sendJson(res, 400, { error: 'conversation_id_required' });
+      const current = readState();
+      let blocks = Array.isArray(current.soomgoBlocks) ? current.soomgoBlocks : [];
+      if (req.method === 'DELETE' || body.active === false) blocks = blocks.filter(item => String(item.conversationId || '') !== conversationId);
+      else {
+        const existing = blocks.find(item => String(item.conversationId || '') === conversationId);
+        if (existing) Object.assign(existing, { active: true, reason: String(body.reason || existing.reason || '사용자 수동 관리').slice(0, 300), updatedAt: new Date().toISOString() });
+        else blocks.unshift({ conversationId, active: true, reason: String(body.reason || '사용자 수동 관리').slice(0, 300), createdAt: new Date().toISOString() });
+      }
+      current.soomgoBlocks = blocks.slice(0, 1000);
+      current.activities = [['방금 전', '사용자', conversationId, req.method === 'DELETE' || body.active === false ? '고객 자동 답변 제외 해제' : '고객 자동 답변 수동 관리 등록'], ...(Array.isArray(current.activities) ? current.activities : [])];
+      writeState(current);
+      return sendJson(res, 200, { ok: true, blocks: current.soomgoBlocks });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  // 고객이 고용 요청과 일정 등록을 최종 단계까지 진행한 뒤에만
+  // 실제 Relay Desk 작성 작업을 생성한다. 견적만 보낸 잠재 의뢰는
+  // 작업 큐를 차지하지 않는다.
+  if (pathname === '/api/soomgo/hire' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
+    try {
+      const body = await readBody(req);
+      const requestId = String(body.requestId || body.sourceRequestId || '').slice(0, 160);
+      if (!requestId) return sendJson(res, 400, { error: 'soomgo_request_id_required' });
+      const current = readState();
+      const leads = Array.isArray(current.soomgoLeads) ? current.soomgoLeads : [];
+      const lead = leads.find(item => item.requestId === requestId);
+      if (!lead) return sendJson(res, 404, { error: 'soomgo_lead_not_found' });
+      if (lead.taskId) {
+        const existingTask = (Array.isArray(current.tasks) ? current.tasks : []).find(item => item.id === lead.taskId) || null;
+        return sendJson(res, 200, { ok: true, duplicate: true, lead, task: existingTask });
+      }
+      const request = lead.request || {};
+      const quote = lead.quote || body.quote || {};
+      const work = createSoomgoFulfillment(current, request, quote, requestId, lead.sourceUrl || body.sourceUrl);
+      if (!work) return sendJson(res, 409, { error: 'soomgo_hire_not_eligible' });
+      lead.status = '고용 요청·일정 등록 완료 · AI 작성 큐 등록';
+      lead.taskId = work.task.id;
+      lead.promptPostId = work.post.id;
+      lead.conversationId = String(body.conversationId || '').slice(0, 160) || lead.conversationId || null;
+      lead.hiredAt = new Date().toISOString();
+      const activityAt = lead.hiredAt;
+      current.activities = [[activityAt, 'Soomgo Bot', lead.id, `고용 요청·일정 등록 완료 · Relay Desk 작업 생성 · ${work.post.nextAI} 작성 큐 등록`], ...(Array.isArray(current.activities) ? current.activities : [])];
+      writeState(current);
+      setImmediate(() => processPendingQueue().catch(error => console.error(`Soomgo work queue error: ${error.message}`)));
+      return sendJson(res, 200, { ok: true, duplicate: false, lead, task: work.task, promptPost: work.post, queued: true });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  if (pathname === '/api/soomgo/reply' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
+    try {
+      const body = await readBody(req);
+      const reply = soomgoReply(body);
+      const conversationId = String(body.conversationId || body.requestId || 'conversation').slice(0, 160);
+      const messageId = String(body.messageId || crypto.createHash('sha256').update(`${conversationId}|${body.message || body.text || ''}`).digest('hex').slice(0, 16)).slice(0, 160);
+      const current = readState();
+      const replies = Array.isArray(current.soomgoReplies) ? current.soomgoReplies : [];
+      const existing = replies.find(item => item.conversationId === conversationId && item.messageId === messageId);
+      if (existing) return sendJson(res, 200, { ok: true, duplicate: true, reply: existing.reply });
+      const record = { id: `REPLY-${Date.now()}`, source: 'Soomgo', conversationId, messageId, incoming: String(body.message || body.text || '').slice(0, 2000), reply, createdAt: new Date().toISOString() };
+      current.soomgoReplies = [record, ...replies].slice(0, 2000);
+      current.activities = [[record.createdAt, 'Soomgo Bot', record.id, reply.autoSend ? '고객 문의 자동 답변 준비' : `고객 문의 수동 확인 대기 · ${reply.reason}`], ...(Array.isArray(current.activities) ? current.activities : [])];
+      writeState(current);
+      return sendJson(res, 200, { ok: true, duplicate: false, reply, record });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  if (pathname === '/api/soomgo/reply-result' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
+    try {
+      const body = await readBody(req);
+      const conversationId = String(body.conversationId || '').slice(0, 160);
+      const messageId = String(body.messageId || '').slice(0, 160);
+      if (!conversationId || !messageId) return sendJson(res, 400, { error: 'conversation_and_message_required' });
+      const current = readState();
+      const record = (Array.isArray(current.soomgoReplies) ? current.soomgoReplies : []).find(item => item.conversationId === conversationId && item.messageId === messageId);
+      if (!record) return sendJson(res, 404, { error: 'soomgo_reply_not_found' });
+      record.replyEvidence = { status: body.status === 'sent' ? 'sent' : 'uncertain', at: String(body.at || new Date().toISOString()), url: String(body.url || '').slice(0, 500) };
+      current.activities = [[record.replyEvidence.at, 'Soomgo Bot', record.id, `고객 답변 전송 결과 기록 · ${record.replyEvidence.status}`], ...(Array.isArray(current.activities) ? current.activities : [])];
+      writeState(current);
+      return sendJson(res, 200, { ok: true, record });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  if (pathname === '/api/projects' && req.method === 'GET') {
+    const state = readState();
+    const projects = Array.isArray(state.projects) && state.projects.length
+      ? state.projects
+      : [...new Map((Array.isArray(state.tasks) ? state.tasks : []).map(task => { const name = task.project || 'AI 연구 운영 허브'; return [name, { id: `PRJ-${crypto.createHash('sha1').update(name).digest('hex').slice(0, 10)}`, name, taskCount: 0 }]; })).values()];
+    projects.forEach(project => { project.taskCount = (Array.isArray(state.tasks) ? state.tasks : []).filter(task => (task.project || 'AI 연구 운영 허브') === project.name).length; });
+    return sendJson(res, 200, { projects, readOnly: !local });
+  }
+
+  if (pathname === '/api/projects' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'read_only_viewer' });
+    try {
+      const body = await readBody(req);
+      const name = String(body.name || '').trim().slice(0, 160);
+      if (!name) return sendJson(res, 400, { error: 'project_name_required' });
+      const current = readState();
+      const projects = Array.isArray(current.projects) ? current.projects : [];
+      const existing = projects.find(project => normalizeSearch(project.name) === normalizeSearch(name));
+      if (existing) return sendJson(res, 200, { ok: true, duplicate: true, project: existing });
+      const project = { id: `PRJ-${Date.now()}`, name, description: String(body.description || '').slice(0, 500), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      current.projects = [project, ...projects];
+      current.activities = [[project.createdAt, currentActor(req, body), project.id, '프로젝트 생성'], ...(Array.isArray(current.activities) ? current.activities : [])];
+      return sendJson(res, 201, { ok: true, duplicate: false, project, state: writeState(current) });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  if (pathname === '/api/workers' && req.method === 'GET') {
+    const state = readState();
+    const custom = Array.isArray(state.workers) ? state.workers : [];
+    return sendJson(res, 200, { workers: [...custom, ...Object.entries(providerSnapshot().providers).map(([name, provider]) => ({ id: `WORKER-${name.toLowerCase()}`, name, ...provider }))], readOnly: !local });
+  }
+
+  if (pathname === '/api/workers' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'read_only_viewer' });
+    try {
+      const body = await readBody(req);
+      const name = String(body.name || body.provider || '').trim().slice(0, 100);
+      if (!name) return sendJson(res, 400, { error: 'worker_name_required' });
+      const current = readState();
+      const workers = Array.isArray(current.workers) ? current.workers : [];
+      const existing = workers.find(worker => normalizeSearch(worker.name) === normalizeSearch(name));
+      if (existing) return sendJson(res, 200, { ok: true, duplicate: true, worker: existing });
+      const worker = { id: `WORKER-${Date.now()}`, name, provider: String(body.provider || 'custom').slice(0, 80), role: String(body.role || 'idea_development').slice(0, 80), purpose: String(body.purpose || '').slice(0, 300), createdAt: new Date().toISOString() };
+      current.workers = [worker, ...workers];
+      current.activities = [[worker.createdAt, currentActor(req, body), worker.id, 'AI 작업자 등록'], ...(Array.isArray(current.activities) ? current.activities : [])];
+      return sendJson(res, 201, { ok: true, duplicate: false, worker, state: writeState(current) });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  if (pathname === '/api/state' && req.method === 'GET') {
+    return sendJson(res, 200, { ...readState(), readOnly: !local });
+  }
+
+  if (pathname === '/api/reports' && req.method === 'GET') {
+    return sendJson(res, 200, { ...reportSnapshot(), readOnly: !local });
+  }
+
+  if (pathname === '/api/reports/meta' && req.method === 'GET') {
+    const manifest = readReportManifest() || syncReportDocument('on-demand');
+    return sendJson(res, 200, {
+      ...manifest,
+      available: fs.existsSync(REPORT_FILE),
+      readOnly: !local
+    });
+  }
+
+  if (pathname === '/api/reports.txt' && req.method === 'GET') {
+    const audience = String(parsed.searchParams.get('audience') || '총괄').slice(0, 80);
+    const manifest = audience === 'Astra' ? syncReportDocument('download') : null;
+    const body = audience === 'Astra' && manifest && fs.existsSync(REPORT_FILE)
+      ? fs.readFileSync(REPORT_FILE, 'utf8')
+      : reportText(reportSnapshot(), audience);
+    const filename = audience === 'Astra' ? 'relay-desk-report-for-astra.txt' : 'relay-desk-executive-report.txt';
+    res.writeHead(200, {
+      'content-type': 'text/plain; charset=utf-8',
+      'content-disposition': `attachment; filename="${filename}"`,
+      'cache-control': 'no-store'
+    });
+    return res.end(body);
+  }
+
+  if (pathname === '/api/backup' && req.method === 'GET') {
+    const payload = backupPayload();
+    const body = JSON.stringify(payload, null, 2);
+    res.writeHead(200, {
+      'content-type': 'application/json; charset=utf-8',
+      'content-disposition': 'attachment; filename="relay-desk-backup.json"',
+      'cache-control': 'no-store'
+    });
+    return res.end(body);
+  }
+
+  if (pathname === '/api/tasks/duplicate-check' && req.method === 'GET') {
+    const matches = duplicateMatches(readState(), {
+      title: parsed.searchParams.get('title'),
+      category: parsed.searchParams.get('category'),
+      project: parsed.searchParams.get('project'),
+      excludeId: parsed.searchParams.get('excludeId')
+    });
+    return sendJson(res, 200, { duplicate: matches.length > 0, matches, checkedAt: new Date().toISOString() });
+  }
+
+  const taskLockMatch = pathname.match(/^\/api\/tasks\/([^/]+)\/(lock|unlock)$/);
+  if (taskLockMatch && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'read_only_viewer' });
+    try {
+      const body = await readBody(req);
+      const taskId = decodeURIComponent(taskLockMatch[1]);
+      const current = readState();
+      const task = (Array.isArray(current.tasks) ? current.tasks : []).find(item => item.id === taskId);
+      if (!task) return sendJson(res, 404, { error: 'task_not_found' });
+      const actor = currentActor(req, body);
+      const now = Date.now();
+      const existingExpiry = Number(task.lockExpiresAt) || 0;
+      if (taskLockMatch[2] === 'unlock') {
+        if (task.lockedBy && task.lockedBy !== actor && existingExpiry > now) return sendJson(res, 409, { error: 'lock_owned_by_other', lockedBy: task.lockedBy, lockExpiresAt: task.lockExpiresAt });
+        Object.assign(task, { lockedBy: null, lockedAt: null, lockExpiresAt: null });
+        current.activities = [[new Date().toISOString(), actor, task.id, '작업 잠금 해제'], ...(Array.isArray(current.activities) ? current.activities : [])];
+        return sendJson(res, 200, writeState(current));
+      }
+      if (task.lockedBy && task.lockedBy !== actor && existingExpiry > now) return sendJson(res, 409, { error: 'lock_owned_by_other', lockedBy: task.lockedBy, lockExpiresAt: task.lockExpiresAt });
+      const leaseMs = Math.max(5 * 60 * 1000, Math.min(24 * 60 * 60 * 1000, Number(body.leaseMs) || 4 * 60 * 60 * 1000));
+      const lockedAt = new Date(now).toISOString();
+      Object.assign(task, { lockedBy: actor, lockedAt, lockExpiresAt: now + leaseMs, status: task.status === 'completed' ? task.status : 'active', updatedAt: lockedAt });
+      current.activities = [[lockedAt, actor, task.id, `작업 잠금 · ${Math.round(leaseMs / 3600000 * 10) / 10}시간`], ...(Array.isArray(current.activities) ? current.activities : [])];
+      return sendJson(res, 200, writeState(current));
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  const revisionMatch = pathname.match(/^\/api\/tasks\/([^/]+)\/revision$/);
+  if (revisionMatch && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'read_only_viewer' });
+    try {
+      const body = await readBody(req);
+      const taskId = decodeURIComponent(revisionMatch[1]);
+      const current = readState();
+      const task = (Array.isArray(current.tasks) ? current.tasks : []).find(item => item.id === taskId);
+      if (!task) return sendJson(res, 404, { error: 'task_not_found' });
+      const now = new Date().toISOString();
+      task.revisionCount = Number(task.revisionCount || 0) + 1;
+      task.lastRevision = { count: task.revisionCount, note: String(body.note || '고객 수정 요청').slice(0, 1200), at: now, source: String(body.source || 'Soomgo').slice(0, 80) };
+      task.status = 'active'; task.label = '수정 요청'; task.tone = 'amber'; task.dot = 'warn'; task.meta = `수정 ${task.revisionCount}회 · AI 재검토 대기`; task.updatedAt = now;
+      current.activities = [[now, String(body.actor || 'Soomgo'), task.id, `고객 수정 요청 등록 · ${task.revisionCount}회차`], ...(Array.isArray(current.activities) ? current.activities : [])];
+      writeState(current);
+      return sendJson(res, 200, { ok: true, task });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  if (pathname === '/api/state' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'read_only_viewer' });
+    try {
+      const body = await readBody(req);
+      const current = readState();
+      const next = mergeStateUpdate(current, body);
+      delete next.readOnly;
+      return sendJson(res, 200, writeState(next));
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  if (pathname === '/api/restore' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'read_only_viewer' });
+    try {
+      const body = await readBody(req);
+      const restored = body.state || body.backup?.state || body;
+      if (!isValidRestoreState(restored)) return sendJson(res, 400, { error: 'invalid_backup_state' });
+      const current = readState();
+      const backupDir = path.join(FILE_DIR, 'backups');
+      fs.mkdirSync(backupDir, { recursive: true });
+      fs.writeFileSync(path.join(backupDir, `${Date.now()}-before-restore.json`), JSON.stringify(backupPayload(), null, 2), 'utf8');
+      const merged = { ...emptyState(), ...restored, activities: [['방금 전', currentActor(req, body), 'SYSTEM', '백업 복구 완료 · 복구 전 상태 별도 보관'], ...(Array.isArray(restored.activities) ? restored.activities : [])] };
+      delete merged.readOnly;
+      return sendJson(res, 200, writeState(merged));
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  if (pathname === '/api/files' && req.method === 'GET') {
+    const state = readState();
+    return sendJson(res, 200, { files: Array.isArray(state.files) ? state.files : [], readOnly: !local });
+  }
+
+  if (pathname === '/api/files' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'read_only_viewer' });
+    try {
+      const body = await readBody(req);
+      const base64 = String(body.dataBase64 || '');
+      if (!base64 || base64.length > 24 * 1024 * 1024) return sendJson(res, 413, { error: 'file_too_large_or_empty' });
+      const buffer = Buffer.from(base64, 'base64');
+      const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+      const current = readState();
+      const existing = Array.isArray(current.files) ? current.files.find(file => file.sha256 === hash) : null;
+      if (existing) return sendJson(res, 200, { ok: true, duplicate: true, file: existing });
+      const name = safeName(body.name);
+      const storedName = `${hash.slice(0, 16)}-${name}`;
+      fs.writeFileSync(path.join(FILE_DIR, storedName), buffer);
+      const file = importFileRecord(body, buffer, hash, storedName, current);
+      current.files = [file, ...(Array.isArray(current.files) ? current.files : [])];
+      current.activities = [[file.uploadedAt, file.source, file.id, `파일 업로드 · 버전 ${file.version} · SHA-256 검증`], ...(Array.isArray(current.activities) ? current.activities : [])];
+      writeState(current);
+      return sendJson(res, 201, { ok: true, duplicate: false, name, storedName, size: buffer.length, sha256: hash, path: file.serverPath, file });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  if (pathname === '/api/import' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'read_only_viewer' });
+    try {
+      const body = await readBody(req);
+      const base64 = String(body.dataBase64 || '');
+      if (!base64 || base64.length > 24 * 1024 * 1024) return sendJson(res, 413, { error: 'file_too_large_or_empty' });
+      const buffer = Buffer.from(base64, 'base64');
+      if (!buffer.length || buffer.length > 18 * 1024 * 1024) return sendJson(res, 413, { error: 'file_too_large_or_empty' });
+      const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+      const current = readState();
+      const existing = Array.isArray(current.files) ? current.files.find(file => file.sha256 === hash) : null;
+      if (existing) return sendJson(res, 200, { ok: true, duplicate: true, file: existing });
+      const name = safeName(body.name);
+      const storedName = `${hash.slice(0, 16)}-${name}`;
+      fs.writeFileSync(path.join(FILE_DIR, storedName), buffer);
+      const file = importFileRecord(body, buffer, hash, storedName, current);
+      const next = {
+        ...current,
+        files: [file, ...(Array.isArray(current.files) ? current.files : [])],
+        lastImport: { source: file.source, file, capturedAt: file.capturedAt },
+        activities: [['방금 전', file.source, file.id, '브리지 자동 수집 · 파일 등록'], ...(Array.isArray(current.activities) ? current.activities : [])]
+      };
+      writeState(next);
+      return sendJson(res, 201, { ok: true, duplicate: false, file });
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  if (pathname === '/api/run' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'read_only_viewer' });
+    try {
+      const body = await readBody(req);
+      const current = readState();
+      const posts = Array.isArray(current.promptPosts) ? current.promptPosts : [];
+      const post = posts.find(item => item.id === body.postId);
+      if (!post) return sendJson(res, 404, { error: 'prompt_post_not_found' });
+      const provider = String(body.provider || post.nextAI || '').trim();
+      if (!['OpenAI', 'Gemini'].includes(provider)) return sendJson(res, 400, { error: 'provider_not_supported' });
+      if (post.status === '실행 중') return sendJson(res, 409, { error: 'already_running' });
+      post.status = '실행 중';
+      const startedAt = new Date().toISOString();
+      post.startedAt = startedAt;
+      const progressPosts = Array.isArray(current.progressPosts) ? current.progressPosts : [];
+      const progressPost = {
+        id: `PROGRESS-${post.id}-${Date.now()}`,
+        postId: post.id,
+        taskId: post.taskId,
+        title: `${post.taskId} 실행 경과`,
+        provider,
+        requestedProvider: provider,
+        cycle: Number(post.cycle || 1),
+        phase: 'started',
+        status: '실행 중',
+        text: `${provider} 실행 시작 · 결과를 기다리는 중`,
+        startedAt,
+        createdAt: startedAt,
+        events: [{ phase: 'started', status: '실행 중', text: `${provider} 실행 시작`, at: startedAt }]
+      };
+      progressPosts.unshift(progressPost);
+      const startingTask = (Array.isArray(current.tasks) ? current.tasks : []).find(item => item.id === post.taskId);
+      if (startingTask) {
+        startingTask.status = 'active';
+        startingTask.label = '실행 중';
+        startingTask.tone = 'blue';
+        startingTask.meta = `${provider} 자동 실행 중`;
+      }
+      writeState({ ...current, promptPosts: posts, progressPosts });
+      try {
+        const executionPrompt = post.mode === 'implement' ? buildImplementationPrompt(post.prompt) : post.prompt;
+        let execution = await runWithFallback(provider, executionPrompt);
+        let result = execution.result;
+        const initialProvider = result.provider;
+        let implementation = post.mode === 'implement' ? applyImplementationPatch(result.text) : null;
+        if (post.mode === 'implement' && implementation.status !== 'applied' && implementation.status !== 'stopped') {
+          const repairProvider = nextProviderFor(initialProvider);
+          try {
+            const repairPrompt = `${buildImplementationPrompt(post.prompt)}\n\n이전 응답은 git이 적용할 수 없는 패치였으므로 폐기한다. 아래 응답을 참고하되, 반드시 정확한 파일 경로와 유효한 @@ 줄 번호를 포함한 unified diff만 다시 출력하라.\n\n이전 응답:\n${String(result.text || '').slice(-6000)}`;
+            const repaired = await runWithFallback(repairProvider, repairPrompt);
+            const repairedImplementation = applyImplementationPatch(repaired.result.text);
+            if (repairedImplementation.status === 'applied') {
+              execution = repaired;
+              result = repaired.result;
+              implementation = { ...repairedImplementation, repairAttempted: true, repairedFrom: initialProvider };
+            } else {
+              implementation = { ...implementation, repairAttempted: true, repairProvider, repairStatus: repairedImplementation.status };
+            }
+          } catch (repairError) {
+            implementation = { ...implementation, repairAttempted: true, repairProvider, repairError: String(repairError.message || repairError).slice(0, 1200) };
+          }
+        }
+        const executedProvider = result.provider;
+        const resultPost = {
+          id: `RESULT-${Date.now()}`,
+          parentPostId: post.id,
+          taskId: post.taskId,
+          title: `${post.taskId} ${executedProvider} 실행 결과`,
+          provider: executedProvider,
+          model: result.model,
+          text: result.text,
+          usage: result.usage,
+          providerResponseId: result.providerResponseId,
+          requestedProvider: execution.requestedProvider,
+          fallbackFrom: execution.fallbackFrom,
+          primaryError: execution.primaryError,
+          executionMode: post.mode || 'analysis',
+          lane: post.lane || startingTask?.lane || 'idea_development',
+          insightPending: true,
+          decisionAuthority: false,
+          decisionOwner: post.decisionOwner || startingTask?.decisionOwner || 'Astra (추후 연결)',
+          implementation,
+          status: '완료',
+          createdAt: new Date().toISOString()
+        };
+        const latest = readState();
+        const latestPosts = Array.isArray(latest.promptPosts) ? latest.promptPosts : [];
+        const latestPost = latestPosts.find(item => item.id === post.id);
+        if (latestPost) Object.assign(latestPost, { status: '완료', completedAt: resultPost.createdAt, resultPostId: resultPost.id, error: null, retryCount: 0, nextRetryAt: null });
+        const completedTask = (Array.isArray(latest.tasks) ? latest.tasks : []).find(item => item.id === post.taskId);
+        const implementationNeedsReview = post.mode === 'implement' && implementation?.status !== 'applied';
+        if (completedTask && implementationNeedsReview) {
+          completedTask.status = 'blocked';
+          completedTask.label = '패치 검토 필요';
+          completedTask.tone = 'red';
+          completedTask.dot = 'block';
+          completedTask.meta = implementation?.status === 'stopped' ? 'AI가 추가 작업 없음으로 중지' : '실제 파일 패치가 적용되지 않음';
+          completedTask.lockedBy = null;
+          completedTask.lockExpiresAt = null;
+        } else if (completedTask) {
+          completedTask.status = 'completed';
+          completedTask.label = '완료';
+          completedTask.tone = 'mint';
+          completedTask.dot = '';
+          completedTask.meta = execution.fallbackFrom ? `완료 · ${executedProvider} 자동 전환` : `완료 · ${executedProvider}`;
+          completedTask.lockedBy = null;
+          completedTask.lockExpiresAt = null;
+        }
+        latest.promptPosts = latestPosts;
+        latest.resultPosts = [resultPost, ...(Array.isArray(latest.resultPosts) ? latest.resultPosts : [])];
+        const implementationLabel = implementation?.status === 'applied' ? ' · 실제 패치 적용' : implementation?.status === 'failed' ? ' · 패치 적용 실패' : implementation?.status === 'stopped' ? ' · 추가 작업 없음' : '';
+        latest.activities = [['방금 전', executedProvider, resultPost.id, execution.fallbackFrom ? `${execution.fallbackFrom} 실패 후 ${executedProvider} 자동 전환 · 결과 저장${implementationLabel}` : `인수인계 게시글 실행 · 결과 저장${implementationLabel}`], ...(Array.isArray(latest.activities) ? latest.activities : [])];
+        const nextPost = createFollowUp(latest, post, resultPost);
+        const latestProgressPosts = Array.isArray(latest.progressPosts) ? latest.progressPosts : [];
+        const progress = latestProgressPosts.find(item => item.postId === post.id && item.status === '실행 중')
+          || latestProgressPosts.find(item => item.postId === post.id);
+        if (progress) {
+          const completedAt = resultPost.createdAt;
+          const completionText = implementationLabel ? `결과 저장${implementationLabel}` : 'AI 결과 저장 완료';
+          progress.provider = executedProvider;
+          progress.phase = nextPost ? 'next_handoff_created' : 'result_saved';
+          progress.status = '완료';
+          progress.text = nextPost ? `${completionText} · 다음 인수인계 게시` : completionText;
+          progress.resultPostId = resultPost.id;
+          progress.implementation = implementation || undefined;
+          progress.completedAt = completedAt;
+          if (nextPost) {
+            progress.nextPostId = nextPost.id;
+            progress.nextTaskId = nextPost.taskId;
+          }
+          progress.events = [...(Array.isArray(progress.events) ? progress.events : []), {
+            phase: 'result_saved', status: '완료', text: completionText, at: completedAt, resultPostId: resultPost.id
+          }];
+          if (nextPost) progress.events.push({ phase: 'next_handoff_created', status: '게시됨', text: `${nextPost.taskId} 다음 인수인계 게시`, at: nextPost.createdAt, nextPostId: nextPost.id });
+        }
+        latest.progressPosts = latestProgressPosts;
+        writeState(latest);
+        return sendJson(res, 200, { ok: true, resultPost, nextPost });
+      } catch (error) {
+        const latest = readState();
+        const latestPosts = Array.isArray(latest.promptPosts) ? latest.promptPosts : [];
+        const latestPost = latestPosts.find(item => item.id === post.id);
+        const retryable = isRetryableRunError(error);
+        const retryCount = Number(latestPost?.retryCount || post.retryCount || 0) + (retryable ? 1 : 0);
+        const retryAt = retryable && retryCount <= 3 ? Date.now() + Math.min(5 * 60 * 1000, 15000 * 2 ** Math.max(0, retryCount - 1)) : null;
+        if (latestPost) Object.assign(latestPost, { status: '실행 실패', error: error.message, failedAt: new Date().toISOString(), retryCount, nextRetryAt: retryAt });
+        const failedAt = new Date().toISOString();
+        const latestProgressPosts = Array.isArray(latest.progressPosts) ? latest.progressPosts : [];
+        const progress = latestProgressPosts.find(item => item.postId === post.id && item.status === '실행 중')
+          || latestProgressPosts.find(item => item.postId === post.id);
+        if (progress) {
+          progress.phase = 'failed';
+          progress.status = '실패';
+          progress.text = 'AI 실행 실패';
+          progress.error = String(error.message || error).slice(0, 1200);
+          progress.failedAt = failedAt;
+          progress.events = [...(Array.isArray(progress.events) ? progress.events : []), { phase: 'failed', status: '실패', text: progress.text, error: progress.error, at: failedAt }];
+        }
+        const failedTask = (Array.isArray(latest.tasks) ? latest.tasks : []).find(item => item.id === post.taskId);
+        if (failedTask) {
+          failedTask.status = 'blocked';
+          failedTask.label = '실행 실패';
+          failedTask.tone = 'red';
+          failedTask.dot = 'block';
+          failedTask.meta = `실행 실패 · ${error.message}`;
+        }
+        writeState({ ...latest, promptPosts: latestPosts, progressPosts: latestProgressPosts });
+        return sendJson(res, 502, { error: error.message });
+      }
+    } catch (error) {
+      return sendJson(res, error.message === 'request_too_large' ? 413 : 400, { error: error.message });
+    }
+  }
+
+  if (pathname.startsWith('/api/files/') && req.method === 'GET') {
+    const storedName = path.basename(decodeURIComponent(pathname.slice('/api/files/'.length)));
+    const target = path.join(FILE_DIR, storedName);
+    if (!fs.existsSync(target)) return sendJson(res, 404, { error: 'not_found' });
+    res.writeHead(200, { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${storedName}"` });
+    return fs.createReadStream(target).pipe(res);
+  }
+
+  return serveStatic(pathname, res);
+}
+
+function serveStatic(pathname, res) {
+  const requested = pathname === '/' ? '/index.html' : (pathname === '/reports' || pathname === '/reports/' ? '/reports.html' : pathname);
+  const target = path.resolve(DIST, `.${requested}`);
+  if ((target !== DIST && !target.startsWith(`${DIST}${path.sep}`)) || !fs.existsSync(target) || fs.statSync(target).isDirectory()) {
+    res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+    return res.end('Not found');
+  }
+  const ext = path.extname(target).toLowerCase();
+  const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
+  res.writeHead(200, { 'content-type': types[ext] || 'application/octet-stream', 'cache-control': 'no-store' });
+  fs.createReadStream(target).pipe(res);
+}
+
+recoverInterruptedRuns();
+const requeuedProviderKeyFailures = requeueProviderKeyFailures();
+if (requeuedProviderKeyFailures) console.log(`Provider key failures requeued ${requeuedProviderKeyFailures} task(s)`);
+const resumedContinuous = resumeContinuousQueue();
+if (resumedContinuous) console.log(`Continuous queue resumed ${resumedContinuous} task(s)`);
+const server = http.createServer((req, res) => route(req, res).catch(error => sendJson(res, 500, { error: error.message })));
+
+// Keep the work queue moving even when the dashboard is not open. A newly
+// published handoff post is picked up one at a time and sent through the
+// same /api/run path used by the dashboard button.
+let queueBusy = false;
+let queueOrder = [];
+let queueIndex = -1;
+function queueRoot(post) {
+  return String(post?.taskId || '').split(/-N\d+/)[0] || String(post?.taskId || 'unknown');
+}
+function choosePendingPost(candidates) {
+  for (const post of candidates) {
+    const root = queueRoot(post);
+    if (!queueOrder.includes(root)) queueOrder.push(root);
+  }
+  if (!queueOrder.length) return null;
+  for (let offset = 1; offset <= queueOrder.length; offset += 1) {
+    const index = (queueIndex + offset) % queueOrder.length;
+    const candidate = candidates.find(post => queueRoot(post) === queueOrder[index]);
+    if (candidate) {
+      queueIndex = index;
+      return candidate;
+    }
+  }
+  return candidates[0] || null;
+}
+function queueProviderFor(post) {
+  const requested = String(post?.nextAI || '').trim();
+  if (!['OpenAI', 'Gemini'].includes(requested)) return null;
+  const alternate = requested === 'OpenAI' ? 'Gemini' : 'OpenAI';
+  if (providerAvailable(requested)) return requested;
+  if (providerAvailable(alternate)) return alternate;
+  return null;
+}
+async function processPendingQueue() {
+  if (queueBusy) return;
+  const current = readState();
+  const posts = Array.isArray(current.promptPosts) ? current.promptPosts : [];
+  const candidates = posts.filter(post => {
+    const status = String(post.status || '').trim();
+    const provider = queueProviderFor(post);
+    const retryable = status === '실행 실패' && isRetryableRunError(post.error) && Number(post.retryCount || 0) <= 3 && (!post.nextRetryAt || Number(post.nextRetryAt) <= Date.now());
+    return (['게시됨', '대기', '인수인계 대기', '예약됨', ''].includes(status) || retryable)
+      && ['OpenAI', 'Gemini'].includes(provider);
+  });
+  const pending = choosePendingPost(candidates);
+  if (!pending) return;
+  queueBusy = true;
+  try {
+    const response = await fetch(`http://127.0.0.1:${PORT}/api/run`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ postId: pending.id, provider: queueProviderFor(pending) })
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      console.error(`Automatic queue run failed for ${pending.id}: ${response.status} ${body}`);
+    } else {
+      console.log(`Automatic queue completed ${pending.id}`);
+    }
+  } catch (error) {
+    console.error(`Automatic queue error for ${pending.id}: ${error.message}`);
+  } finally {
+    queueBusy = false;
+  }
+}
+
+server.listen(PORT, HOST, () => {
+  console.log(`Relay Desk server listening on http://${HOST}:${PORT}`);
+  startReportScheduler();
+  processPendingQueue().catch(error => console.error(`Automatic queue startup error: ${error.message}`));
+});
+setInterval(() => processPendingQueue().catch(error => console.error(`Automatic queue error: ${error.message}`)), 1500);

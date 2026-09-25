@@ -1,0 +1,148 @@
+{
+  "id": "presentation",
+  "label": "보고서·원고 PPT 변환",
+  "priority": 30,
+  "matchKeywords": [
+    "ppt",
+    "pptx",
+    "파워포인트",
+    "프레젠테이션",
+    "발표\\s*자료",
+    "슬라이드"
+  ],
+  "excludeKeywords": [
+    "자막",
+    "srt",
+    "vtt",
+    "caption",
+    "subtitle"
+  ],
+  "pricing": {
+    "base": 49000,
+    "packages": [
+      {
+        "when": {
+          "pagesLte": 7
+        },
+        "regularAmount": 49000,
+        "saleAmount": 39000
+      },
+      {
+        "when": {
+          "pagesGt": 7
+        },
+        "regularAmount": 49000,
+        "saleAmount": 39000,
+        "unit": {
+          "sizePages": 3,
+          "regularAmount": 15000,
+          "saleAmount": 12000
+        }
+      }
+    ],
+    "additionalFees": [
+      {
+        "id": "extra_3_slides",
+        "unit": "3장",
+        "regularAmount": 15000,
+        "saleAmount": 12000
+      },
+      {
+        "id": "revision",
+        "amount": 10000,
+        "_note": "2026-09-22 준희 결정: PPT 기본 수정 2회, 추가 수정 1회 10,000원"
+      },
+      {
+        "id": "research",
+        "amount": 10000,
+        "_note": "2026-09-22 준희 결정: 자료조사 추가금 문서·PPT 모두 10,000원 고정"
+      }
+    ],
+    "launchDiscountRate": 0.3,
+    "launchDiscountAppliesTo": "fallbackOnly",
+    "minimumAmount": 15000
+  },
+  "leadDaysRules": [
+    {
+      "when": {
+        "pagesGte": 6
+      },
+      "value": "1~2일"
+    },
+    {
+      "when": {
+        "isSubmission": true
+      },
+      "value": "1~2일"
+    },
+    {
+      "default": true,
+      "value": "당일~1일"
+    }
+  ],
+  "intakeQuestions": [
+    "PPT로 옮길 보고서나 원고가 있으실까요?",
+    "완성본은 몇 장 정도를 생각하고 계실까요?",
+    "PPT를 어디에 사용하실 예정인가요?",
+    "원하시는 분위기나 참고할 PPT와 필요한 날짜를 알려주세요."
+  ],
+  "quoteText": "{{requestIntro}}\n원고의 흐름을 정리하고, 제목과 본문이 잘 구분되도록 PPT로 구성해 드립니다.\n견적 {{amountFormatted}}원 · 작업 기간 {{days}} · 수정 {{revisions}}회 포함\n결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.\n장수가 늘어나면 작업 전에 먼저 여쭤보겠습니다.\n{{question}}",
+  "quoteMessageVersion": "v6",
+  "includedRevisions": 2,
+  "scope": "기본 포함 범위: 원고 내용을 {{pages}}장 이내로 정리해 파워포인트 파일로 드리고, 수정 {{revisionCount}}회를 포함합니다.",
+  "optionLines": [
+    "① 원고·보고서 제공 기준 7장 이내 39,000원 · 수정 2회",
+    "② 내용을 발표 흐름에 맞게 나누고 가독성 중심으로 배치합니다.",
+    "③ 원본 PPTX를 제공하며 복잡한 표·그래프·자료조사는 범위 확인 후 안내합니다."
+  ],
+  "extraScope": "추가금 기준: 기본 범위를 넘는 작업은 범위와 금액을 먼저 안내하고 동의 후 진행합니다.",
+  "nextQuestion": "PPT로 옮길 원고와 희망 장수, 사용 목적을 보내주실 수 있을까요?",
+  "deliverFormats": [
+    "pptx"
+  ],
+  "qualityChecks": [
+    {
+      "id": "pptx_open",
+      "blocking": true
+    },
+    {
+      "id": "pptx_slide_count",
+      "blocking": true
+    },
+    {
+      "id": "pptx_empty_slide",
+      "blocking": true
+    }
+  ],
+  "soomgoAutoQuote": false,
+  "_soomgoAutoQuoteNote": "decisions 7-13(9/24 준희 \"응\"): 숨고 PPT 제작 요청에는 자동 견적을 보내지 않고 삭제도 하지 않는다. 켜기·끄기는 ppt-quote-on/off.bat(scripts/soomgo-quote-switch.cjs)만. 크몽·이미 견적 보낸 채팅방 응대는 그대로",
+  "channels": {
+    "soomgo": true,
+    "kmong": true
+  },
+  "reviewCriteria": [
+    "요구사항·자료 대조",
+    "사실·근거·논리 검토",
+    "수치·계산·출처 재확인",
+    "파일·데이터 무결성 및 결과 형식 확인",
+    "문장·구성·중복·가독성 편집 검수",
+    "참고자료·고객 지시·브랜드 톤 반영 검수",
+    "보안·개인정보·위조·표절 위험 검수",
+    "실행 가능성·납품 절차·추가금 조건 검수",
+    "독립 최종 검수: 누락·모순·계산·형식·오탈자 확인"
+  ],
+  "followupMessages": [
+    {
+      "id": "presentation.followup.v1",
+      "version": "v1",
+      "text": "PPT로 옮길 원고와 희망 장수, 사용 목적, 필요한 날짜를 보내주실 수 있을까요?"
+    }
+  ],
+  "soomgoCategories": [
+    {
+      "name": "PPT 제작",
+      "match": "^PPT\\s*제작$"
+    }
+  ],
+  "_quoteTextNote": "2026-09-22 v4: 문서·자막과 같은 형식. 확인 질문은 장수를 모르면 장수, 알면 원고·자료 여부(자료조사 추가금 안내)"
+}

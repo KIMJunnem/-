@@ -1,0 +1,348 @@
+{
+  "schemaVersion": 1,
+  "specifiedInputs": [
+    {
+      "input": "영어 자막",
+      "expectedId": "subtitle",
+      "id": "subtitle",
+      "label": "자막 제작",
+      "matched": [
+        "자막"
+      ],
+      "candidates": [
+        "subtitle"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "PPT 보고서 변환",
+      "expectedId": "presentation",
+      "id": "presentation",
+      "label": "보고서·원고 PPT 변환",
+      "matched": [
+        "ppt"
+      ],
+      "candidates": [
+        "presentation"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "영어 문서 번역",
+      "expectedId": "translation_en",
+      "id": "translation_en",
+      "label": "영어 번역",
+      "matched": [
+        "번역"
+      ],
+      "candidates": [
+        "translation_en"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "일반 문서 작성",
+      "expectedId": "document_writing",
+      "id": "document_writing",
+      "label": "일반 문서·글 작성",
+      "matched": [
+        "일반\\s*문서\\s*작성",
+        "문서\\s*작성"
+      ],
+      "candidates": [
+        "document_writing"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "문서 / 글 작성",
+      "expectedId": "document_writing",
+      "id": "document_writing",
+      "label": "일반 문서·글 작성",
+      "matched": [
+        "문서\\s*[·/]?\\s*글\\s*작성",
+        "글\\s*작성"
+      ],
+      "candidates": [
+        "document_writing"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "발표자료 원고 정리",
+      "expectedId": "presentation",
+      "id": "presentation",
+      "label": "보고서·원고 PPT 변환",
+      "matched": [
+        "발표\\s*자료"
+      ],
+      "candidates": [
+        "presentation"
+      ],
+      "usedPriority": false
+    },
+    {
+      "input": "영상 자막 번역",
+      "expectedId": "subtitle",
+      "id": "subtitle",
+      "label": "자막 제작",
+      "matched": [
+        "자막"
+      ],
+      "candidates": [
+        "subtitle"
+      ],
+      "usedPriority": false
+    }
+  ],
+  "regressionInputs": [
+    {
+      "caseId": "subtitle-basic-5m",
+      "text": "자막 제작 SRT 5분 한국어 인터뷰 SRT 자막",
+      "expectedId": "subtitle",
+      "id": "subtitle",
+      "label": "자막 제작",
+      "matched": [
+        "자막",
+        "srt"
+      ],
+      "candidates": [
+        "subtitle"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "subtitle-basic-10m",
+      "text": "자막 제작 SRT 10분 한국어 강의 영상 자막",
+      "expectedId": "subtitle",
+      "id": "subtitle",
+      "label": "자막 제작",
+      "matched": [
+        "자막",
+        "srt"
+      ],
+      "candidates": [
+        "subtitle"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "subtitle-long-30m",
+      "text": "자막 제작 SRT 30분 한국어 발표 영상 자막",
+      "expectedId": "subtitle",
+      "id": "subtitle",
+      "label": "자막 제작",
+      "matched": [
+        "자막",
+        "srt"
+      ],
+      "candidates": [
+        "subtitle"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "subtitle-long-35m",
+      "text": "자막 제작 SRT 35분 한국어 인터뷰 발화 타이밍 자막",
+      "expectedId": "subtitle",
+      "id": "subtitle",
+      "label": "자막 제작",
+      "matched": [
+        "자막",
+        "srt",
+        "발화\\s*타이밍"
+      ],
+      "candidates": [
+        "subtitle"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "subtitle-urgent-5m",
+      "text": "자막 제작 5분 한국어 영상 SRT 자막 오늘 급하게",
+      "expectedId": "subtitle",
+      "id": "subtitle",
+      "label": "자막 제작",
+      "matched": [
+        "자막",
+        "srt"
+      ],
+      "candidates": [
+        "subtitle"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "document-basic-1500",
+      "text": "문서 / 글 작성 1,500자 회사 안내문 작성",
+      "expectedId": "document_writing",
+      "id": "document_writing",
+      "label": "일반 문서·글 작성",
+      "matched": [
+        "문서\\s*[·/]?\\s*글\\s*작성",
+        "글\\s*작성"
+      ],
+      "candidates": [
+        "document_writing"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "document-one-page",
+      "text": "일반 문서 작성 A4 1쪽 서비스 소개문 정리",
+      "expectedId": "document_writing",
+      "id": "document_writing",
+      "label": "일반 문서·글 작성",
+      "matched": [
+        "일반\\s*문서\\s*작성",
+        "문서\\s*작성"
+      ],
+      "candidates": [
+        "document_writing"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "document-three-pages",
+      "text": "문서 / 글 작성 A4 3쪽 행사 결과 정리 문서",
+      "expectedId": "document_writing",
+      "id": "document_writing",
+      "label": "일반 문서·글 작성",
+      "matched": [
+        "문서\\s*[·/]?\\s*글\\s*작성",
+        "글\\s*작성"
+      ],
+      "candidates": [
+        "document_writing"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "document-expanded",
+      "text": "문서 / 글 작성 A4 3쪽 1. 현황\n2. 문제점\n3. 개선안",
+      "expectedId": "document_writing",
+      "id": "document_writing",
+      "label": "일반 문서·글 작성",
+      "matched": [
+        "문서\\s*[·/]?\\s*글\\s*작성",
+        "글\\s*작성"
+      ],
+      "candidates": [
+        "document_writing"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "document-urgent",
+      "text": "문서 / 글 작성 A4 1쪽 업무 안내문 오늘",
+      "expectedId": "document_writing",
+      "id": "document_writing",
+      "label": "일반 문서·글 작성",
+      "matched": [
+        "문서\\s*[·/]?\\s*글\\s*작성",
+        "글\\s*작성"
+      ],
+      "candidates": [
+        "document_writing"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "presentation-3-slides",
+      "text": "PPT 제작 PPTX 3장 제공 원고를 발표자료로 변환",
+      "expectedId": "presentation",
+      "id": "presentation",
+      "label": "보고서·원고 PPT 변환",
+      "matched": [
+        "ppt",
+        "pptx",
+        "발표\\s*자료"
+      ],
+      "candidates": [
+        "presentation"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "presentation-7-slides",
+      "text": "PPT 제작 PPTX 7장 제공 보고서를 발표자료로 변환",
+      "expectedId": "presentation",
+      "id": "presentation",
+      "label": "보고서·원고 PPT 변환",
+      "matched": [
+        "ppt",
+        "pptx",
+        "발표\\s*자료"
+      ],
+      "candidates": [
+        "presentation"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "presentation-10-slides",
+      "text": "PPT 제작 PPTX 10장 제공 원고를 발표자료로 변환",
+      "expectedId": "presentation",
+      "id": "presentation",
+      "label": "보고서·원고 PPT 변환",
+      "matched": [
+        "ppt",
+        "pptx",
+        "발표\\s*자료"
+      ],
+      "candidates": [
+        "presentation"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "presentation-13-slides",
+      "text": "프레젠테이션 제작 PPTX 13장 보고서 내용을 슬라이드로 변환",
+      "expectedId": "presentation",
+      "id": "presentation",
+      "label": "보고서·원고 PPT 변환",
+      "matched": [
+        "ppt",
+        "pptx",
+        "프레젠테이션",
+        "슬라이드"
+      ],
+      "candidates": [
+        "presentation"
+      ],
+      "usedPriority": false
+    },
+    {
+      "caseId": "presentation-urgent-7-slides",
+      "text": "PPT 제작 PPTX 7장 제공 원고를 발표자료로 변환 오늘 급하게",
+      "expectedId": "presentation",
+      "id": "presentation",
+      "label": "보고서·원고 PPT 변환",
+      "matched": [
+        "ppt",
+        "pptx",
+        "발표\\s*자료"
+      ],
+      "candidates": [
+        "presentation"
+      ],
+      "usedPriority": false
+    }
+  ],
+  "summary": {
+    "specifiedInputsPassed": 7,
+    "regressionInputsPassed": 15,
+    "priorityUsed": 0,
+    "unknownReturnsNull": true,
+    "activeSoomgoServices": [
+      "document_writing",
+      "presentation",
+      "subtitle"
+    ],
+    "activeKmongServices": [
+      "document_writing",
+      "presentation",
+      "subtitle"
+    ]
+  }
+}

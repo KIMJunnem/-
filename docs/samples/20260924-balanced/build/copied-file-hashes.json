@@ -1,0 +1,137 @@
+[
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-professional\\ready\\Swan_Professional_Report.pdf",
+    "to": "06_Professional_Report.pdf",
+    "sha256": "6b6c2d0742781d308334d1c3443f6fe21cf950571b6d7777488f9bc300cf85dd"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-professional\\ready\\Swan_Report_Preview.jpg",
+    "to": "06_Professional_Report_preview.jpg",
+    "sha256": "d6573261e5ea6a293a1bc125bb94745e261c0d480fbdaf729c01d52662c1a08b"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-professional\\ready\\Swan_Professional_Presentation_v2.pptx",
+    "to": "07_Report_to_Presentation.pptx",
+    "sha256": "18eed6900f64e5ed0b86c66039c2da793038cd9bd5e67fee0f2700e037fd1129"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-professional\\ready\\Swan_Presentation_Preview.jpg",
+    "to": "07_Report_to_Presentation_preview.jpg",
+    "sha256": "3e87e858c2998e14c537ffa366fe3e685d09a3aa4400c89cc5c6c0123224faf8"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-professional\\build\\slides-v2\\slide-1.png",
+    "to": "07_slide_1.png",
+    "sha256": "c589b07d4ae1cadbc66b1df6813591c122dd0038df91654ef2dfe0ddc8dddb59"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-professional\\build\\slides-v2\\slide-2.png",
+    "to": "07_slide_2.png",
+    "sha256": "909b13584c41c83e1fd3641b55bc787c05b5c97ad028d9d9fa5aed32a8925b46"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-professional\\build\\slides-v2\\slide-3.png",
+    "to": "07_slide_3.png",
+    "sha256": "a799881652cdf9544d62ccde7fced2792911ab49b04ce597d9601f672d17e1fa"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-professional\\build\\slides-v2\\slide-4.png",
+    "to": "07_slide_4.png",
+    "sha256": "5a418bc6a50d0d408948479ea4db5af8dae1e00ea1b9016042a4400f658050d8"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-professional\\build\\slides-v2\\slide-5.png",
+    "to": "07_slide_5.png",
+    "sha256": "4bcbb730178991b3c71c31ea5958c0d89732233cccdc10399a220951038fe7e2"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-professional\\build\\slides-v2\\slide-6.png",
+    "to": "07_slide_6.png",
+    "sha256": "983f329d338be4da19891fe059b87b257c1a053f0acf104368ae7c5de50f7966"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-professional\\build\\slides-v2\\slide-7.png",
+    "to": "07_slide_7.png",
+    "sha256": "a123b200f4d11769afbcc5c882a2b92080624e3c8a30eb20c0789bc884dfc7b5"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_ko_60s_v2.mp4",
+    "to": "08_ko_Subtitle_60s.mp4",
+    "sha256": "83b7e2f9e59e03491e58efa7878028decb206c2e75a4ca9c44c997540ee5c331"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_ko_60s_v2_ko.srt",
+    "to": "08_ko_Subtitle_60s.srt",
+    "sha256": "c9c2a4d59014acdd03def2f5af32aace2afdfb05ce5b6442cc8e31595a512b4a"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_ko_v2_preview.jpg",
+    "to": "08_ko_Subtitle_60s_preview.jpg",
+    "sha256": "ea1519dacceafc3d257eb73e4eb6072497c509aa160ee97cdfcca3dec04f35db"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_fr_60s_v2.mp4",
+    "to": "08_fr_Subtitle_60s.mp4",
+    "sha256": "a2e3dc2eaacda72391650d4bfe0943b5d4073e21f6a0ffb8a16c5f082419cae3"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_fr_60s_v2_ko.srt",
+    "to": "08_fr_Subtitle_60s.srt",
+    "sha256": "29f1380ea5e25cb4704f56b040a6214528c04c9521f8a75082d2e2dc7a975c51"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_fr_v2_preview.jpg",
+    "to": "08_fr_Subtitle_60s_preview.jpg",
+    "sha256": "f647459c98e1f36f4480a6b0985a9ce201142e13ec163d41b34214e00169016b"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_ja_60s_v2.mp4",
+    "to": "08_ja_Subtitle_60s.mp4",
+    "sha256": "ac4bd238e89f0df0acd34e0767a284d422b026432d6c4f2d231f1cfc7d1d0293"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_ja_60s_v2_ko.srt",
+    "to": "08_ja_Subtitle_60s.srt",
+    "sha256": "5f4c76bad9905b62d29f02d565f8cc64073302f2b10620bf210dd92ad300124f"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_ja_v2_preview.jpg",
+    "to": "08_ja_Subtitle_60s_preview.jpg",
+    "sha256": "dba44ec4b2ebd8d9475ef0f7533d047c77b02a987a5dbf497ba06b1403348586"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_zh_60s_v2.mp4",
+    "to": "08_zh_Subtitle_60s.mp4",
+    "sha256": "8ea781b51dc16691f4f42be264bfe7f20a86ac5bdbb6fb8a9832e4cdc225394d"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_zh_60s_v2_ko.srt",
+    "to": "08_zh_Subtitle_60s.srt",
+    "sha256": "9d31211bc4bec80e3518a6e527114187071a2f5adf1f3123b36a6bd31c11b4c5"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\Swan_zh_v2_preview.jpg",
+    "to": "08_zh_Subtitle_60s_preview.jpg",
+    "sha256": "2cffb0473e2eb3e37b1fb4fb93b426be040ec99d58aab97a647bc75a1a0d997c"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-proof\\ready\\Swan_Subtitle_Compare_21s.mp4",
+    "to": "09_English_Korean_Compare_21s.mp4",
+    "sha256": "0a4e611c20681fe1ae62012e6bb6e8b56e075672e1dce0e69620554b99a4f0a5"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-proof\\ready\\Swan_Subtitle_Compare_21s_ko.srt",
+    "to": "09_English_Korean_Compare_21s.srt",
+    "sha256": "80d0596d14425bc0c883ae51b9b893f8a867e00f6da9de991f4926fad5790947"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\README_수정내역과출처.md",
+    "to": "Subtitle_Sources_CC_BY_SA.md",
+    "sha256": "1fe9fc72ff897f7e58006b9d7f6c86c8f05e17292a3aa3d5376a45aee698018b"
+  },
+  {
+    "from": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-proof\\ready\\README.md",
+    "to": "English_Subtitle_Source_and_Review.md",
+    "sha256": "d7ba6341cb478dad3b45de117db51b8a83953dd758ecc3e42e92e9c884b8fb4e"
+  }
+]

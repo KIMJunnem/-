@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "environmentType": "virtual_server",
+  "alwaysOn": true,
+  "sleepRisk": "not_applicable",
+  "confirmedByUserAt": "2026-09-19T16:50:00+09:00",
+  "note": "24시간 가동 가상서버이며 절전되지 않음. 배터리·덮개 관련 운영 경고 제외."
+}

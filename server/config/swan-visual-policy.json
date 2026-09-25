@@ -1,0 +1,14 @@
+{
+  "brand": "Swan",
+  "palette": ["#000000", "#FFFFFF", "#E8E8E8"],
+  "fonts": {
+    "korean": "Malgun Gothic",
+    "latin": "Noto Sans"
+  },
+  "forbidden": [
+    "swan-subtitle-detail.png에 사용된 기존 장식 글꼴",
+    "손글씨체",
+    "명조 계열 장식체"
+  ],
+  "rule": "모든 가격표·상세 페이지·샘플은 읽기 쉬운 고딕체만 사용한다."
+}

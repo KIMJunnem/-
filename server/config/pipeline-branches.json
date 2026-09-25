@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "tag": "파이프라인 A/B/C 시뮬레이터 · 뼈대(가짜 응답 전용)",
+  "note": "2026-09-22 준희 지시. 갈래는 이 파일(데이터)로만 정한다. 모델명·가격은 예시이며 실제 호출 전 확인해야 한다(Claude Haiku 가격은 [추정]). fakeProfiles 수치는 채점·비용·시간 계산 검증용으로 지어낸 값이라 결과의 좋고 나쁨에는 의미가 없다. 실제 호출은 운영 정책 pipelineSim.enabled=false로 막혀 있다.",
+  "tasks": { "edit_pairs": 100, "subtitle_pairs": 100 },
+  "krwPerUsd": 1500,
+  "prices": {
+    "claude-fable-5-1": { "usdPerMInput": 10, "usdPerMOutput": 50, "source": "Claude 공식 가격표(2026-09-22 확인)" },
+    "claude-haiku-4-5": { "usdPerMInput": 1, "usdPerMOutput": 5, "source": "[추정] 실제 호출 전 확인" },
+    "jev-1.13.0": { "usdPerMInput": 0.042, "usdPerMOutput": 0, "source": "Jev 공개 가격" }
+  },
+  "fakeProfiles": {
+    "claude-fable-5-1": { "fixRate": 0.9, "overEditRate": 0.1, "undoRate": 0.8, "msPerCall": 4000, "inputTokensPerChar": 0.8, "outputTokensPerChar": 0.8, "promptTokens": 600 },
+    "claude-haiku-4-5": { "fixRate": 0.7, "overEditRate": 0.25, "undoRate": 0.5, "msPerCall": 1500, "inputTokensPerChar": 0.8, "outputTokensPerChar": 0.8, "promptTokens": 600 },
+    "jev-1.13.0": { "accuracy": 0.85, "msPerCall": 300, "inputTokensPerChar": 0.8, "promptTokens": 150 }
+  },
+  "branches": [
+    {
+      "id": "A",
+      "label": "A · 큰 모델 1회 교정",
+      "steps": [
+        { "type": "model", "provider": "claude", "model": "claude-fable-5-1", "role": "edit" }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "B · 작은 모델 교정 → Jev 확인(뜻 바뀌면 원래대로)",
+      "steps": [
+        { "type": "model", "provider": "claude", "model": "claude-haiku-4-5", "role": "edit" },
+        { "type": "jev", "provider": "jev", "model": "jev-1.13.0",
+          "questions": { "meaning_changed": { "type": "noul", "instructions": "Does output change the meaning of input beyond fixing errors?", "criteria": { "true": "meaning changed", "false": "meaning kept" } } },
+          "gate": { "question": "meaning_changed", "atLeast": 0.5, "action": "revert" } }
+      ]
+    },
+    {
+      "id": "C",
+      "label": "C · 작은 모델 교정 → 큰 모델 검토 → Jev 확인",
+      "steps": [
+        { "type": "model", "provider": "claude", "model": "claude-haiku-4-5", "role": "edit" },
+        { "type": "model", "provider": "claude", "model": "claude-fable-5-1", "role": "review" },
+        { "type": "jev", "provider": "jev", "model": "jev-1.13.0",
+          "questions": { "meaning_changed": { "type": "noul", "instructions": "Does output change the meaning of input beyond fixing errors?", "criteria": { "true": "meaning changed", "false": "meaning kept" } } },
+          "gate": { "question": "meaning_changed", "atLeast": 0.5, "action": "revert" } }
+      ]
+    }
+  ]
+}

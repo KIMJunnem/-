@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "enabled": true,
+  "status": "linked",
+  "targetThreadId": "01a0b890-3dda-7483-8805-e71c38a29694",
+  "targetTitle": "Swan Astra 운영·고객대응실",
+  "promptFile": "server/config/swan-astra-operations-room-prompt.md",
+  "policyVersion": "swan-astra-room-v1",
+  "updatedAt": "2026-09-19T07:28:10.885Z"
+}

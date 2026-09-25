@@ -1,0 +1,57 @@
+{"kind":"deck","id":"pr/0qpunx","name":"Deck"}
+{"kind":"layout","layoutId":"298ddec5-2105-45d6-a438-1759c91a7485","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"9d3f064b-494e-4973-a72e-512814c1f29c","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/eouk0s","slide":1,"title":"swan","textShapes":6}
+{"kind":"textbox","id":"sh/14fe5gz2","slide":1,"name":"copy-1","text":"swan","textPreview":"swan","textChars":4,"textLines":1,"bbox":[64,30,200,40]}
+{"kind":"textbox","id":"sh/e1ofal0b","slide":1,"name":"copy-2","text":"자체 제작 샘플 · 원문을 발표용으로 재구성한 예시","textPreview":"자체 제작 샘플 · 원문을 발표용으로 재구성한 예시","textChars":28,"textLines":1,"bbox":[64,664,1000,24]}
+{"kind":"textbox","id":"sh/f2xw3qhw","slide":1,"name":"copy-3","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[1170,664,48,24]}
+{"kind":"textbox","id":"sh/o76xgvid","slide":1,"name":"copy-4","text":"swan 브랜드 콘텐츠 운영안","textPreview":"swan 브랜드 콘텐츠 운영안","textChars":16,"textLines":1,"bbox":[65,123,1100,52]}
+{"kind":"textbox","id":"sh/pszy90zy","slide":1,"name":"copy-5","text":"고객의 자료를\n쓰기 좋은 형태로","textPreview":"고객의 자료를 | 쓰기 좋은 형태로","textChars":17,"textLines":2,"bbox":[61,222,1150,213]}
+{"kind":"textbox","id":"sh/25ofel0n","slide":1,"name":"copy-6","text":"영상은 한국어 자막으로,\n초안은 문서로, 보고서는 발표 자료로 정리합니다.","textPreview":"영상은 한국어 자막으로, | 초안은 문서로, 보고서는 발표 자료로 정리합니다.","textChars":41,"textLines":2,"bbox":[67,506,1100,97]}
+{"kind":"notes","id":"nt/eouk0s","slide":1,"text":"출처: 함께 제공한 source-memo.txt 및 Swan_02_Edited_Report.docx. Swan 자체 제작 원문과 운영 제안이며 실제 고객 의뢰, 실적, 검증된 전환 성과를 의미하지 않습니다. 가격이나 납기를 제시하지 않습니다."}
+{"kind":"slide","id":"sl/dmcbzi","slide":2,"title":"swan","textShapes":16}
+{"kind":"textbox","id":"sh/zux8fapg","slide":2,"name":"copy-7","text":"swan","textPreview":"swan","textChars":4,"textLines":1,"bbox":[64,30,200,40]}
+{"kind":"textbox","id":"sh/0vq9of61","slide":2,"name":"copy-8","text":"자체 제작 샘플 · 원문을 발표용으로 재구성한 예시","textPreview":"자체 제작 샘플 · 원문을 발표용으로 재구성한 예시","textChars":28,"textLines":1,"bbox":[64,664,1000,24]}
+{"kind":"textbox","id":"sh/1gzqhk7m","slide":2,"name":"copy-9","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1170,664,48,24]}
+{"kind":"textbox","id":"sh/mh8rqpo7","slide":2,"name":"copy-10","text":"맡길 자료와 받을 결과를 명확하게","textPreview":"맡길 자료와 받을 결과를 명확하게","textChars":18,"textLines":1,"bbox":[62,116,1160,78]}
+{"kind":"textbox","id":"sh/nih8jups","slide":2,"name":"copy-11","text":"영상 자막","textPreview":"영상 자막","textChars":5,"textLines":1,"bbox":[66,260,365,55]}
+{"kind":"textbox","id":"sh/ojq9sz6x","slide":2,"name":"copy-12","text":"영상과 대본 유무 확인","textPreview":"영상과 대본 유무 확인","textChars":12,"textLines":1,"bbox":[66,356,365,45]}
+{"kind":"textbox","id":"sh/9kzql47i","slide":2,"name":"copy-13","text":"한국어 자막 파일(SRT)","textPreview":"한국어 자막 파일(SRT)","textChars":14,"textLines":1,"bbox":[66,435,365,48]}
+{"kind":"textbox","id":"sh/2l47el8n","slide":2,"name":"copy-14","text":"외국어 영상은 한국어로 번역\n영상 삽입은 별도 범위","textPreview":"외국어 영상은 한국어로 번역 | 영상 삽입은 별도 범위","textChars":28,"textLines":2,"bbox":[66,515,365,75]}
+{"kind":"textbox","id":"sh/3md87qp8","slide":2,"name":"copy-15","text":"일반 문서","textPreview":"일반 문서","textChars":5,"textLines":1,"bbox":[473,260,365,55]}
+{"kind":"textbox","id":"sh/7m10361k","slide":2,"name":"copy-16","text":"초안과 참고 자료 확인","textPreview":"초안과 참고 자료 확인","textChars":12,"textLines":1,"bbox":[473,356,365,45]}
+{"kind":"textbox","id":"sh/6lszu10z","slide":2,"name":"copy-17","text":"순서와 표현을 정리한 문서","textPreview":"순서와 표현을 정리한 문서","textChars":14,"textLines":1,"bbox":[473,435,365,48]}
+{"kind":"textbox","id":"sh/t8ji5wjq","slide":2,"name":"copy-18","text":"원문의 내용과 의도 유지","textPreview":"원문의 내용과 의도 유지","textChars":13,"textLines":1,"bbox":[473,515,365,75]}
+{"kind":"textbox","id":"sh/s7ahwbi5","slide":2,"name":"copy-19","text":"PPT 변환","textPreview":"PPT 변환","textChars":6,"textLines":1,"bbox":[880,260,365,55]}
+{"kind":"textbox","id":"sh/jih0zm18","slide":2,"name":"copy-20","text":"보고서와 원고 확인","textPreview":"보고서와 원고 확인","textChars":10,"textLines":1,"bbox":[880,356,365,45]}
+{"kind":"textbox","id":"sh/ih8zqh03","slide":2,"name":"copy-21","text":"핵심을 나눈 발표 자료","textPreview":"핵심을 나눈 발표 자료","textChars":12,"textLines":1,"bbox":[880,435,365,48]}
+{"kind":"textbox","id":"sh/5kzi1wje","slide":2,"name":"copy-22","text":"슬라이드별 전달 목적 정리","textPreview":"슬라이드별 전달 목적 정리","textChars":14,"textLines":1,"bbox":[880,515,365,75]}
+{"kind":"notes","id":"nt/dmcbzi","slide":2,"text":"출처: 함께 제공한 source-memo.txt 및 Swan_02_Edited_Report.docx. Swan 자체 제작 원문과 운영 제안이며 실제 고객 의뢰, 실적, 검증된 전환 성과를 의미하지 않습니다. 가격이나 납기를 제시하지 않습니다."}
+{"kind":"slide","id":"sl/d6semp","slide":3,"title":"swan","textShapes":13}
+{"kind":"textbox","id":"sh/jit8fmpg","slide":3,"name":"copy-23","text":"swan","textPreview":"swan","textChars":4,"textLines":1,"bbox":[64,30,200,40]}
+{"kind":"textbox","id":"sh/kj298r6l","slide":3,"name":"copy-24","text":"자체 제작 샘플 · 원문을 발표용으로 재구성한 예시","textPreview":"자체 제작 샘플 · 원문을 발표용으로 재구성한 예시","textChars":28,"textLines":1,"bbox":[64,664,1000,24]}
+{"kind":"textbox","id":"sh/lkbqhw76","slide":3,"name":"copy-25","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1170,664,48,24]}
+{"kind":"textbox","id":"sh/at0r2xoj","slide":3,"name":"copy-26","text":"제작 전에 세 가지를 맞춥니다","textPreview":"제작 전에 세 가지를 맞춥니다","textChars":16,"textLines":1,"bbox":[62,114,1150,80]}
+{"kind":"textbox","id":"sh/bu98b2p4","slide":3,"name":"copy-27","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[67,268,95,55]}
+{"kind":"textbox","id":"sh/wfi9476p","slide":3,"name":"copy-28","text":"원자료","textPreview":"원자료","textChars":3,"textLines":1,"bbox":[187,268,260,55]}
+{"kind":"textbox","id":"sh/xgbqdc7a","slide":3,"name":"copy-29","text":"기존 영상·초안·보고서가 있나요?","textPreview":"기존 영상·초안·보고서가 있나요?","textChars":18,"textLines":1,"bbox":[526,271,660,54]}
+{"kind":"textbox","id":"sh/mp07yx8n","slide":3,"name":"copy-30","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[67,386,95,55]}
+{"kind":"textbox","id":"sh/nq9872p8","slide":3,"name":"copy-31","text":"사용 목적","textPreview":"사용 목적","textChars":5,"textLines":1,"bbox":[187,386,260,55]}
+{"kind":"textbox","id":"sh/fy1kbipc","slide":3,"name":"copy-32","text":"어디에 쓰고, 누가 볼 자료인가요?","textPreview":"어디에 쓰고, 누가 볼 자료인가요?","textChars":19,"textLines":1,"bbox":[526,389,660,54]}
+{"kind":"textbox","id":"sh/exsj2dor","slide":3,"name":"copy-33","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[67,504,95,55]}
+{"kind":"textbox","id":"sh/10j2ds7i","slide":3,"name":"copy-34","text":"필요한 시점","textPreview":"필요한 시점","textChars":6,"textLines":1,"bbox":[187,504,260,55]}
+{"kind":"textbox","id":"sh/0za14n6x","slide":3,"name":"copy-35","text":"언제까지 필요하신가요?","textPreview":"언제까지 필요하신가요?","textChars":12,"textLines":1,"bbox":[526,507,660,54]}
+{"kind":"notes","id":"nt/d6semp","slide":3,"text":"출처: 함께 제공한 source-memo.txt 및 Swan_02_Edited_Report.docx. Swan 자체 제작 원문과 운영 제안이며 실제 고객 의뢰, 실적, 검증된 전환 성과를 의미하지 않습니다. 가격이나 납기를 제시하지 않습니다."}
+{"kind":"slide","id":"sl/x4mzj3","slide":4,"title":"swan","textShapes":11}
+{"kind":"textbox","id":"sh/ul8behkj","slide":4,"name":"copy-36","text":"swan","textPreview":"swan","textChars":4,"textLines":1,"bbox":[64,30,200,40]}
+{"kind":"textbox","id":"sh/hozupwju","slide":4,"name":"copy-37","text":"자체 제작 샘플 · 원문을 발표용으로 재구성한 예시","textPreview":"자체 제작 샘플 · 원문을 발표용으로 재구성한 예시","textChars":28,"textLines":1,"bbox":[64,664,1000,24]}
+{"kind":"textbox","id":"sh/wnqtgri9","slide":4,"name":"copy-38","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1170,664,48,24]}
+{"kind":"textbox","id":"sh/jq1cr610","slide":4,"name":"copy-39","text":"완성한 뒤에도 원문으로 돌아갑니다","textPreview":"완성한 뒤에도 원문으로 돌아갑니다","textChars":18,"textLines":1,"bbox":[62,116,1160,80]}
+{"kind":"textbox","id":"sh/ipsbi10f","slide":4,"name":"copy-40","text":"내용","textPreview":"내용","textChars":2,"textLines":1,"bbox":[67,255,300,60]}
+{"kind":"textbox","id":"sh/5sjutwj6","slide":4,"name":"copy-41","text":"뜻과 조건이\n바뀌지 않았는지","textPreview":"뜻과 조건이 | 바뀌지 않았는지","textChars":15,"textLines":2,"bbox":[67,345,337,110]}
+{"kind":"textbox","id":"sh/4radkril","slide":4,"name":"copy-42","text":"파일","textPreview":"파일","textChars":2,"textLines":1,"bbox":[479,255,300,60]}
+{"kind":"textbox","id":"sh/ru1cv61w","slide":4,"name":"copy-43","text":"열리고 읽히며\n잘리지 않는지","textPreview":"열리고 읽히며 | 잘리지 않는지","textChars":15,"textLines":2,"bbox":[479,345,337,110]}
+{"kind":"textbox","id":"sh/6tsvm10b","slide":4,"name":"copy-44","text":"자막","textPreview":"자막","textChars":2,"textLines":1,"bbox":[890,255,300,60]}
+{"kind":"textbox","id":"sh/8r2lorqx","slide":4,"name":"copy-45","text":"음성보다 늦거나\n빠르지 않은지","textPreview":"음성보다 늦거나 | 빠르지 않은지","textChars":16,"textLines":2,"bbox":[890,345,326,110]}
+{"kind":"textbox","id":"sh/9sb2xw7i","slide":4,"name":"copy-46","text":"수정한 이유를 기록해 다음 작업의 체크리스트에 반영합니다.","textPreview":"수정한 이유를 기록해 다음 작업의 체크리스트에 반영합니다.","textChars":32,"textLines":1,"bbox":[67,554,1120,52]}
+{"kind":"notes","id":"nt/x4mzj3","slide":4,"text":"출처: 함께 제공한 source-memo.txt 및 Swan_02_Edited_Report.docx. Swan 자체 제작 원문과 운영 제안이며 실제 고객 의뢰, 실적, 검증된 전환 성과를 의미하지 않습니다. 가격이나 납기를 제시하지 않습니다."}

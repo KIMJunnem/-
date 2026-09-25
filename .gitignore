@@ -1,0 +1,24 @@
+server/data/state.json
+server/data/state.json.tmp
+server/storage/*
+!server/storage/.gitkeep
+bridge/config.json
+bridge/data/*
+!bridge/data/.gitkeep
+server/*.log
+server/data/transcripts/
+# 고객 자료 제외 (2026-09-23 준희 승인, 개발방)
+server/data/state.before-*.json
+server/data/state.json.pre-*
+server/data/astra-chat.json
+server/data/case-study-log.json
+server/data/relay-desk-report-for-astra.txt
+server/data/relay-desk-report-manifest.json
+# outputs/는 코드·시험 결과가 섞여 있어 고객 이름이 든 것만
+outputs/astra-kimgukeun-20260917/
+outputs/kimgeunguk_astra_12000_results.zip
+# Codex 대화방 PPT 제작 결과(고객 원고로 만든 파일, 2026-09-23 개발방)
+server/data/productions/
+# Astra 숨고 답장 기록(대화방 번호·시각만, 2026-09-23 숨고 운영방)
+server/data/astra-chat-log.json
+server/data/astra-chat-log.json.tmp

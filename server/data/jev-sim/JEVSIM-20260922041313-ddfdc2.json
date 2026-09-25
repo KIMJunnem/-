@@ -1,0 +1,850 @@
+{
+  "id": "JEVSIM-20260922041313-ddfdc2",
+  "status": "completed",
+  "day": "2026-09-22",
+  "startedAt": "2026-09-22T04:13:13.473Z",
+  "finishedAt": "2026-09-22T04:13:17.010Z",
+  "experiments": [
+    "custom:q1_sync_crosslang"
+  ],
+  "customDefinitions": {
+    "custom:q1_sync_crosslang": {
+      "label": "번역 자막 싱크 매칭",
+      "source": "subtitle_pairs",
+      "filter": {},
+      "sampleLimit": 10000,
+      "questions": {
+        "same_content": {
+          "type": "noul",
+          "instructions": "Does srt_block express the same content as transcript? They may be in different languages. Judge meaning only.",
+          "criteria": {
+            "true": "same content",
+            "false": "different content"
+          }
+        }
+      }
+    }
+  },
+  "available": {
+    "custom:q1_sync_crosslang": 30
+  },
+  "planned": 30,
+  "skippedByCap": 0,
+  "limits": {
+    "maxCalls": 10000,
+    "runMaxCalls": 10000,
+    "dailyInputTokens": 158730158,
+    "tokensTodayBefore": 7787348,
+    "remainingTokensAtStart": 150942810,
+    "resetsAt": "2026-09-22T15:00:00.000Z"
+  },
+  "cost": {
+    "calls": 30,
+    "inputTokens": 11437,
+    "usd": 0.00048,
+    "krw": 1
+  },
+  "stopReason": null,
+  "results": {
+    "custom:q1_sync_crosslang": [
+      {
+        "key": "sp-fr-01",
+        "state": {
+          "srt_block": "1\n00:00:01,000 --> 00:00:03,200\n오늘은 파리의 오래된 시장을 소개합니다",
+          "transcript": "Aujourd'hui, je vous présente un vieux marché de Paris.",
+          "source_lang": "fr"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.94,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-fr-04",
+        "state": {
+          "srt_block": "4\n00:00:08,700 --> 00:00:11,000\n가장 인기 있는 건 치즈 가게입니다",
+          "transcript": "Il ouvre tous les dimanches matin.",
+          "source_lang": "fr"
+        },
+        "compare": {
+          "gold": {
+            "same_content": false
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.05,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-en-01",
+        "state": {
+          "srt_block": "5\n00:00:11,200 --> 00:00:13,600\n가격은 한 봉지에 3유로입니다",
+          "transcript": "It costs three euros a bag.",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true,
+            "omits_meaning": false,
+            "adds_meaning": false
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.97,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-fr-03",
+        "state": {
+          "srt_block": "3\n00:00:06,000 --> 00:00:08,500\n이곳은 매주 일요일 아침에 열립니다",
+          "transcript": "Les producteurs viennent de toute la région.",
+          "source_lang": "fr"
+        },
+        "compare": {
+          "gold": {
+            "same_content": false
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.03,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-fr-02",
+        "state": {
+          "srt_block": "2\n00:00:03,400 --> 00:00:05,800\n이곳은 매주 일요일 아침에 열립니다",
+          "transcript": "Il ouvre tous les dimanches matin.",
+          "source_lang": "fr"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.88,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-gap-06",
+        "state": {
+          "srt_block": "15\n00:00:45,200 --> 00:00:48,000\n다음 주에 다시 뵙겠습니다",
+          "transcript": "See you again next week.",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true,
+            "omits_meaning": false,
+            "adds_meaning": false
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.97,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-gap-03",
+        "state": {
+          "srt_block": "12\n00:00:36,200 --> 00:00:39,000\n이 제품은 두 가지 색상으로 나옵니다",
+          "transcript": "This product comes in two colors.",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true,
+            "omits_meaning": false,
+            "adds_meaning": false
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.98,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-gap-09",
+        "state": {
+          "srt_block": "18\n00:00:54,200 --> 00:00:57,000\n감사합니다, 좋은 하루 보내세요",
+          "transcript": "Merci, bonne journée.",
+          "source_lang": "fr"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true,
+            "omits_meaning": false,
+            "adds_meaning": false
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.96,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-aligned-1",
+        "state": {
+          "srt_block": "1\n00:00:00,000 --> 00:00:02,000\n첫 번째 안내입니다",
+          "transcript": "This is the first notice",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true
+          },
+          "origin": "tests/samples/sync/translated",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.88,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-aligned-4",
+        "state": {
+          "srt_block": "4\n00:00:09,000 --> 00:00:11,000\n네 번째 문장입니다",
+          "transcript": "The fourth sentence follows",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true
+          },
+          "origin": "tests/samples/sync/translated",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.69,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-aligned-2",
+        "state": {
+          "srt_block": "2\n00:00:03,000 --> 00:00:05,000\n두 번째 내용입니다",
+          "transcript": "Here is the second part",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true
+          },
+          "origin": "tests/samples/sync/translated",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.79,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-aligned-3",
+        "state": {
+          "srt_block": "3\n00:00:06,000 --> 00:00:08,000\n세 번째 설명입니다",
+          "transcript": "Now the third explanation",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true
+          },
+          "origin": "tests/samples/sync/translated",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.9,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-aligned-5",
+        "state": {
+          "srt_block": "5\n00:00:12,000 --> 00:00:14,000\n다섯 번째 구간입니다",
+          "transcript": "Fifth section starts here",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true
+          },
+          "origin": "tests/samples/sync/translated",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.72,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-aligned-8",
+        "state": {
+          "srt_block": "8\n00:00:21,000 --> 00:00:23,000\n여덟 번째 마무리입니다",
+          "transcript": "Eighth and final wrap up",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true
+          },
+          "origin": "tests/samples/sync/translated",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.88,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-aligned-7",
+        "state": {
+          "srt_block": "7\n00:00:18,000 --> 00:00:20,000\n일곱 번째 대사입니다",
+          "transcript": "Seventh line of dialogue",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true
+          },
+          "origin": "tests/samples/sync/translated",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.89,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-aligned-6",
+        "state": {
+          "srt_block": "6\n00:00:15,000 --> 00:00:17,000\n여섯 번째 부분입니다",
+          "transcript": "Sixth part of the talk",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": true
+          },
+          "origin": "tests/samples/sync/translated",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.74,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-shifted-1",
+        "state": {
+          "srt_block": "1\n00:00:00,000 --> 00:00:02,000\n첫 번째 안내입니다",
+          "transcript": "Here is the second part",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": false
+          },
+          "origin": "tests/samples/sync/translated (한 칸 어긋남)",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.04,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-shifted-5",
+        "state": {
+          "srt_block": "5\n00:00:12,000 --> 00:00:14,000\n다섯 번째 구간입니다",
+          "transcript": "Sixth part of the talk",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": false
+          },
+          "origin": "tests/samples/sync/translated (한 칸 어긋남)",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.05,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-shifted-2",
+        "state": {
+          "srt_block": "2\n00:00:03,000 --> 00:00:05,000\n두 번째 내용입니다",
+          "transcript": "Now the third explanation",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": false
+          },
+          "origin": "tests/samples/sync/translated (한 칸 어긋남)",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.04,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-shifted-3",
+        "state": {
+          "srt_block": "3\n00:00:06,000 --> 00:00:08,000\n세 번째 설명입니다",
+          "transcript": "The fourth sentence follows",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": false
+          },
+          "origin": "tests/samples/sync/translated (한 칸 어긋남)",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.05,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-shifted-4",
+        "state": {
+          "srt_block": "4\n00:00:09,000 --> 00:00:11,000\n네 번째 문장입니다",
+          "transcript": "Fifth section starts here",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": false
+          },
+          "origin": "tests/samples/sync/translated (한 칸 어긋남)",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.04,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-shifted-7",
+        "state": {
+          "srt_block": "7\n00:00:18,000 --> 00:00:20,000\n일곱 번째 대사입니다",
+          "transcript": "Eighth and final wrap up",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": false
+          },
+          "origin": "tests/samples/sync/translated (한 칸 어긋남)",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.04,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-sample-shifted-6",
+        "state": {
+          "srt_block": "6\n00:00:15,000 --> 00:00:17,000\n여섯 번째 부분입니다",
+          "transcript": "Seventh line of dialogue",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": false
+          },
+          "origin": "tests/samples/sync/translated (한 칸 어긋남)",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.04,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-gap-01",
+        "state": {
+          "srt_block": "10\n00:00:30,000 --> 00:00:33,000\n회의는 월요일에 열립니다",
+          "transcript": "The meeting will be held on Monday at 3 p.m. in room B.",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": null,
+            "omits_meaning": true,
+            "adds_meaning": false
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.15,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-gap-02",
+        "state": {
+          "srt_block": "11\n00:00:33,200 --> 00:00:36,000\n참가비는 무료이며 점심도 제공됩니다",
+          "transcript": "Participation is free.",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": null,
+            "omits_meaning": false,
+            "adds_meaning": true
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.2,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-gap-05",
+        "state": {
+          "srt_block": "14\n00:00:42,200 --> 00:00:45,000\n이 빵은 세계에서 가장 맛있습니다",
+          "transcript": "Ce pain est très bon.",
+          "source_lang": "fr"
+        },
+        "compare": {
+          "gold": {
+            "same_content": null,
+            "omits_meaning": false,
+            "adds_meaning": true
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.23,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-gap-07",
+        "state": {
+          "srt_block": "16\n00:00:48,200 --> 00:00:51,000\n신청은 홈페이지에서 할 수 있습니다",
+          "transcript": "You can apply on the website until Friday.",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": null,
+            "omits_meaning": true,
+            "adds_meaning": false
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.21,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-gap-04",
+        "state": {
+          "srt_block": "13\n00:00:39,200 --> 00:00:42,000\n저는 이 도시에서 태어났습니다",
+          "transcript": "Je suis né dans cette ville et j'y ai vécu vingt ans.",
+          "source_lang": "fr"
+        },
+        "compare": {
+          "gold": {
+            "same_content": null,
+            "omits_meaning": true,
+            "adds_meaning": false
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.2,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-gap-08",
+        "state": {
+          "srt_block": "17\n00:00:51,200 --> 00:00:54,000\n작년보다 매출이 두 배로 늘었습니다",
+          "transcript": "Sales grew compared to last year.",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": null,
+            "omits_meaning": false,
+            "adds_meaning": true
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.21,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      },
+      {
+        "key": "sp-gap-10",
+        "state": {
+          "srt_block": "19\n00:00:57,200 --> 00:01:00,000\n문은 오전 9시에 엽니다",
+          "transcript": "The doors open at 9 a.m. Please bring your ticket.",
+          "source_lang": "en"
+        },
+        "compare": {
+          "gold": {
+            "same_content": null,
+            "omits_meaning": true,
+            "adds_meaning": false
+          },
+          "origin": "tests/fixtures/jev-quality-gold.json",
+          "synthetic": true
+        },
+        "jev": {
+          "same_content": {
+            "value": 0.15,
+            "confidence": null
+          }
+        },
+        "model": "jev-1.13.0"
+      }
+    ]
+  },
+  "summary": {
+    "custom:q1_sync_crosslang": {
+      "label": "번역 자막 싱크 매칭",
+      "source": "subtitle_pairs",
+      "items": 30,
+      "answered": 30,
+      "errors": 0,
+      "questions": {
+        "same_content": {
+          "type": "noul",
+          "answered": 30,
+          "mean": 0.464,
+          "trueRate": 0.467,
+          "byOutcome": {},
+          "byRule": {},
+          "examples": [
+            {
+              "key": "sp-fr-03",
+              "answer": 0.03,
+              "confidence": null,
+              "rule": null,
+              "outcome": null,
+              "text": "3 00:00:06,000 --> 00:00:08,500 이곳은 매주 일요일 아침에 열립니다"
+            },
+            {
+              "key": "sp-sample-shifted-1",
+              "answer": 0.04,
+              "confidence": null,
+              "rule": null,
+              "outcome": null,
+              "text": "1 00:00:00,000 --> 00:00:02,000 첫 번째 안내입니다"
+            },
+            {
+              "key": "sp-sample-shifted-2",
+              "answer": 0.04,
+              "confidence": null,
+              "rule": null,
+              "outcome": null,
+              "text": "2 00:00:03,000 --> 00:00:05,000 두 번째 내용입니다"
+            },
+            {
+              "key": "sp-sample-shifted-4",
+              "answer": 0.04,
+              "confidence": null,
+              "rule": null,
+              "outcome": null,
+              "text": "4 00:00:09,000 --> 00:00:11,000 네 번째 문장입니다"
+            },
+            {
+              "key": "sp-sample-shifted-7",
+              "answer": 0.04,
+              "confidence": null,
+              "rule": null,
+              "outcome": null,
+              "text": "7 00:00:18,000 --> 00:00:20,000 일곱 번째 대사입니다"
+            },
+            {
+              "key": "sp-sample-shifted-6",
+              "answer": 0.04,
+              "confidence": null,
+              "rule": null,
+              "outcome": null,
+              "text": "6 00:00:15,000 --> 00:00:17,000 여섯 번째 부분입니다"
+            },
+            {
+              "key": "sp-fr-04",
+              "answer": 0.05,
+              "confidence": null,
+              "rule": null,
+              "outcome": null,
+              "text": "4 00:00:08,700 --> 00:00:11,000 가장 인기 있는 건 치즈 가게입니다"
+            },
+            {
+              "key": "sp-sample-shifted-5",
+              "answer": 0.05,
+              "confidence": null,
+              "rule": null,
+              "outcome": null,
+              "text": "5 00:00:12,000 --> 00:00:14,000 다섯 번째 구간입니다"
+            }
+          ],
+          "gold": {
+            "labeled": 23,
+            "accuracy": 1,
+            "confusion": {
+              "tp": 14,
+              "fp": 0,
+              "tn": 9,
+              "fn": 0
+            },
+            "precision": 1,
+            "recall": 1,
+            "byConfidence": [
+              {
+                "range": "낮음 0~0.4",
+                "n": 1,
+                "accuracy": 1
+              },
+              {
+                "range": "중간 0.4~0.8",
+                "n": 7,
+                "accuracy": 1
+              },
+              {
+                "range": "높음 0.8~1",
+                "n": 15,
+                "accuracy": 1
+              }
+            ],
+            "misses": []
+          }
+        }
+      }
+    }
+  },
+  "skippedByDailyCap": 0
+}

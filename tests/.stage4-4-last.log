@@ -1,0 +1,81 @@
+{
+  "normalSrt": {
+    "status": "passed",
+    "deliveryBlocked": false,
+    "code": null,
+    "failures": []
+  },
+  "driftSrt": {
+    "status": "failed",
+    "deliveryBlocked": true,
+    "code": "quality_failed",
+    "failures": [
+      {
+        "id": "sync_drift",
+        "detail": "5번 블록(12.000초)부터 싱크 밀림이 유지됩니다.",
+        "location": "subtitles.srt:block:5",
+        "status": "failed"
+      }
+    ]
+  },
+  "missingTranscript": {
+    "status": "manual_review",
+    "deliveryBlocked": true,
+    "code": "quality_manual_review",
+    "failures": [
+      {
+        "id": "sync_manual_review_required",
+        "detail": "독립 전사 파일이 없어 싱크를 자동 검증할 수 없습니다.",
+        "location": "subtitles.srt:context.independentTranscript",
+        "status": "manual_review"
+      }
+    ]
+  },
+  "normalPptx": {
+    "status": "passed",
+    "deliveryBlocked": false,
+    "code": null,
+    "failures": []
+  },
+  "emptyPptx": {
+    "status": "failed",
+    "deliveryBlocked": true,
+    "code": "quality_failed",
+    "failures": [
+      {
+        "id": "pptx_empty_slide",
+        "detail": "빈 슬라이드가 발견되었습니다: 1장",
+        "location": "pptx_empty_slide-fail.pptx:slide:1",
+        "status": "failed"
+      }
+    ]
+  },
+  "hwp": {
+    "status": "manual_review",
+    "deliveryBlocked": true,
+    "code": "quality_manual_review",
+    "failures": [
+      {
+        "id": "doc_length",
+        "detail": "이 HWP 형식은 자동 분량 추출이 불가능합니다.",
+        "location": "doc_open-pass.hwp:document",
+        "status": "manual_review"
+      }
+    ]
+  },
+  "unknown": {
+    "status": "failed",
+    "passed": false,
+    "blocking": true,
+    "failures": [
+      {
+        "id": "unknown_service",
+        "detail": "등록되지 않은 서비스 ID입니다: not_registered",
+        "location": "serviceId",
+        "status": "failed"
+      }
+    ],
+    "results": []
+  }
+}
+quality-delivery-stage4-4: PASS

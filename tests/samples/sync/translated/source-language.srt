@@ -1,0 +1,31 @@
+1
+00:00:00,000 --> 00:00:02,000
+This is the first notice
+
+2
+00:00:03,000 --> 00:00:05,000
+Here is the second part
+
+3
+00:00:06,000 --> 00:00:08,000
+Now the third explanation
+
+4
+00:00:09,000 --> 00:00:11,000
+The fourth sentence follows
+
+5
+00:00:12,000 --> 00:00:14,000
+Fifth section starts here
+
+6
+00:00:15,000 --> 00:00:17,000
+Sixth part of the talk
+
+7
+00:00:18,000 --> 00:00:20,000
+Seventh line of dialogue
+
+8
+00:00:21,000 --> 00:00:23,000
+Eighth and final wrap up

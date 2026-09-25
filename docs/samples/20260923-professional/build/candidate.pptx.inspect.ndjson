@@ -1,0 +1,92 @@
+{"kind":"deck","id":"pr/0pvktt","name":"Deck"}
+{"kind":"layout","layoutId":"45137aa4-0689-492a-80c4-5ac32fb198fe","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"7bf9126c-c02d-4fc8-9a83-0e747ae33bdb","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/6uk012","slide":1,"title":"OPERATIONS BRIEF  /  2026.09","textShapes":7}
+{"kind":"textbox","id":"sh/9k3q98v2","slide":1,"name":"copy-1","text":"OPERATIONS BRIEF  /  2026.09","textPreview":"OPERATIONS BRIEF  /  2026.09","textChars":28,"textLines":1,"bbox":[64,35,900,32]}
+{"kind":"textbox","id":"sh/mhs7etwr","slide":1,"name":"copy-2","text":"swan · SAMPLE","textPreview":"swan · SAMPLE","textChars":13,"textLines":1,"bbox":[915,651,310,38]}
+{"kind":"textbox","id":"sh/ni1o7ydc","slide":1,"name":"copy-3","text":"자체 제작 운영 설계 · 실제 성과 분석 아님","textPreview":"자체 제작 운영 설계 · 실제 성과 분석 아님","textChars":25,"textLines":1,"bbox":[64,665,770,22]}
+{"kind":"textbox","id":"sh/wnupknet","slide":1,"name":"copy-4","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[1160,36,65,32]}
+{"kind":"textbox","id":"sh/x83qd8ve","slide":1,"name":"copy-5","text":"고객 문의에서\n결제까지","textPreview":"고객 문의에서 | 결제까지","textChars":12,"textLines":2,"bbox":[60,182,1130,220]}
+{"kind":"textbox","id":"sh/alc7idwn","slide":1,"name":"copy-6","text":"디지털 제작 서비스의 상담 전환 개선안","textPreview":"디지털 제작 서비스의 상담 전환 개선안","textChars":21,"textLines":1,"bbox":[67,471,1140,62]}
+{"kind":"textbox","id":"sh/bml8bid8","slide":1,"name":"copy-7","text":"측정 기준 · 고객 응대 · 샘플 제공 실험","textPreview":"측정 기준 · 고객 응대 · 샘플 제공 실험","textChars":24,"textLines":1,"bbox":[67,555,1100,40]}
+{"kind":"notes","id":"nt/6uk012","slide":1,"text":"출처: Swan_Professional_Report.docx. 자체 제작 운영 설계 샘플이며 실제 고객 실적이나 검증된 전환 성과가 아니다. 가상 수치는 설명용이다. 측정 원칙 참고: https://www.gov.uk/service-manual/measuring-success/measuring-completion-rate (2021-02-19). 기간·절차·실험안은 본 보고서의 제안이다."}
+{"kind":"slide","id":"sl/hvszdc","slide":2,"title":"01  /  PRIORITY","textShapes":17}
+{"kind":"textbox","id":"sh/4f6tg3e5","slide":2,"name":"copy-8","text":"01  /  PRIORITY","textPreview":"01  /  PRIORITY","textChars":15,"textLines":1,"bbox":[64,35,900,32]}
+{"kind":"textbox","id":"sh/3exs7yxk","slide":2,"name":"copy-9","text":"swan · SAMPLE","textPreview":"swan · SAMPLE","textChars":13,"textLines":1,"bbox":[915,651,310,38]}
+{"kind":"textbox","id":"sh/idobetwz","slide":2,"name":"copy-10","text":"자체 제작 운영 설계 · 실제 성과 분석 아님","textPreview":"자체 제작 운영 설계 · 실제 성과 분석 아님","textChars":25,"textLines":1,"bbox":[64,665,770,22]}
+{"kind":"textbox","id":"sh/hcfa5ofu","slide":2,"name":"copy-11","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1160,36,65,32]}
+{"kind":"textbox","id":"sh/gb6tcje9","slide":2,"name":"copy-12","text":"가격을 바꾸기 전에\n어느 단계에서 멈추는지 확인한다","textPreview":"가격을 바꾸기 전에 | 어느 단계에서 멈추는지 확인한다","textChars":28,"textLines":2,"bbox":[61,117,1158,122]}
+{"kind":"textbox","id":"sh/vads3exo","slide":2,"name":"copy-13","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[66,302,350,42]}
+{"kind":"textbox","id":"sh/up4batw3","slide":2,"name":"copy-14","text":"응대 누락","textPreview":"응대 누락","textChars":5,"textLines":1,"bbox":[66,367,370,52]}
+{"kind":"textbox","id":"sh/tova1ofi","slide":2,"name":"copy-15","text":"고객의 실제 질문을 먼저 찾고\n답변 발송까지 확인한다.","textPreview":"고객의 실제 질문을 먼저 찾고 | 답변 발송까지 확인한다.","textChars":30,"textLines":2,"bbox":[66,452,370,85]}
+{"kind":"textbox","id":"sh/8nmt8jex","slide":2,"name":"copy-16","text":"증거: 질문·답변 시각","textPreview":"증거: 질문·답변 시각","textChars":12,"textLines":1,"bbox":[66,575,370,35]}
+{"kind":"textbox","id":"sh/2tsfmx8j","slide":2,"name":"copy-17","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[468,302,350,42]}
+{"kind":"textbox","id":"sh/nu1gf2p4","slide":2,"name":"copy-18","text":"결과물 이해","textPreview":"결과물 이해","textChars":6,"textLines":1,"bbox":[468,367,370,52]}
+{"kind":"textbox","id":"sh/ovaxo7qp","slide":2,"name":"copy-19","text":"요청과 가장 가까운 샘플 1개로\n입력과 결과를 보여준다.","textPreview":"요청과 가장 가까운 샘플 1개로 | 입력과 결과를 보여준다.","textChars":31,"textLines":2,"bbox":[468,452,370,85]}
+{"kind":"textbox","id":"sh/pw3yhc7a","slide":2,"name":"copy-20","text":"증거: 샘플·검수 기록","textPreview":"증거: 샘플·검수 기록","textChars":12,"textLines":1,"bbox":[468,575,370,35]}
+{"kind":"textbox","id":"sh/epsfid8n","slide":2,"name":"copy-21","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[870,302,350,42]}
+{"kind":"textbox","id":"sh/fq1gbip8","slide":2,"name":"copy-22","text":"결제 전 불확실성","textPreview":"결제 전 불확실성","textChars":9,"textLines":1,"bbox":[870,367,370,52]}
+{"kind":"textbox","id":"sh/0raxknqt","slide":2,"name":"copy-23","text":"총액·납기·수정 범위를\n합의한 뒤 결제를 안내한다.","textPreview":"총액·납기·수정 범위를 | 합의한 뒤 결제를 안내한다.","textChars":28,"textLines":2,"bbox":[870,452,370,85]}
+{"kind":"textbox","id":"sh/1sjyds7e","slide":2,"name":"copy-24","text":"증거: 범위 동의·결제 확인","textPreview":"증거: 범위 동의·결제 확인","textChars":15,"textLines":1,"bbox":[870,575,370,35]}
+{"kind":"notes","id":"nt/hvszdc","slide":2,"text":"출처: Swan_Professional_Report.docx. 자체 제작 운영 설계 샘플이며 실제 고객 실적이나 검증된 전환 성과가 아니다. 가상 수치는 설명용이다. 측정 원칙 참고: https://www.gov.uk/service-manual/measuring-success/measuring-completion-rate (2021-02-19). 기간·절차·실험안은 본 보고서의 제안이다."}
+{"kind":"slide","id":"sl/ybbypp","slide":3,"title":"02  /  MEASUREMENT","textShapes":7}
+{"kind":"textbox","id":"sh/cjeh0fah","slide":3,"name":"copy-25","text":"02  /  MEASUREMENT","textPreview":"02  /  MEASUREMENT","textChars":18,"textLines":1,"bbox":[64,35,900,32]}
+{"kind":"textbox","id":"sh/ri507atw","slide":3,"name":"copy-26","text":"swan · SAMPLE","textPreview":"swan · SAMPLE","textChars":13,"textLines":1,"bbox":[915,651,310,38]}
+{"kind":"textbox","id":"sh/qhwzy5sb","slide":3,"name":"copy-27","text":"자체 제작 운영 설계 · 실제 성과 분석 아님","textPreview":"자체 제작 운영 설계 · 실제 성과 분석 아님","textChars":25,"textLines":1,"bbox":[64,665,770,22]}
+{"kind":"textbox","id":"sh/187idkby","slide":3,"name":"copy-28","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1160,36,65,32]}
+{"kind":"textbox","id":"sh/0nyh4fad","slide":3,"name":"copy-29","text":"전체 견적 대비 결제율을\n주지표로 둔다","textPreview":"전체 견적 대비 결제율을 | 주지표로 둔다","textChars":21,"textLines":2,"bbox":[61,117,1158,122]}
+{"kind":"textbox","id":"sh/zm50bat8","slide":3,"name":"copy-30","text":"가상 계산 사례 · 실제 swan 실적 및 업계 평균 아님","textPreview":"가상 계산 사례 · 실제 swan 실적 및 업계 평균 아님","textChars":32,"textLines":1,"bbox":[66,245,1120,30]}
+{"kind":"textbox","id":"sh/hc3y1gbu","slide":3,"name":"copy-31","text":"같은 집단을 같은 기간 관찰한다.  단계별 순서를 모두 거친 가상 사례다.","textPreview":"같은 집단을 같은 기간 관찰한다.  단계별 순서를 모두 거친 가상 사례다.","textChars":41,"textLines":1,"bbox":[66,596,1140,30]}
+{"kind":"table","id":"tb/bapw7itw","slide":3,"name":"","rows":6,"cols":4,"preview":"단계 | 건수 | 직전 단계 대비 | 전체 견적 대비","bbox":[66,297,1145,270]}
+{"kind":"notes","id":"nt/ybbypp","slide":3,"text":"출처: Swan_Professional_Report.docx. 자체 제작 운영 설계 샘플이며 실제 고객 실적이나 검증된 전환 성과가 아니다. 가상 수치는 설명용이다. 측정 원칙 참고: https://www.gov.uk/service-manual/measuring-success/measuring-completion-rate (2021-02-19). 기간·절차·실험안은 본 보고서의 제안이다."}
+{"kind":"slide","id":"sl/az3xwx","slide":4,"title":"03  /  INTERPRETATION","textShapes":10}
+{"kind":"textbox","id":"sh/v2t0v61c","slide":4,"name":"copy-32","text":"03  /  INTERPRETATION","textPreview":"03  /  INTERPRETATION","textChars":21,"textLines":1,"bbox":[64,35,900,32]}
+{"kind":"textbox","id":"sh/w32h4rix","slide":4,"name":"copy-33","text":"swan · SAMPLE","textPreview":"swan · SAMPLE","textChars":13,"textLines":1,"bbox":[915,651,310,38]}
+{"kind":"textbox","id":"sh/x4bixwji","slide":4,"name":"copy-34","text":"자체 제작 운영 설계 · 실제 성과 분석 아님","textPreview":"자체 제작 운영 설계 · 실제 성과 분석 아님","textChars":25,"textLines":1,"bbox":[64,665,770,22]}
+{"kind":"textbox","id":"sh/i5kz6103","slide":4,"name":"copy-35","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1160,36,65,32]}
+{"kind":"textbox","id":"sh/j6t0z61o","slide":4,"name":"copy-36","text":"낮은 전환율은 관찰 결과다.\n원인을 단정하는 근거는 아니다.","textPreview":"낮은 전환율은 관찰 결과다. | 원인을 단정하는 근거는 아니다.","textChars":33,"textLines":2,"bbox":[61,117,1158,122]}
+{"kind":"textbox","id":"sh/k72h8bit","slide":4,"name":"copy-37","text":"측정할 것","textPreview":"측정할 것","textChars":5,"textLines":1,"bbox":[66,304,505,55]}
+{"kind":"textbox","id":"sh/58bi1gje","slide":4,"name":"copy-38","text":"고객·요청별 첫 견적을 기준으로 집계\n시스템 알림과 실제 답장을 분리\n결제 확인과 결제 의향을 구분","textPreview":"고객·요청별 첫 견적을 기준으로 집계 | 시스템 알림과 실제 답장을 분리 | 결제 확인과 결제 의향을 구분","textChars":55,"textLines":3,"bbox":[66,397,535,140]}
+{"kind":"textbox","id":"sh/69kzal0z","slide":4,"name":"copy-39","text":"분리해 볼 것","textPreview":"분리해 볼 것","textChars":7,"textLines":1,"bbox":[685,304,500,55]}
+{"kind":"textbox","id":"sh/7ad03q1k","slide":4,"name":"copy-40","text":"읽음 미관측 ≠ 미열람\n관찰 기간 미경과 ≠ 미결제 확정\n결제액 ≠ 비용을 뺀 순이익","textPreview":"읽음 미관측 ≠ 미열람 | 관찰 기간 미경과 ≠ 미결제 확정 | 결제액 ≠ 비용을 뺀 순이익","textChars":47,"textLines":3,"bbox":[685,397,525,140]}
+{"kind":"textbox","id":"sh/vi5cfmxo","slide":4,"name":"copy-41","text":"문의 누락과 기록 오류를 먼저 확인한 뒤, 고객 대화로 원인 가설을 좁힌다.","textPreview":"문의 누락과 기록 오류를 먼저 확인한 뒤, 고객 대화로 원인 가설을 좁힌다.","textChars":42,"textLines":1,"bbox":[66,581,1148,40]}
+{"kind":"notes","id":"nt/az3xwx","slide":4,"text":"출처: Swan_Professional_Report.docx. 자체 제작 운영 설계 샘플이며 실제 고객 실적이나 검증된 전환 성과가 아니다. 가상 수치는 설명용이다. 측정 원칙 참고: https://www.gov.uk/service-manual/measuring-success/measuring-completion-rate (2021-02-19). 기간·절차·실험안은 본 보고서의 제안이다."}
+{"kind":"slide","id":"sl/fu1r8y","slide":5,"title":"04  /  CUSTOMER RESPONSE","textShapes":8}
+{"kind":"textbox","id":"sh/1c7ydsr6","slide":5,"name":"copy-42","text":"04  /  CUSTOMER RESPONSE","textPreview":"04  /  CUSTOMER RESPONSE","textChars":24,"textLines":1,"bbox":[64,35,900,32]}
+{"kind":"textbox","id":"sh/e9gz2dsf","slide":5,"name":"copy-43","text":"swan · SAMPLE","textPreview":"swan · SAMPLE","textChars":13,"textLines":1,"bbox":[915,651,310,38]}
+{"kind":"textbox","id":"sh/fapgbi90","slide":5,"name":"copy-44","text":"자체 제작 운영 설계 · 실제 성과 분석 아님","textPreview":"자체 제작 운영 설계 · 실제 성과 분석 아님","textChars":25,"textLines":1,"bbox":[64,665,770,22]}
+{"kind":"textbox","id":"sh/ofyh87qh","slide":5,"name":"copy-45","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1160,36,65,32]}
+{"kind":"textbox","id":"sh/pg7ihcr2","slide":5,"name":"copy-46","text":"고객이 묻는 일정부터 답한다","textPreview":"고객이 묻는 일정부터 답한다","textChars":15,"textLines":1,"bbox":[61,117,1158,122]}
+{"kind":"textbox","id":"sh/2dgz6x8b","slide":5,"name":"copy-47","text":"원본을 받기 전 · 응대 예시","textPreview":"원본을 받기 전 · 응대 예시","textChars":16,"textLines":1,"bbox":[66,266,1110,35]}
+{"kind":"textbox","id":"sh/3epgf29w","slide":5,"name":"copy-48","text":"“원본 분량을 아직 못 봐서 완료 시각은\n파일을 확인한 뒤 말씀드릴게요.\n보고서와 필요한 슬라이드 수, 발표 시간을 보내주시면\n가능한 일정부터 먼저 확인하겠습니다.”","textPreview":"“원본 분량을 아직 못 봐서 완료 시각은 | 파일을 확인한 뒤 말씀드릴게요. | 보고서와 필요한 슬라이드 수, 발표 시간을 보내주시면 | 가능한 일정부터 먼저 확인하겠습니다.”","textChars":92,"textLines":4,"bbox":[66,335,1140,188]}
+{"kind":"textbox","id":"sh/4jehw3ad","slide":5,"name":"copy-49","text":"이미 가능한 일정을 확인했다면 그 일정을 첫 문장에 제시한다.\n받은 자료를 다시 요청하거나, 확인하지 않은 당일 납품을 약속하지 않는다.","textPreview":"이미 가능한 일정을 확인했다면 그 일정을 첫 문장에 제시한다. | 받은 자료를 다시 요청하거나, 확인하지 않은 당일 납품을 약속하지 않는다.","textChars":76,"textLines":2,"bbox":[66,567,1140,66]}
+{"kind":"notes","id":"nt/fu1r8y","slide":5,"text":"출처: Swan_Professional_Report.docx. 자체 제작 운영 설계 샘플이며 실제 고객 실적이나 검증된 전환 성과가 아니다. 가상 수치는 설명용이다. 측정 원칙 참고: https://www.gov.uk/service-manual/measuring-success/measuring-completion-rate (2021-02-19). 기간·절차·실험안은 본 보고서의 제안이다."}
+{"kind":"slide","id":"sl/zmzfkx","slide":6,"title":"05  /  EXPERIMENT","textShapes":11}
+{"kind":"textbox","id":"sh/wzi94rih","slide":6,"name":"copy-50","text":"05  /  EXPERIMENT","textPreview":"05  /  EXPERIMENT","textChars":17,"textLines":1,"bbox":[64,35,900,32]}
+{"kind":"textbox","id":"sh/vy9sbm1w","slide":6,"name":"copy-51","text":"swan · SAMPLE","textPreview":"swan · SAMPLE","textChars":13,"textLines":1,"bbox":[915,651,310,38]}
+{"kind":"textbox","id":"sh/ux0r2h0r","slide":6,"name":"copy-52","text":"자체 제작 운영 설계 · 실제 성과 분석 아님","textPreview":"자체 제작 운영 설계 · 실제 성과 분석 아님","textChars":25,"textLines":1,"bbox":[64,665,770,22]}
+{"kind":"textbox","id":"sh/54bahgje","slide":6,"name":"copy-53","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1160,36,65,32]}
+{"kind":"textbox","id":"sh/432t8bit","slide":6,"name":"copy-54","text":"샘플 제공의 효과는\n한 변수만 바꿔 비교한다","textPreview":"샘플 제공의 효과는 | 한 변수만 바꿔 비교한다","textChars":24,"textLines":2,"bbox":[61,117,1158,122]}
+{"kind":"textbox","id":"sh/j2tsf618","slide":6,"name":"copy-55","text":"A","textPreview":"A","textChars":1,"textLines":1,"bbox":[66,288,460,60]}
+{"kind":"textbox","id":"sh/i10b610n","slide":6,"name":"copy-56","text":"기존 견적","textPreview":"기존 견적","textChars":5,"textLines":1,"bbox":[66,367,495,54]}
+{"kind":"textbox","id":"sh/tsbalgja","slide":6,"name":"copy-57","text":"B","textPreview":"B","textChars":1,"textLines":1,"bbox":[690,288,460,60]}
+{"kind":"textbox","id":"sh/s72tcbip","slide":6,"name":"copy-58","text":"같은 견적 + 관련 샘플 1개","textPreview":"같은 견적 + 관련 샘플 1개","textChars":16,"textLines":1,"bbox":[690,367,510,90]}
+{"kind":"textbox","id":"sh/69w365kj","slide":6,"name":"copy-59","text":"같은 서비스 안에서 고객 단위 무작위 배정\n가격·범위·후속 연락 정책은 동일하게 유지","textPreview":"같은 서비스 안에서 고객 단위 무작위 배정 | 가격·범위·후속 연락 정책은 동일하게 유지","textChars":47,"textLines":2,"bbox":[66,472,1120,82]}
+{"kind":"textbox","id":"sh/7a5kfa14","slide":6,"name":"copy-60","text":"주지표: 견적 발송 후 7일 이내 결제 확인 비율\n7일은 이 샘플의 제안이다. 표본수·종료 기준은 실험 전에 별도로 확정한다.","textPreview":"주지표: 견적 발송 후 7일 이내 결제 확인 비율 | 7일은 이 샘플의 제안이다. 표본수·종료 기준은 실험 전에 별도로 확정한다.","textChars":70,"textLines":2,"bbox":[66,573,1135,61]}
+{"kind":"notes","id":"nt/zmzfkx","slide":6,"text":"출처: Swan_Professional_Report.docx. 자체 제작 운영 설계 샘플이며 실제 고객 실적이나 검증된 전환 성과가 아니다. 가상 수치는 설명용이다. 측정 원칙 참고: https://www.gov.uk/service-manual/measuring-success/measuring-completion-rate (2021-02-19). 기간·절차·실험안은 본 보고서의 제안이다."}
+{"kind":"slide","id":"sl/swsaru","slide":7,"title":"06  /  EXECUTION","textShapes":14}
+{"kind":"textbox","id":"sh/ba5gzy14","slide":7,"name":"copy-61","text":"06  /  EXECUTION","textPreview":"06  /  EXECUTION","textChars":16,"textLines":1,"bbox":[64,35,900,32]}
+{"kind":"textbox","id":"sh/cvehsj2p","slide":7,"name":"copy-62","text":"swan · SAMPLE","textPreview":"swan · SAMPLE","textChars":13,"textLines":1,"bbox":[915,651,310,38]}
+{"kind":"textbox","id":"sh/xwny1oja","slide":7,"name":"copy-63","text":"자체 제작 운영 설계 · 실제 성과 분석 아님","textPreview":"자체 제작 운영 설계 · 실제 성과 분석 아님","textChars":25,"textLines":1,"bbox":[64,665,770,22]}
+{"kind":"textbox","id":"sh/25czm9kn","slide":7,"name":"copy-64","text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1160,36,65,32]}
+{"kind":"textbox","id":"sh/365gve18","slide":7,"name":"copy-65","text":"샘플은 약속을 보여주고,\n검수는 그 약속을 지킨다.","textPreview":"샘플은 약속을 보여주고, | 검수는 그 약속을 지킨다.","textChars":28,"textLines":2,"bbox":[63,127,1160,150]}
+{"kind":"textbox","id":"sh/o7ehoj2t","slide":7,"name":"copy-66","text":"운영","textPreview":"운영","textChars":2,"textLines":1,"bbox":[67,324,150,42]}
+{"kind":"textbox","id":"sh/p8nyxoje","slide":7,"name":"copy-67","text":"미답변·중복·실패 발송 점검","textPreview":"미답변·중복·실패 발송 점검","textChars":15,"textLines":1,"bbox":[248,324,945,45]}
+{"kind":"textbox","id":"sh/e1czi9kb","slide":7,"name":"copy-68","text":"제작","textPreview":"제작","textChars":2,"textLines":1,"bbox":[67,390,150,42]}
+{"kind":"textbox","id":"sh/f2lgru1w","slide":7,"name":"copy-69","text":"샘플과 실제 제공 범위의 일치 확인","textPreview":"샘플과 실제 제공 범위의 일치 확인","textChars":19,"textLines":1,"bbox":[248,390,945,45]}
+{"kind":"textbox","id":"sh/rexczed0","slide":7,"name":"copy-70","text":"검수","textPreview":"검수","textChars":2,"textLines":1,"bbox":[67,456,150,42]}
+{"kind":"textbox","id":"sh/qdovq9wf","slide":7,"name":"copy-71","text":"내용·파일 열림·전 페이지 시각 확인","textPreview":"내용·파일 열림·전 페이지 시각 확인","textChars":20,"textLines":1,"bbox":[248,456,945,45]}
+{"kind":"textbox","id":"sh/dgfu1ovq","slide":7,"name":"copy-72","text":"책임자","textPreview":"책임자","textChars":3,"textLines":1,"bbox":[67,522,150,42]}
+{"kind":"textbox","id":"sh/sf6dsje5","slide":7,"name":"copy-73","text":"성숙 표본과 비용을 보고 다음 변경 1개 결정","textPreview":"성숙 표본과 비용을 보고 다음 변경 1개 결정","textChars":25,"textLines":1,"bbox":[248,522,945,45]}
+{"kind":"textbox","id":"sh/fixc3ydw","slide":7,"name":"copy-74","text":"잘못된 금액·깨진 링크·응대 누락이 나오면 해당 자동 안내를 중단한다.","textPreview":"잘못된 금액·깨진 링크·응대 누락이 나오면 해당 자동 안내를 중단한다.","textChars":39,"textLines":1,"bbox":[67,611,1140,32]}
+{"kind":"notes","id":"nt/swsaru","slide":7,"text":"출처: Swan_Professional_Report.docx. 자체 제작 운영 설계 샘플이며 실제 고객 실적이나 검증된 전환 성과가 아니다. 가상 수치는 설명용이다. 측정 원칙 참고: https://www.gov.uk/service-manual/measuring-success/measuring-completion-rate (2021-02-19). 기간·절차·실험안은 본 보고서의 제안이다."}

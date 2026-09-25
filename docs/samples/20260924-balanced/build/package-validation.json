@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "catalogItems": 12,
+  "pdfPages": {
+    "01_Writing_Brand_Article.pdf": 2,
+    "02_Proofreading_Before_After.pdf": 2,
+    "03_Formatting_Before_After.pdf": 2,
+    "04_Transcription_Interview.pdf": 2,
+    "05_Script_60s_Brand.pdf": 2,
+    "06_Professional_Report.pdf": 4
+  },
+  "pptSlides": 7,
+  "archiveFiles": 47,
+  "archiveBytes": 53950036,
+  "links": "all local targets exist",
+  "docxIncluded": false,
+  "newPaidApiCalls": 0
+}
