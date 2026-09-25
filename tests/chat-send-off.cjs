@@ -54,7 +54,7 @@ const makeGate = response => new Function('fetch', 'AbortSignal', `${gate}; retu
   assert.match(bot, /if \(controlState\.sendOff\) renderStatus\('발송 끔 · 기록만'/);
   // 감시 탭 재로드(auto-update.js)는 paused만 본다 → 발송 끔이어도 멈춘 탭은 되살린다
   assert.match(fs.readFileSync(path.join(root, 'soomgo-chat-bot', 'auto-update.js'), 'utf8'), /control\.paused\) return;/);
-  assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'soomgo-chat-bot', 'manifest.json'), 'utf8')).version, '0.3.24'); // 9/24 지시 15: 0.3.24 = 0.3.23 + 감지 전용 customer-observer(8791), 발송 코드 변경 없음
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'soomgo-chat-bot', 'manifest.json'), 'utf8')).version, '0.3.25'); // 9/24 지시 15: 0.3.24 = 0.3.23 + 감지 전용 customer-observer(8791), 발송 코드 변경 없음
 
   // 4) Claude 대체
   const fb = require('../server/customer-room-fallback');

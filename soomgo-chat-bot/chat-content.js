@@ -499,6 +499,14 @@
       await chrome.storage.local.set({ [RESET_V3_KEY]: { at: Date.now(), version: '0.3.0' }, [STORAGE_KEY]: { ...DEFAULTS, enabled: true, autoSend: true, autoReply: true } });
     }
     Object.assign(chatInspections, stored[CHAT_INSPECTED_KEY] || {});
+    // 9/25 저장 공간 초과(kQuotaBytes) 뒤: 채팅방 확인 기록은 지우는 곳이 없어 방마다 계속 쌓였다.
+    // 최근에 본 500개 방만 남긴다(오래된 방은 다음에 목록에 보이면 새로 기록된다).
+    const inspectionKeys = Object.keys(chatInspections);
+    if (inspectionKeys.length > 500) {
+      const lastSeen = key => Math.max(Number(chatInspections[key]?.at || 0), Number(chatInspections[key]?.hireCheckAt || 0), Number(chatInspections[key]?.globalUnreadAt || 0));
+      for (const key of inspectionKeys.sort((a, b) => lastSeen(b) - lastSeen(a)).slice(500)) delete chatInspections[key];
+      try { await chrome.storage.local.set({ [CHAT_INSPECTED_KEY]: chatInspections }); } catch (_) {}
+    }
     const storedSettings = stored[STORAGE_KEY] || {};
     state.settings = { ...DEFAULTS, ...storedSettings };
     if (SYSTEM_TEST_MODE) {
