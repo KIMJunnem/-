@@ -98,7 +98,8 @@ const suites = [
   ['견적 판단(Claude, 스위치 기본 꺼짐)·합성 5건·한도 (지시 19)', 'tests/quote-judge-19.cjs'],
   ['고객 첨부 판단(Claude, 스위치 기본 꺼짐)·합성 첨부 5건·영상은 길이만 (지시 20)', 'tests/attachment-judge-20.cjs'],
   ['Claude 사용 단가 = 정책 claudeQuote', 'tests/claude-usage-rate.cjs'],
-  ['9/25 고객 여정 시뮬 수정(영상 고용·할인 금액·쇼츠 개수·전액 결제·안부 멘트 끔·상한 추가)', 'tests/sim-fixes-0925.cjs']
+  ['9/25 고객 여정 시뮬 수정(영상 고용·할인 금액·쇼츠 개수·전액 결제·안부 멘트 끔·상한 추가)', 'tests/sim-fixes-0925.cjs'],
+  ['9/25 수정 방침(3번째부터 유료·모아서 2시간 뒤 제작)·새벽 요청 안부·조용한 시간 02~08시·메일 주소 정책', 'tests/revision-policy-0925.cjs']
 ];
 
 const results = [];

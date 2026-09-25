@@ -30,16 +30,17 @@ const at = iso => Date.parse(iso);
   assert.equal(t.replyDelayMs('same', 'x'), t.replyDelayMs('same', 'x'), '같은 메시지 = 같은 지연(재시작해도 흔들리지 않음)');
   assert.ok(!/Date|now|Hour/.test(t.replyDelayMs.toString()), '시각을 보지 않음 → 밤·새벽도 같은 범위');
   const server = fs.readFileSync(path.join(root, 'server', 'relay-server.js'), 'utf8');
-  assert.match(server, /releaseAt: new Date\(Date\.now\(\) \+ chatTiming\.replyDelayMs\(messageId, body\.message \|\| body\.text \|\| ''\)\)\.toISOString\(\)/, 'Claude 답장 대기열에도 같은 지연');
-  assert.match(server, /kind: 'delayed_reply', releaseAt: Date\.now\(\) \+ chatTiming\.replyDelayMs\(messageId, incomingText\)/, '정해진 문구 답장도 같은 지연');
+  // 9/25 준희 "2시~8시 외에는 답하자": 같은 지연 + 조용한 시간(02~08시)이면 8시 이후(quietReleaseAt)
+  assert.match(server, /releaseAt: new Date\(quietReleaseAt\(Date\.now\(\) \+ chatTiming\.replyDelayMs\(messageId, body\.message \|\| body\.text \|\| ''\), messageId\)\)\.toISOString\(\)/, 'Claude 답장 대기열에도 같은 지연');
+  assert.match(server, /kind: 'delayed_reply', releaseAt: quietReleaseAt\(Date\.now\(\) \+ chatTiming\.replyDelayMs\(messageId, incomingText\), messageId\)/, '정해진 문구 답장도 같은 지연');
 }
-// 2) 안부 멘트: 읽은 뒤 2~4시간, 밤 12시~아침 8시(KST)에 걸리면 그날 8시~9시 30분
+// 2) 안부 멘트: 읽은 뒤 2~4시간, 조용한 시간(9/25 준희: 새벽 2시~아침 8시, 예전 0시~8시)에 걸리면 그날 8시~9시 30분
 {
   for (let i = 0; i < 300; i += 1) {
     const readAt = at('2026-09-24T00:00:00Z') + i * 11 * 60 * 1000; // 하루 넘게 11분 간격
     const release = t.followupReleaseAt(readAt, `room${i}`);
     const hour = kstHour(release);
-    assert.ok(!(hour >= 0 && hour < 8), `새벽에 안 나감 (${new Date(release + KST).toISOString()})`);
+    assert.ok(!(hour >= 2 && hour < 8), `새벽에 안 나감 (${new Date(release + KST).toISOString()})`);
     const gap = release - readAt;
     const kst = new Date(release + KST);
     const minutesOfDay = kst.getUTCHours() * 60 + kst.getUTCMinutes();
@@ -50,9 +51,14 @@ const at = iso => Date.parse(iso);
   const afternoon = at('2026-09-24T05:00:00Z'); // KST 14:00
   const r1 = t.followupReleaseAt(afternoon, 'x');
   assert.ok(r1 - afternoon >= 2 * 3600e3 && r1 - afternoon <= 4 * 3600e3, '오후 2시에 읽음 → 4~6시');
-  const late = at('2026-09-24T14:30:00Z'); // KST 23:30 → 1:30~3:30이면 아침으로
+  const late = at('2026-09-24T14:30:00Z'); // KST 23:30 → 1:30~3:30. 2시 전이면 그대로, 2시 넘으면 아침으로
   const r2 = t.followupReleaseAt(late, 'y');
-  assert.ok(r2 >= at('2026-09-24T23:00:00Z') && r2 <= at('2026-09-25T00:30:00Z'), `밤 11시 반에 읽음 → 다음 날 아침 8시~9시 30분 (${new Date(r2 + KST).toISOString()})`);
+  const r2Hour = kstHour(r2);
+  assert.ok((r2 - late >= 2 * 3600e3 && r2Hour < 2) || (r2 >= at('2026-09-24T23:00:00Z') && r2 <= at('2026-09-25T00:30:00Z')), `밤 11시 반에 읽음 → 2시 전 그대로 또는 다음 날 아침 8시~9시 30분 (${new Date(r2 + KST).toISOString()})`);
+  // 경계: 01:59는 그대로, 02:00·07:59는 아침으로, 08:00은 그대로
+  assert.equal(t.deferOutOfNight(at('2026-09-24T16:59:00Z'), 'b'), at('2026-09-24T16:59:00Z'));
+  for (const iso of ['2026-09-24T17:00:00Z', '2026-09-24T22:59:00Z']) { const v = t.deferOutOfNight(at(iso), 'b'); assert.ok(v >= at('2026-09-24T23:00:00Z') && v <= at('2026-09-25T00:30:00Z'), iso); }
+  assert.equal(t.deferOutOfNight(at('2026-09-24T23:00:00Z'), 'b'), at('2026-09-24T23:00:00Z'));
 }
 // 3) 120자 나누기
 {
@@ -86,7 +92,7 @@ const bridge = createAstraRoomBridge({ dataFile: path.join(tmp, 'bridge.json'), 
   assert.equal(bridge.outbox({ now: Date.now() + 4 * 3600e3 }).length, 0, '취소된 안부는 안 나감');
   const server = fs.readFileSync(path.join(root, 'server', 'relay-server.js'), 'utf8');
   assert.match(server, /astraRoomBridge\.cancelScheduled\(conversationId, \['quote_read_followup', 'delayed_reply'\], 'customer_spoke_first'\)/, '고객 말이 들어오면 서버가 예약을 취소');
-  assert.match(server, /chatTiming\.followupReleaseAt\(readAt, conversationId\)/, '안부 멘트는 2~4시간 예약');
+  assert.match(server, /chatTiming\.followupReleaseAt\(readAt, conversationId, quiet\)/, '안부 멘트는 2~4시간 예약');
 }
 // 6) Claude 대체 흐름(가짜 Claude): 보낼 시각 전엔 안 부름 · 긴 답은 두 통 · AI 티 걸리면 준희 알림(정해진 문구도 안 보냄)
 (async () => {

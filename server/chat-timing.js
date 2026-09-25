@@ -2,7 +2,8 @@
 
 // 채팅이 봇처럼 보이지 않게 하는 시간·모양 규칙 (2026-09-24 개발방 지시 28, 준희 "채팅이 제일 중요").
 // 1) 고객 말에 대한 답장은 받은 뒤 1분 30초~4분 사이(글이 길수록 뒤쪽). 밤·새벽도 같다(새벽 응대가 강점).
-// 2) "견적 읽음" 뒤 안부 멘트는 읽은 뒤 2~4시간. 밤 12시~아침 8시에 걸리면 그날 아침 8시~9시 30분으로 미룬다.
+// 2) "견적 읽음" 뒤 안부 멘트는 읽은 뒤 2~4시간. 조용한 시간(9/25 준희 "2시~8시 외에는 답하자": 새벽 2시~아침 8시)에 걸리면 그날 아침 8시~9시 30분으로 미룬다.
+// 5) 9/25: 조용한 시간(정책 quietHours, 기본 02~08시)에는 자동 답장·예약 발송도 내보내지 않고 아침 8시(+0~20분)로 미룬다.
 // 3) 한 통 120자 넘으면 두 통으로(20~40초 간격). 나눌 수 없으면 보내지 않는다.
 // 4) 보내기 직전 AI 티 점검. 걸리면 보내지 않고 준희 알림.
 // 무작위 값은 메시지·방 ID로 정해서(같은 입력 = 같은 값) 서버를 다시 켜도 흔들리지 않게 한다.
@@ -13,7 +14,7 @@ const REPLY_DELAY_MIN_MS = 90 * 1000;
 const REPLY_DELAY_MAX_MS = 240 * 1000;
 const FOLLOWUP_MIN_MS = 2 * 3600 * 1000;
 const FOLLOWUP_MAX_MS = 4 * 3600 * 1000;
-const NIGHT_START_HOUR = 0; // KST 00:00
+const NIGHT_START_HOUR = 2; // KST 02:00 (9/25 준희: 조용한 시간 02~08시, 예전 00시)
 const NIGHT_END_HOUR = 8; // KST 08:00
 const MORNING_WINDOW_MS = 90 * 60 * 1000; // 08:00~09:30
 const SPLIT_LIMIT = 120;
@@ -38,18 +39,48 @@ function replyDelayMs(key, text = '') {
 function kstHour(ms) { return new Date(ms + KST_MS).getUTCHours(); }
 function kstMidnightUtc(ms) { const d = new Date(ms + KST_MS); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - KST_MS; }
 
-// 우리가 먼저 거는 말(안부 멘트)만 새벽 금지. 00:00~08:00(KST)에 걸리면 그날 08:00~09:30 사이 고정 난수로 미룬다.
-function deferOutOfNight(ms, key) {
-  const hour = kstHour(ms);
-  if (hour >= NIGHT_START_HOUR && hour < NIGHT_END_HOUR) {
-    return kstMidnightUtc(ms) + NIGHT_END_HOUR * 3600 * 1000 + Math.round(unit(key, 'morning') * MORNING_WINDOW_MS);
+function quietBounds(quiet = {}) {
+  return { start: Number(quiet?.start ?? NIGHT_START_HOUR), end: Number(quiet?.end ?? NIGHT_END_HOUR), windowMinutes: Math.max(0, Number(quiet?.windowMinutes ?? 20)) };
+}
+// 조용한 시간이 끝나는 시각(그날 end시, 이미 지났으면 다음 날)
+function quietEndUtc(ms, end) {
+  let target = kstMidnightUtc(ms) + end * 3600 * 1000;
+  if (target <= ms) target += 24 * 3600 * 1000;
+  return target;
+}
+
+// 우리가 먼저 거는 말(안부 멘트)은 조용한 시간(기본 02:00~08:00 KST)에 걸리면 그날 08:00~09:30 사이 고정 난수로 미룬다.
+function deferOutOfNight(ms, key, quiet = {}) {
+  const { start, end } = quietBounds(quiet);
+  if (isKstHourBetween(ms, start, end)) {
+    return quietEndUtc(ms, end) + Math.round(unit(key, 'morning') * MORNING_WINDOW_MS);
   }
   return ms;
 }
 
-function followupReleaseAt(readAtMs, key) {
+// 9/25 준희 "2시~8시 외에는 답하자": 자동 답장·예약 발송·새벽 요청 안부가 조용한 시간에 걸리면 끝나는 시각 + 0~windowMinutes분(고정 난수)
+function deferOutOfQuiet(ms, key, quiet = {}) {
+  const { start, end, windowMinutes } = quietBounds(quiet);
+  if (!isKstHourBetween(ms, start, end)) return ms;
+  return quietEndUtc(ms, end) + Math.round(unit(key, 'quiet') * windowMinutes * 60 * 1000);
+}
+
+function followupReleaseAt(readAtMs, key, quiet = {}) {
   const raw = Number(readAtMs) + FOLLOWUP_MIN_MS + Math.round(unit(key, 'followup') * (FOLLOWUP_MAX_MS - FOLLOWUP_MIN_MS));
-  return deferOutOfNight(raw, key);
+  return deferOutOfNight(raw, key, quiet);
+}
+
+// 9/25 준희 "새벽 요청은 급한 경우가 많으니 적극적으로": 한국 시간 startHour 이상 endHour 미만이면 새벽(끝 시각은 포함 안 함, 07:00은 낮)
+function isKstHourBetween(ms, startHour, endHour) {
+  const hour = kstHour(Number(ms));
+  return startHour <= endHour ? hour >= startHour && hour < endHour : hour >= startHour || hour < endHour;
+}
+
+// 새벽 요청 안부: 읽은 뒤 minMinutes~maxMinutes(고정 난수). 고객이 깨어 있다는 뜻이라 아침으로 미루지 않는다
+function nightFollowupReleaseAt(readAtMs, key, minMinutes = 20, maxMinutes = 40) {
+  const lo = Math.max(0, Number(minMinutes) || 0);
+  const hi = Math.max(lo, Number(maxMinutes) || lo);
+  return Number(readAtMs) + Math.round((lo + unit(key, 'night') * (hi - lo)) * 60 * 1000);
 }
 
 // 120자 넘는 답장을 문장 경계에서 두 통으로. 나눌 수 없으면 null(보내지 않음).
@@ -90,5 +121,5 @@ function aiTellCheck(text, conversationText = '') {
 
 module.exports = {
   REPLY_DELAY_MIN_MS, REPLY_DELAY_MAX_MS, FOLLOWUP_MIN_MS, FOLLOWUP_MAX_MS, SPLIT_LIMIT, SPLIT_GAP_MIN_MS, SPLIT_GAP_MAX_MS,
-  unit, replyDelayMs, kstHour, deferOutOfNight, followupReleaseAt, splitReply, splitGapMs, aiTellCheck
+  unit, replyDelayMs, kstHour, deferOutOfNight, deferOutOfQuiet, followupReleaseAt, isKstHourBetween, nightFollowupReleaseAt, splitReply, splitGapMs, aiTellCheck
 };

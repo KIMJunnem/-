@@ -279,6 +279,8 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const policy = JSON.parse(fs.readFileSync(policyFile, 'utf8'));
   policy.quoteJudge.enabled = false;
   policy.contact.materialsEmail = 'materials-e2e@example.net';
+  // 새벽(0~7시) 요청 안부는 revision-policy-0925에서 따로 본다. 여기서는 시험 시각과 상관없이 "낮 요청은 안부 없음"을 본다
+  if (policy.quoteReadFollowup.nightRequests) policy.quoteReadFollowup.nightRequests.enabled = false;
   fs.writeFileSync(policyFile, JSON.stringify(policy, null, 2));
   const today = new Date().toISOString();
   fs.writeFileSync(path.join(dir, 'server', 'data', 'state.json'), JSON.stringify({ soomgoLeads: [], soomgoReplies: [], promptPosts: [], videoEditAutoQuotes: Array.from({ length: 30 }, (_, i) => ({ at: today, requestId: `seed${i}` })) }));
