@@ -76,7 +76,8 @@ function applyOpts() {
     const top = git(['rev-parse', '--show-toplevel']).trim();
     applyDirectory = path.relative(path.resolve(top), path.resolve(ROOT)).split(path.sep).join('/');
   }
-  return ['apply', '--ignore-whitespace', '--whitespace=nowarn', ...(applyDirectory ? [`--directory=${applyDirectory}`] : [])];
+  // 윈도우 git(core.autocrlf=true)은 고친 파일을 CRLF로 바꿔 쓴다 → 줄바꿈을 보는 시험이 깨져 되돌림이 반복됐다(9/25). 줄바꿈은 GitHub 판 그대로 둔다.
+  return ['-c', 'core.autocrlf=false', '-c', 'core.eol=lf', 'apply', '--ignore-whitespace', '--whitespace=nowarn', ...(applyDirectory ? [`--directory=${applyDirectory}`] : [])];
 }
 function classify(patch) {
   const opts = applyOpts();
