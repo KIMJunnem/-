@@ -25,15 +25,15 @@ assert.match(source, /await deleteCurrentRequest\('quoteClosed10'\)/);
 assert.match(source, /삭제 대상 · 승인 대기 · 삭제 안 함'\);\s*await new Promise\(resolve => setTimeout\(resolve, 600\)\);\s*await returnToRequestList\(\);/);
 assert.match(source, /삭제 승인 대기\(봇은 삭제하지 않음\)/);
 assert.match(source, /if \(!dialog \|\| requestId\(\) !== currentId\) return false;/, '확인은 대화상자 안에서만');
-assert.equal(manifest.version, '0.4.23');
-assert.match(source, /요청봇 0\.4\.23/);
+assert.equal(manifest.version, '0.4.24');
+assert.match(source, /요청봇 0\.4\.24/);
 assert.match(source, /const REQUEST_REFRESH_MS = 20000;/, '목록 새로고침 20초');
 // 0.4.12: 탭 잠금·캐시 부족·계정 확인
 assert.match(source, /createGuard\(\{\s*role: 'request'/);
 assert.match(source, /숨고 캐시 부족 · 자동 정지/);
 assert.match(source, /숨고 계정이 swan이 아님/);
 // 0.4.11: 하루 신규 견적 20건, 한국 시간 기준
-assert.match(source, /const DAILY_QUOTE_LIMIT = 15;/);
+assert.match(source, /const DAILY_QUOTE_LIMIT = 30;/);
 assert.doesNotMatch(source, />= 5\)/);
 // 0.4.10: Relay Desk 연결 끊김 시 상세 화면에 머물지 않고 목록에서 대기
 assert.match(source, /await queueForRelayDesk\(request, error, true\)/);
