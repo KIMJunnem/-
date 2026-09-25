@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T21:38:01.572Z",
+  "generatedAt": "2026-09-25T22:43:01.563Z",
   "kstDay": "2026-09-26",
   "funnel": {
     "requests": 430,
@@ -275,7 +275,7 @@
       "2026-09-21": 27,
       "2026-09-23": 14,
       "2026-09-20": 5,
-      "2026-09-19": 5,
+      "2026-09-19": 4,
       "2026-09-26": 2
     },
     "videoAutoDecision": {
@@ -286,7 +286,7 @@
     "videoMaterialsQuotes": 1,
     "repliesByDay": {
       "2026-09-20": 51,
-      "2026-09-19": 31,
+      "2026-09-19": 28,
       "2026-09-21": 18,
       "2026-09-22": 16,
       "2026-09-24": 11,
@@ -295,10 +295,10 @@
     "replyTemplates": {
       "(없음)": 24,
       "quote_read_followup": 17,
-      "emergency_astra_review": 9,
       "system_notice": 8,
       "quote_read_followup_relinked": 6,
       "emergency_astra_failed": 6,
+      "emergency_astra_review": 6,
       "auto_general": 4,
       "chat_only_contact": 4,
       "guard_customer_left": 3,
@@ -325,7 +325,7 @@
       "auto_format": 1
     },
     "replyAuto": 51,
-    "replyManual": 66,
+    "replyManual": 63,
     "honorificHeld": 0,
     "paymentClaims": 0,
     "agreedDiscounts": 0,
@@ -339,7 +339,7 @@
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 8,
+        "minutesSinceHeartbeat": 73,
         "errorWord": false
       },
       "chat": {
