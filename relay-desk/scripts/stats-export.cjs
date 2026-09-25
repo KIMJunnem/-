@@ -56,6 +56,15 @@ function extraCounts(state = {}, now = Date.now()) {
     paymentClaims: replies.filter(item => item.reply?.paymentCheck).length,
     agreedDiscounts: replies.filter(item => Number(item.reply?.agreedAmount || 0) > 0).length,
     jevGate: count(recent(state.jevGateLog), item => `${item.choice || '-'}:${item.action || '-'}`),
+    // 9/25 준희 "많이 찾는 유형별 샘플": 최근 30일 영상 편집 요청을 종류별로 센다(글은 올리지 않음)
+    videoRequestTypes: (() => {
+      let typeOf = () => 'other';
+      try { typeOf = require(path.join(ROOT, 'server', 'video-edit-quote.js')).videoType; } catch (_) { return {}; }
+      const since30 = now - 30 * 24 * 3600e3;
+      const video = (Array.isArray(state.soomgoLeads) ? state.soomgoLeads : []).filter(item => timeOf(item) >= since30
+        && (item.quote?.pricing?.type === 'video_edit' || item.quote?.videoEdit || /영상\s*편집/.test(String(item.request?.soomgoCategory || item.category || ''))));
+      return count(video, item => typeOf(item.request || item));
+    })(),
     // 9/25: 봇이 멈추면 알림(마지막 신호 뒤 몇 분). 상태 글은 올리지 않고 오류 낱말이 있는지만
     botHealth: Object.fromEntries(Object.entries(state.botStatus && typeof state.botStatus === 'object' ? state.botStatus : {}).map(([role, item]) => [role, {
       minutesSinceHeartbeat: Math.round((now - Number(item?.at || 0)) / 60000),

@@ -43,6 +43,7 @@ assert.strictEqual(first.ok, true);
 const text = sh(['show', 'relay-stats:stats/latest.json'], origin);
 const stats = JSON.parse(text);
 assert.strictEqual(stats.extra.videoAutoDecision.ok, 1);
+assert.strictEqual(typeof stats.extra.videoRequestTypes, 'object');
 assert.strictEqual(stats.extra.videoAutoDecision.excluded_work, 1);
 assert.strictEqual(stats.extra.replyTemplates.hire_ready, 1);
 assert.strictEqual(stats.extra.agreedDiscounts, 1);

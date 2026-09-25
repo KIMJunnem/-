@@ -23,6 +23,15 @@
     "minimumAmount": 15000,
     "materials": { "_note": "9/25 준희: 식전영상처럼 원본 길이로 정해지지 않는 요청은 자료를 보고 확정한다고 하고 시작가로 보낸다. 시작가는 크몽 식전영상 판매가(58,000~110,000원부터) 참고, 리뷰 없는 신규라 아래쪽. 기간은 크몽 예시(당일~4일)보다 빠른 2~3일(9/25 준희 \"3~4일 너무 길지 않아?\")", "photoMatch": "식전|식중|성장\\s*(?:영상|동영상)|프로포즈|돌\\s*잔치|웨딩|결혼|추모|부모님\\s*감사|사진\\s*(?:영상|슬라이드|모음)|슬라이드\\s*쇼|포토\\s*영상", "photoAmount": 89000, "photoDays": "2~3일", "generalAmount": 69000, "generalDays": "1~2일" }
   },
+  "sampleTypes": [
+    { "key": "wedding", "label": "식전·웨딩", "match": "식전|식중|웨딩|결혼|프로포즈|부모님\\s*감사" },
+    { "key": "baby", "label": "돌잔치·성장", "match": "돌\\s*잔치|돌잔치|성장\\s*(?:영상|동영상)|백일|아기" },
+    { "key": "shorts", "label": "쇼츠·릴스", "match": "쇼츠|숏츠|숏폼|릴스|shorts|reels|틱톡" },
+    { "key": "lecture", "label": "강의·인터뷰", "match": "강의|강연|인터뷰|세미나|교육|수업" },
+    { "key": "event", "label": "행사·기업", "match": "행사|스케치|기업|회사|축제|공연|컨퍼런스|워크숍" },
+    { "key": "promo", "label": "광고·홍보", "match": "광고|홍보|제품|상품|브랜드|매장|가게" },
+    { "key": "youtube", "label": "유튜브·브이로그", "match": "유튜브|youtube|브이로그|vlog|방송|채널" }
+  ],
   "includedRevisions": 2,
   "deliverFormats": ["mp4"],
   "scope": "말하는 영상(강의·인터뷰·유튜브 토크·행사 발언) 컷편집 + 한국어 자막 입히기(번역 자막 가능), 결과물 MP4, 수정 2회",
@@ -39,6 +48,8 @@
     "safeLine": "결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.",
     "experienceLine": "33분 분량 영상의 번역 자막을 실제로 제작해 납품했습니다.",
     "sampleUrl": "",
+    "sampleUrls": { "youtube": "", "wedding": "", "baby": "", "shorts": "", "event": "", "lecture": "", "promo": "" },
+    "_sampleUrlsNote": "9/25 준희 \"많이 찾는 유형별로 샘플 하나씩\": 요청 종류(sampleTypes)에 맞는 링크를 먼저 쓰고, 없으면 sampleUrl",
     "_sampleUrlNote": "9/25: 장편 편집 샘플을 유튜브 일부공개로 올린 뒤 링크를 넣으면 자동 견적 끝에 \"작업 예시 영상: 링크\"가 붙는다(youtube.com·youtu.be만)",
     "questionKnown": "원본 영상 파일이 몇 개인지만 알려주실 수 있을까요?",
     "questionLengthUnknown": "원본 영상이 전체 몇 분인지 알려주시면 금액을 바로 확정해 드리겠습니다.",
