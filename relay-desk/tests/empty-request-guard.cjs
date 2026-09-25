@@ -32,5 +32,5 @@ assert.ok(FIELDS.test('요청 상세\n자막\n영상 길이\n33분'), '자막 �
 const detail = bot.slice(bot.indexOf('async function processDetail()'));
 assert.ok(detail.indexOf('REQUEST_FIELDS.test(request.text)') > 0 && detail.indexOf('REQUEST_FIELDS.test(request.text)') < detail.indexOf('await fetch(ENDPOINT'), '보내기 전에 기다림');
 assert.match(bot, /const DETAIL_WAIT_MS = 8000;/);
-assert.equal(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'soomgo-bot-extension', 'manifest.json'), 'utf8')).version, '0.4.25');
+assert.equal(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'soomgo-bot-extension', 'manifest.json'), 'utf8')).version, '0.4.26');
 console.log('empty-request-guard: PASS');

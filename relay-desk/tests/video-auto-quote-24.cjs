@@ -18,7 +18,7 @@ const supported = registry.listServices({ channel: 'soomgo' }).map(service => se
 // 0) 스위치: 정의 파일 기본값은 꺼짐, 하루 10건. 켜기·끄기는 bat 두 개가 scripts/video-quote-switch.cjs로만 바꾼다
 const def = JSON.parse(fs.readFileSync(path.join(root, 'services', 'video_edit.json'), 'utf8'));
 assert.equal(typeof def.autoQuote.enabled, 'boolean');
-assert.equal(def.autoQuote.dailyMaxSends, 15);
+assert.equal(def.autoQuote.dailyMaxSends, 30);
 for (const [bat, mode] of [['video-quote-on.bat', 'on'], ['video-quote-off.bat', 'off']]) {
   const text = fs.readFileSync(path.join(root, bat), 'utf8');
   assert.match(text, new RegExp(`node scripts\\\\video-quote-switch\\.cjs ${mode}`), bat);
@@ -105,15 +105,15 @@ for (const [name, input, reason] of [
 // 5) 하루 30건 상한(9/25 준희 "하루 30개까지", 한국 시간 기준, 같은 요청은 한 번만 셈)
 {
   const now = Date.now();
-  const state = { videoEditAutoQuotes: Array.from({ length: 15 }, (_, i) => ({ at: new Date(now).toISOString(), requestId: `DONE-${i}` })) };
+  const state = { videoEditAutoQuotes: Array.from({ length: 30 }, (_, i) => ({ at: new Date(now).toISOString(), requestId: `DONE-${i}` })) };
   const capped = run(mk('VA-cap', '5분 이내'), { state });
-  assert.equal(capped.quote.autoSend, false, '16번째는 보내지 않음');
+  assert.equal(capped.quote.autoSend, false, '31번째는 보내지 않음');
   assert.equal(capped.quote.videoEdit.autoDecision, 'daily_cap');
   const again = run(mk('DONE-3', '5분 이내'), { state });
   assert.equal(again.quote.autoSend, true, '이미 센 요청을 다시 열면 상한에 막히지 않음(중복 계산 없음)');
-  assert.equal(state.videoEditAutoQuotes.length, 15, '같은 요청은 다시 기록하지 않음');
+  assert.equal(state.videoEditAutoQuotes.length, 30, '같은 요청은 다시 기록하지 않음');
   const yesterday = { videoEditAutoQuotes: Array.from({ length: 10 }, (_, i) => ({ at: new Date(now - 36 * 3600e3).toISOString(), requestId: `OLD-${i}` })) };
-  assert.equal(run(mk('VA-new-day', '5분 이내'), { state: yesterday }).quote.autoSend, true, '날이 바뀌면 다시 15건');
+  assert.equal(run(mk('VA-new-day', '5분 이내'), { state: yesterday }).quote.autoSend, true, '날이 바뀌면 다시 30건');
 }
 // 6) 길이 읽기: 구간은 최댓값, "1시간 30분"은 합
 assert.equal(video.sourceMinutes({ volume: '30분~1시간' }), 60);

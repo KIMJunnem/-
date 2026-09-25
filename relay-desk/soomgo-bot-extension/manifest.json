@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Relay Desk · 숨고 자동 견적",
-  "version": "0.4.25",
+  "version": "0.4.26",
   "description": "숨고 요청서를 읽어 Relay Desk에서 견적·소요일을 계산하고 견적 입력을 자동화합니다.",
   "permissions": [
     "storage",
