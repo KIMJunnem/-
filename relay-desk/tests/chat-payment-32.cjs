@@ -58,6 +58,12 @@ console.log('지시 32 결제·흥정 통과');
   assert.strictEqual(r.templateKey, 'hire_ready');
   assert.strictEqual(r.hireRequest, true);
   assert.strictEqual(r.agreedAmount, 62000);
-  assert.match(r.reason, /결제 요청 금액 확인 필요/);
-  console.log('할인 합의 알림 통과');
+  assert.match(r.reason, /이 금액으로 작업·결제 요청/);
+  assert.ok(!r.attention, '준희 확인 없이 봇이 정함');
+  // 고용 연결 때 이 방의 합의 금액을 작업·결제 금액으로(범위 밖·다른 방은 무시)
+  const state = { soomgoReplies: [{ conversationId: '235909002', reply: { agreedAmount: 62000 } }, { conversationId: '235909003', reply: { agreedAmount: 50000 } }] };
+  assert.strictEqual(R.agreedDiscountFor(state, '235909002', quote), 62000);
+  assert.strictEqual(R.agreedDiscountFor(state, '235909003', quote), null, '85% 아래는 인정 안 함');
+  assert.strictEqual(R.agreedDiscountFor(state, '235909009', quote), null);
+  console.log('할인 합의 금액 자동 반영 통과');
 }

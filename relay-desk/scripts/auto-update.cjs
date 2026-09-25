@@ -216,4 +216,21 @@ async function main() {
   }
 }
 
-main();
+// 9/25 준희 "응 만들어줘": 한 시간에 한 번 성과 숫자(숫자만)를 relay-stats 브랜치에 올린다. 실패해도 업데이트와 상관없음.
+async function maybeExportStats() {
+  if (process.env.RELAY_STATS_DISABLED === '1') return;
+  const state = readState();
+  if (!state.lastApplied) return;
+  if (Date.now() - (Date.parse(state.lastStatsAt || '') || 0) < 60 * 60 * 1000) return;
+  try {
+    const result = await require('./stats-export.cjs').exportStats();
+    if (!result?.ok) log('성과 숫자 올리기 실패');
+  } catch (error) {
+    log(`성과 숫자 올리기 실패 · ${String(error.message || error).slice(0, 200)}`);
+  }
+  const next = readState();
+  next.lastStatsAt = new Date().toISOString();
+  writeState(next);
+}
+
+main().then(maybeExportStats);
