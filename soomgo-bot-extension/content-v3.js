@@ -182,7 +182,7 @@
       // 숨고 견적 작성 화면의 보라색 발송 버튼은 오른쪽 아래에 있으므로
       // 패널을 위쪽으로 고정해 버튼을 가리지 않게 한다.
       panel.style.cssText = 'position:fixed;z-index:2147483647;right:14px;top:82px;width:250px;padding:12px;border-radius:12px;background:#111827;color:#e5e7eb;font:13px sans-serif;box-shadow:0 8px 30px #0007';
-      panel.innerHTML = '<b>Relay Desk · 요청봇 0.4.26</b><button data-toggle style="float:right">OFF</button><div data-status style="margin-top:10px;color:#a7f3d0"></div><small>하루 최대 30건 · 발송 확인 후 완료</small>';
+      panel.innerHTML = '<b>Relay Desk · 요청봇 0.4.27</b><button data-toggle style="float:right">OFF</button><div data-status style="margin-top:10px;color:#a7f3d0"></div><small>하루 최대 30건 · 발송 확인 후 완료</small>';
       panel.addEventListener('click', async event => {
         if (!event.target.matches('[data-toggle]')) return;
         state.on = !state.on;
@@ -245,12 +245,15 @@
     }
     return false;
   }
+  // 0.4.27(9/25 시뮬 7): 원본 길이 칸이 없을 때 '희망 길이'(완성본 길이)를 원본 길이로 읽어 식전영상이 "원본 3분 69,000원"으로 나갔다.
+  // 원본(작업할 자료) 길이가 분명한 칸만 읽는다. 희망·완성 길이는 비워 두고 서버가 자료 기준(89,000원부터)으로 정한다.
+  const sourceVolume = text => (text.match(/(?<!희망\s*|완성\s*|원하는\s*)(?:작업 분량|원본 영상 길이|원본 길이|영상 길이|분량)\s*\n?([^\n]+)/i) || [])[1] || '';
   const extract = () => {
     const page = bodyText();
     const start = page.indexOf('요청 상세');
     const text = start >= 0 ? page.slice(start).split('견적 금액')[0] : '';
     const displayLabel = (text.match(/(?:희망 서비스|서비스 분야)\s*[:：]?\s*\n?\s*([^\n]+)/i) || [])[1] || '';
-    return { requestId: requestKey(), text, displayLabel: clean(displayLabel), topic: (text.match(/(?:의뢰\/희망사항|의뢰 내용|작성 주제)\s*\n?([\s\S]{0,1200}?)(?=\n?\s*(?:고객 정보|완료 희망일)|$)/i) || [])[1] || '', volume: (text.match(/(?:작업 분량|영상 길이|원본 길이|희망 길이|분량)\s*\n?([^\n]+)/i) || [])[1] || '', format: (text.match(/(?:파일 형식|결과물 형식)\s*\n?([^\n]+)/i) || [])[1] || '', sourceUrl: location.href };
+    return { requestId: requestKey(), text, displayLabel: clean(displayLabel), topic: (text.match(/(?:의뢰\/희망사항|의뢰 내용|작성 주제)\s*\n?([\s\S]{0,1200}?)(?=\n?\s*(?:고객 정보|완료 희망일)|$)/i) || [])[1] || '', volume: sourceVolume(text), format: (text.match(/(?:파일 형식|결과물 형식)\s*\n?([^\n]+)/i) || [])[1] || '', sourceUrl: location.href };
   };
   async function queueForRelayDesk(request, error, connectionLost = false) {
     const previous = state.pending.get(request.requestId) || {};
