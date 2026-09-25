@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-25T08:48:02.472Z",
+  "generatedAt": "2026-09-25T09:53:01.990Z",
   "kstDay": "2026-09-25",
   "funnel": {
-    "requests": 422,
-    "quotes": 217,
+    "requests": 423,
+    "quotes": 218,
     "customerReplies": 13,
     "humanConversations": 23,
     "byQuoteVersion": [
@@ -50,6 +50,12 @@
         "replyRate": 20
       },
       {
+        "version": "video_edit auto-v2-B",
+        "sent": 3,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
         "version": "presentation v6",
         "sent": 3,
         "replied": 0,
@@ -70,12 +76,6 @@
       {
         "version": "presentation v1",
         "sent": 3,
-        "replied": 0,
-        "replyRate": 0
-      },
-      {
-        "version": "video_edit auto-v2-B",
-        "sent": 2,
         "replied": 0,
         "replyRate": 0
       },
@@ -116,7 +116,7 @@
     "delivered": 0
   },
   "conversionRates": {
-    "requestToQuote": 51.4,
+    "requestToQuote": 51.5,
     "quoteToReply": 6,
     "replyToHire": 0,
     "hireToPaymentConfirmed": 0,
@@ -127,8 +127,8 @@
   "serviceMix": [
     {
       "service": "영상 편집",
-      "requests": 129,
-      "quotes": 35,
+      "requests": 130,
+      "quotes": 36,
       "replies": 0,
       "replyRate": 0
     },
@@ -273,13 +273,13 @@
       "2026-09-24": 35,
       "2026-09-22": 33,
       "2026-09-21": 27,
-      "2026-09-25": 22,
+      "2026-09-25": 23,
       "2026-09-18": 17,
       "2026-09-23": 14,
       "2026-09-20": 5
     },
     "videoAutoDecision": {
-      "ok": 36,
+      "ok": 37,
       "(없음)": 5,
       "daily_cap": 2
     },
@@ -288,13 +288,13 @@
       "2026-09-20": 51,
       "2026-09-19": 35,
       "2026-09-21": 18,
-      "2026-09-18": 18,
       "2026-09-22": 16,
       "2026-09-24": 11,
-      "2026-09-23": 10
+      "2026-09-23": 10,
+      "2026-09-18": 10
     },
     "replyTemplates": {
-      "(없음)": 32,
+      "(없음)": 24,
       "quote_read_followup": 20,
       "emergency_astra_review": 19,
       "system_notice": 8,
@@ -325,30 +325,32 @@
       "additional_fee_info": 1,
       "auto_format": 1
     },
-    "replyAuto": 62,
+    "replyAuto": 54,
     "replyManual": 77,
     "honorificHeld": 0,
     "paymentClaims": 0,
     "agreedDiscounts": 0,
     "jevGate": {},
+    "videoRequestTypes": {
+      "other": 37,
+      "wedding": 2,
+      "lecture": 2,
+      "youtube": 2,
+      "event": 2
+    },
     "botHealth": {
       "request": {
         "minutesSinceHeartbeat": 1,
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 0,
+        "minutesSinceHeartbeat": 1,
         "errorWord": false
       }
     },
     "workflows": {
-      "byStage": {
-        "awaiting_completion_confirmation": 26,
-        "transaction_confirmation_wait": 8,
-        "manual_extension_review": 5,
-        "payment_requested": 5
-      },
-      "oldestStuckMinutes": 10566
+      "byStage": {},
+      "oldestStuckMinutes": 0
     }
   }
 }
