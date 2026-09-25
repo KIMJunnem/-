@@ -84,6 +84,35 @@ function classify(patch) {
   if (git([...opts, '--reverse', '--check', '-'], { input: patch, allowFail: true }).status === 0) return 'already';
   return 'conflict';
 }
+// 이 PC의 파일이 GitHub에 올라간 우리 쪽 예전 판 그대로면(예: 존댓말-업데이트.bat이 만든 판) 새 판으로 바꿔도 안전하다.
+function knownVersionFor(base, target, file) {
+  const full = path.join(ROOT, file);
+  if (!fs.existsSync(full)) return null;
+  const mine = git(['hash-object', full]).trim();
+  const commits = git(['log', '--format=%H', `${base}..${target}`, '--', file]).split('\n').map(line => line.trim()).filter(Boolean);
+  const blobs = new Set(commits.map(commit => git(['rev-parse', `${commit}:${file}`], { allowFail: true }).stdout?.trim()).filter(Boolean));
+  if (!blobs.has(mine)) return null;
+  const t = git(['show', `${target}:${file}`], { encoding: null, allowFail: true });
+  return t.status === 0 ? t.stdout : null;
+}
+// 패치가 그대로 안 맞는 파일(예: 존댓말-업데이트.bat으로 일부가 이미 들어간 파일)은 3방향 합치기를 해 본다.
+// 같은 곳을 이 PC에서 다르게 고쳤으면 합치기가 실패해 그대로 "겹침"이 된다. 성공하면 합친 내용을 쓴다.
+function mergeFor(base, target, file) {
+  const full = path.join(ROOT, file);
+  if (!fs.existsSync(full)) return null;
+  const blob = rev => git(['show', `${rev}:${file}`], { encoding: null, allowFail: true });
+  const b = blob(base); const t = blob(target);
+  if (b.status !== 0 || t.status !== 0) return null; // 새로 생기거나 지워지는 파일은 합치지 않음
+  const dir = fs.mkdtempSync(path.join(WORK, 'merge-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'base'), b.stdout);
+    fs.writeFileSync(path.join(dir, 'target'), t.stdout);
+    const run = spawnSync('git', ['merge-file', '-p', '--quiet', full, path.join(dir, 'base'), path.join(dir, 'target')], { cwd: ROOT, encoding: null, maxBuffer: 256 * 1024 * 1024 });
+    return run.status === 0 ? run.stdout : null;
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
 
 async function main() {
   const install = process.argv.includes('--install');
@@ -117,7 +146,14 @@ async function main() {
     const changed = git(['diff', '--name-only', '-z', '--no-renames', base, target]).split('\0').filter(Boolean);
     const files = changed.filter(file => !PROTECTED.some(re => re.test(file)));
     const skippedProtected = changed.filter(file => !files.includes(file));
-    const plan = files.map(file => ({ file, patch: patchFor(base, target, file) })).map(item => ({ ...item, kind: classify(item.patch) }));
+    const plan = files.map(file => ({ file, patch: patchFor(base, target, file) })).map(item => ({ ...item, kind: classify(item.patch) }))
+      .map(item => {
+        if (item.kind !== 'conflict') return item;
+        const known = knownVersionFor(base, target, item.file);
+        if (known) return { ...item, kind: 'merge', merged: known };
+        const merged = mergeFor(base, target, item.file);
+        return merged ? { ...item, kind: 'merge', merged } : item;
+      });
     const conflicts = plan.filter(item => item.kind === 'conflict').map(item => item.file);
     const short = `${base.slice(0, 7)}→${target.slice(0, 7)}`;
     if (conflicts.length) {
@@ -126,7 +162,7 @@ async function main() {
       writeState(state);
       return;
     }
-    const toApply = plan.filter(item => item.kind === 'apply');
+    const toApply = plan.filter(item => item.kind === 'apply' || item.kind === 'merge');
     const backupDir = path.join(WORK, stamp().replace(/[: ]/g, '').replace(/-/g, ''));
     const created = [];
     for (const item of toApply) {
@@ -143,7 +179,10 @@ async function main() {
       for (const file of created) fs.rmSync(path.join(ROOT, file), { force: true });
     };
     try {
-      for (const item of toApply) git([...applyOpts(), '-'], { input: item.patch });
+      for (const item of toApply) {
+        if (item.kind === 'merge') fs.writeFileSync(path.join(ROOT, item.file), item.merged);
+        else git([...applyOpts(), '-'], { input: item.patch });
+      }
     } catch (error) {
       rollback();
       log(`적용 중 오류로 원래대로 되돌림 ${short} · ${error.message}`);
