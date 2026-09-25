@@ -201,7 +201,10 @@ async function main() {
     Object.assign(state, { lastApplied: target, lastResult: `적용 ${toApply.length}개 · ${tests.detail}`, lastAppliedAt: stamp() });
     delete state.lastFailed;
     log(`적용 완료 ${short} · 파일 ${toApply.length}개(이미 있던 것 ${plan.length - toApply.length}개, 보호 폴더라 건너뜀 ${skippedProtected.length}개) · ${tests.detail}`);
-    if (toApply.length) {
+    // 문서·시험 파일만 바뀌었으면 서버를 다시 켜지 않는다(고객 채팅 중 불필요한 재시작 방지)
+    const needsRestart = toApply.some(item => /^(?:server\/|services\/|soomgo-bot-extension\/|soomgo-chat-bot\/|kmong-bot-extension\/|bridge\/|dist\/|package(?:-lock)?\.json$)/.test(item.file));
+    if (toApply.length && !needsRestart) log('문서·시험 파일만 바뀌어 서버 재시작 안 함');
+    if (needsRestart) {
       const r = await restartServer();
       if (r.status === 202) log('서버 재시작 완료');
       else if (r.status === 409) { state.restartPending = short; log('제작 중이라 재시작 미룸 · 다음 차례에 다시 시도'); }
