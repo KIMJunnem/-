@@ -47,7 +47,7 @@ const suites = [
   ['요청봇 카드 키 겹침 방지', 'tests/request-bot-card-key.cjs'],
   ['고객응대실 합치기 (Astra→Claude→정해진 문구, 가짜 호출)', 'tests/customer-room-fallback.cjs'],
   ['채팅봇 존댓말 필수', 'tests/honorific-guard.cjs'],
-  ['식전영상·길이 모름 자동 견적(하루 15건)', 'tests/video-materials-quote.cjs'],
+  ['식전영상·길이 모름 자동 견적(하루 30건)', 'tests/video-materials-quote.cjs'],
   ['지시 32 결제·흥정은 챗봇이(할인 85%·한 번)', 'tests/chat-payment-32.cjs'],
   ['지시 31 제브 문지기(가짜 응답, 기본 꺼짐)', 'tests/jev-gate-31.cjs'],
   ['봇이 못 정한 채팅은 Claude에게 묻기', 'tests/chat-supervisor.cjs'],

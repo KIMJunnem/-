@@ -57,7 +57,7 @@ const run = (input, state = {}) => {
 // 4) 하루 상한(9/25부터 30건)
 {
   const now = Date.now();
-  const state = { videoEditAutoQuotes: Array.from({ length: 15 }, (_, i) => ({ at: new Date(now).toISOString(), requestId: `D${i}` })) };
+  const state = { videoEditAutoQuotes: Array.from({ length: 30 }, (_, i) => ({ at: new Date(now).toISOString(), requestId: `D${i}` })) };
   const capped = run(mk('V25-CAP', '45분'), state);
   assert.equal(capped.quote.autoSend, false); assert.equal(capped.quote.videoEdit.autoDecision, 'daily_cap');
 }
