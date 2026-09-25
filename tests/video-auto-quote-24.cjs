@@ -18,7 +18,7 @@ const supported = registry.listServices({ channel: 'soomgo' }).map(service => se
 // 0) 스위치: 정의 파일 기본값은 꺼짐, 하루 10건. 켜기·끄기는 bat 두 개가 scripts/video-quote-switch.cjs로만 바꾼다
 const def = JSON.parse(fs.readFileSync(path.join(root, 'services', 'video_edit.json'), 'utf8'));
 assert.equal(typeof def.autoQuote.enabled, 'boolean');
-assert.equal(def.autoQuote.dailyMaxSends, 10);
+assert.equal(def.autoQuote.dailyMaxSends, 30);
 for (const [bat, mode] of [['video-quote-on.bat', 'on'], ['video-quote-off.bat', 'off']]) {
   const text = fs.readFileSync(path.join(root, bat), 'utf8');
   assert.match(text, new RegExp(`node scripts\\\\video-quote-switch\\.cjs ${mode}`), bat);
@@ -70,7 +70,6 @@ for (const [name, input, reason] of [
   ['3D', mk('VA-3d', '5분 이내', '요청 사항\n3D 효과'), 'excluded_work'],
   ['더빙', mk('VA-dub', '5분 이내', '요청 사항\n성우 더빙 필요'), 'excluded_work'],
   ['촬영·방문', mk('VA-visit', '5분 이내', '요청 사항\n현장 촬영 부탁드려요'), 'visit_or_shoot'],
-  ['길이 없음', mk('VA-nolen', ''), 'length_unknown'],
   ['끝이 열린 길이(2시간 넘음)', mk('VA-open', '3시간 이상'), 'length_open_ended']
 ]) {
   const { result, quote, state } = run(input);
@@ -103,18 +102,18 @@ for (const [name, input, reason] of [
   assert.equal(forcedOff.quote.autoSend, false, '꺼짐 설정이면 보내지 않음');
   assert.equal(forcedOff.quote.videoEdit.autoDecision, 'switch_off');
 }
-// 5) 하루 10건 상한(한국 시간 기준, 같은 요청은 한 번만 셈)
+// 5) 하루 30건 상한(9/25 준희 "하루 30개까지", 한국 시간 기준, 같은 요청은 한 번만 셈)
 {
   const now = Date.now();
-  const state = { videoEditAutoQuotes: Array.from({ length: 10 }, (_, i) => ({ at: new Date(now).toISOString(), requestId: `DONE-${i}` })) };
+  const state = { videoEditAutoQuotes: Array.from({ length: 30 }, (_, i) => ({ at: new Date(now).toISOString(), requestId: `DONE-${i}` })) };
   const capped = run(mk('VA-cap', '5분 이내'), { state });
-  assert.equal(capped.quote.autoSend, false, '11번째는 보내지 않음');
+  assert.equal(capped.quote.autoSend, false, '31번째는 보내지 않음');
   assert.equal(capped.quote.videoEdit.autoDecision, 'daily_cap');
   const again = run(mk('DONE-3', '5분 이내'), { state });
   assert.equal(again.quote.autoSend, true, '이미 센 요청을 다시 열면 상한에 막히지 않음(중복 계산 없음)');
-  assert.equal(state.videoEditAutoQuotes.length, 10, '같은 요청은 다시 기록하지 않음');
+  assert.equal(state.videoEditAutoQuotes.length, 30, '같은 요청은 다시 기록하지 않음');
   const yesterday = { videoEditAutoQuotes: Array.from({ length: 10 }, (_, i) => ({ at: new Date(now - 36 * 3600e3).toISOString(), requestId: `OLD-${i}` })) };
-  assert.equal(run(mk('VA-new-day', '5분 이내'), { state: yesterday }).quote.autoSend, true, '날이 바뀌면 다시 10건');
+  assert.equal(run(mk('VA-new-day', '5분 이내'), { state: yesterday }).quote.autoSend, true, '날이 바뀌면 다시 30건');
 }
 // 6) 길이 읽기: 구간은 최댓값, "1시간 30분"은 합
 assert.equal(video.sourceMinutes({ volume: '30분~1시간' }), 60);

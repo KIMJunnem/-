@@ -21,10 +21,10 @@ for (const [category, body] of [
   const input = mk('영상 편집', '유튜브 영상 컷 편집 부탁드립니다 10분 분량');
   const { parsed, quote } = buildSoomgoQuote(input);
   const result = autoRules.applySoomgoAutoRules({ body: input, request: parsed, quote, requestedServiceId: null, existingLead: null, state: {}, requestId: 'T', supportedServiceIds: supported, sampleAmount: a => a });
-  assert.equal(result.action, 'retain_review', '영상 편집 삭제 안 함');
+  assert.equal(result.action, 'quote', '영상 편집 삭제 안 함(9/25부터 길이 모름도 시작가 견적)');
   assert.equal(quote.deleteRequest, false);
-  assert.equal(quote.autoSend, false, '견적 자동 발송 안 함');
-  assert.equal(quote.manualReview, true, '준희 확인 알림');
+  assert.equal(quote.autoSend, true, '9/25: 길이 모름 영상 편집은 시작가로 자동 발송');
+  assert.match(quote.message, /자료를 보고 정확한 금액을 확정/);
   assert.equal(require('../server/claude-quote').eligible(quote), false, 'Claude 견적 판단 대상 아님');
 }
 // 판매하는 카테고리는 삭제하지 않는다

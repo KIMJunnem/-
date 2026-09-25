@@ -11,7 +11,7 @@
   },
   "limits": {
     "maxConcurrentPaidOrders": 2,
-    "maxDailyNewQuotes": 20,
+    "maxDailyNewQuotes": 30,
     "maxDailyFollowups": 3,
     "maxFollowupsPerCustomer": 1,
     "maxAstraUsdPerOrder": 0.35,

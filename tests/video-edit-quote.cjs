@@ -27,7 +27,7 @@ const cases = [
   ['1시간', '작업 분량\n1시간 이내\n강연 영상 편집', 219000, '3일', null],
   ['쇼츠', '작업 분량\n원본 8분\n유튜브 쇼츠 1개 만들어 주세요', 39000, '당일~1일', null],
   ['쇼츠 원본 20분', '작업 분량\n20분\n릴스용 쇼츠 1개', 0, '', 'shorts_long_source'],
-  ['길이 모름', '유튜브 영상 편집 부탁드립니다', 0, '', 'length_unknown'],
+  ['길이 모름', '유튜브 영상 편집 부탁드립니다', 69000, '1~2일', null], // 9/25: 자료 보고 확정 + 시작가
   ['번역 10분', '작업 분량\n10분\n영어 인터뷰 영상 한국어 자막 편집', 83000, '1~2일', null],
   ['배경음악 10분', '작업 분량\n10분\n브이로그 컷편집 배경음악 넣어주세요', 79000, '1~2일', null]
 ];
@@ -62,7 +62,8 @@ for (const [name, body, amount, days, scopeCheck] of cases) {
 // 모듈 단독 계산도 같은 값
 assert.equal(videoEditQuote({ volume: '10분' }).amount, 69000);
 assert.equal(videoEditQuote({ volume: '31분' }).amount, 144000);
-assert.equal(videoEditQuote({}).amount, null);
+assert.equal(videoEditQuote({}).amount, 69000); // 9/25: 길이 모름은 시작가(자료 보고 확정)
+assert.equal(videoEditQuote({}).materialsBased, 'general');
 // 9/24 지시 25: 원본 31~69분 작업 기간 3일(감독 결정)
 assert.equal(videoEditQuote({ volume: '45분' }).days, '3일');
 // 금액 상한 249,000원(decisions 7-4, 준희 9/24 15시대): 70분 이상은 249,000원·3~4일, 옵션을 더해도 상한 그대로

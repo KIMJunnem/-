@@ -40,7 +40,7 @@ for (const item of classifyItems) {
   assert.ok(!/홍길순|010-1234-5678|hong@example\.com/.test(text), `가림 처리: ${item.key}`);
 }
 // 9/24 준희: 영상 편집은 삭제하지 않고 기록·사람 확인
-assert.equal(classifyItems.find(i => i.key === 'R2').compare.rule.action, 'human_review');
+assert.equal(classifyItems.find(i => i.key === 'R2').compare.rule.action, 'quote'); // 9/25: 길이 모름 영상도 시작가 견적
 assert.equal(classifyItems.find(i => i.key === 'R1').compare.rule.action, 'quote');
 assert.equal(sim.buildItems(state, 'quote_copy', deps).length, 2);
 assert.equal(sim.buildItems(state, 'chat_intent', deps).find(i => i.key === 'C1').compare.rule.intent, 'price_negotiation');
@@ -83,7 +83,7 @@ const wait = async id => { for (let i = 0; i < 200 && sim.activeRuns.has(id); i 
     assert.ok(sent.every(call => call.url === sim.JEV_URL && call.auth === 'Bearer sk-test-key-000000000000'));
     assert.ok(!fs.readFileSync(path.join(dataDir, 'jev-sim', `${started.id}.json`), 'utf8').includes('sk-test-key'), '결과 파일에 키 없음');
     assert.ok(!JSON.stringify(sent.map(c => c.body)).match(/홍길순|010-1234-5678/), '보낸 내용에 개인정보 없음');
-    assert.equal(run.summary.classify.actionAgreement, Number((1 / 3).toFixed(3)), '규칙과 1/3 일치(R1만 quote)');
+    assert.equal(run.summary.classify.actionAgreement, Number((2 / 3).toFixed(3)), '규칙과 2/3 일치(R1·R2 quote, 9/25부터 길이 모름 영상도 견적)');
     assert.equal(run.summary.chat_intent.intentAgreement, 0.5);
     assert.ok(run.summary.reply_prediction.caution, '표본 적음 경고');
     assert.equal(JSON.stringify(state), before, '원본 기록 불변');

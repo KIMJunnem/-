@@ -21,7 +21,7 @@
   const HEARTBEAT_MS = 15000;
   const DAILY_STATS_KEY = 'relaySoomgoQuoteDailyV1';
   // 하루 신규 견적 상한(사용자 지시 2026-09-21: 5건 → 20건). 날짜는 한국 시간 기준.
-  const DAILY_QUOTE_LIMIT = 20;
+  const DAILY_QUOTE_LIMIT = 30; // 9/25 준희 "견적 하루 30개까지"
   const DETAIL_WAIT_MS = 8000;
   // 요청 상세가 다 떴는지 보는 칸 이름(숨고 요청서 항목). 하나라도 있으면 읽는다.
   const REQUEST_FIELDS = /(이용 목적|작업 분량|작성 주제|제작 범위|희망 서비스|서비스 분야|파일 형식|결과물 형식|영상 길이|원본 길이|의뢰 내용|의뢰\/희망사항|완료 희망일|예산)/;
@@ -182,7 +182,7 @@
       // 숨고 견적 작성 화면의 보라색 발송 버튼은 오른쪽 아래에 있으므로
       // 패널을 위쪽으로 고정해 버튼을 가리지 않게 한다.
       panel.style.cssText = 'position:fixed;z-index:2147483647;right:14px;top:82px;width:250px;padding:12px;border-radius:12px;background:#111827;color:#e5e7eb;font:13px sans-serif;box-shadow:0 8px 30px #0007';
-      panel.innerHTML = '<b>Relay Desk · 요청봇 0.4.21</b><button data-toggle style="float:right">OFF</button><div data-status style="margin-top:10px;color:#a7f3d0"></div><small>하루 최대 20건 · 발송 확인 후 완료</small>';
+      panel.innerHTML = '<b>Relay Desk · 요청봇 0.4.22</b><button data-toggle style="float:right">OFF</button><div data-status style="margin-top:10px;color:#a7f3d0"></div><small>하루 최대 30건 · 발송 확인 후 완료</small>';
       panel.addEventListener('click', async event => {
         if (!event.target.matches('[data-toggle]')) return;
         state.on = !state.on;

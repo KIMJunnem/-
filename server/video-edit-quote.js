@@ -76,13 +76,22 @@ function videoEditQuote(parsed = {}) {
     if (minutes !== null && minutes > Number(shorts.maxSourceMinutes)) scopeCheck = 'shorts_long_source';
     else { amount = Number(shorts.saleAmount); days = shorts.days; workLine = copy.shortsWorkLine; }
   } else if (minutes === null) {
-    scopeCheck = 'length_unknown';
+    // 9/25 준희: 식전영상처럼 원본 길이로 정해지지 않는 요청은 "자료 보고 확정"으로 시작가를 보낸다.
+    const materials = def.pricing.materials;
+    if (materials) {
+      const photo = new RegExp(materials.photoMatch || '(?!)', 'i').test(fieldText(parsed));
+      amount = Number(photo ? materials.photoAmount : materials.generalAmount);
+      days = photo ? materials.photoDays : materials.generalDays;
+      base.materialsBased = photo ? 'photo' : 'general';
+    } else {
+      scopeCheck = 'length_unknown';
+    }
   } else {
     const rule = def.pricing.packages.find(item => (item.when.minutesLte === undefined || minutes <= item.when.minutesLte) && (item.when.minutesGt === undefined || minutes > item.when.minutesGt));
     amount = Number(rule.saleAmount) + (rule.unit ? Math.ceil((minutes - Number(rule.when.minutesGt)) / Number(rule.unit.sizeMinutes)) * Number(rule.unit.saleAmount) : 0);
     days = rule.days || null;
   }
-  if (amount !== null) {
+  if (amount !== null && !base.materialsBased) {
     if (options.translation) amount = round1000(amount * (1 + Number(fee('translation').rate)));
     if (options.bgm) amount += Number(fee('bgm').amount);
     if (options.color) amount += Number(fee('color').amount);
@@ -100,7 +109,8 @@ function videoEditQuote(parsed = {}) {
   }
   const won = amount.toLocaleString('ko-KR');
   const dayText = days ? `작업 기간 ${days}` : copy.daysLater;
-  const lines = [intro, workLine, options.translation ? copy.translationLine : null, `견적 ${won}원 · ${dayText} · 수정 ${revisions}회 포함`, copy.safeLine, copy.experienceLine, copy.questionKnown];
+  const priceLine = base.materialsBased ? `견적 ${won}원부터(자료를 보고 최종 금액 확정) · ${dayText} · 수정 ${revisions}회 포함` : `견적 ${won}원 · ${dayText} · 수정 ${revisions}회 포함`;
+  const lines = [intro, workLine, options.translation ? copy.translationLine : null, priceLine, copy.safeLine, copy.experienceLine, copy.questionKnown];
   return { ...base, amount, days, scopeCheck: null, message: lines.filter(Boolean).join('\n') };
 }
 
@@ -156,7 +166,10 @@ function autoQuoteMessage(parsed = {}, priced = {}, decision = {}) {
   const who = said ? `${said} ` : '';
   const lines = [];
   if (priced.options?.shorts) lines.push(`안녕하세요, ${who}영상으로 1분 이내 쇼츠 1개 만들어서 자막까지 넣는 건 ${won}에 해 드릴 수 있습니다.`);
-  else {
+  else if (priced.materialsBased) {
+    // 9/25 준희: 길이로 못 정하는 요청(식전영상 등)은 자료를 보고 확정한다고 말하고 시작가만 알린다.
+    lines.push(`안녕하세요, ${who}보내주실 사진·영상 자료를 보고 정확한 금액을 확정해 드리려고 합니다. 기본 구성 기준으로 ${won}부터 해 드릴 수 있습니다.`);
+  } else {
     // 고객이 고른 원본 길이 답("5분 이내", "2시간 이내")을 그대로 되짚는다. 없으면 계산에 쓴 분.
     const own = String(parsed.volume || '').trim();
     const length = own && own.length <= 20 && durations(own).length ? own : `${priced.minutes}분`;
@@ -166,7 +179,7 @@ function autoQuoteMessage(parsed = {}, priced = {}, decision = {}) {
   if (priced.options?.translation) lines.push('외국어로 말하는 부분을 한국어 자막으로 옮기는 것도 이 금액에 들어 있습니다.');
   if (decision.storyboard) lines.push('금액은 이대로 두고, 세부 구성은 스토리보드 보고 확정하겠습니다.');
   if (decision.openEnded) lines.push('원본 길이 확인하고 일정은 다시 말씀드릴 수 있습니다.');
-  lines.push(`영상 받고 ${days} 안에 MP4로 보내드리고, 수정은 ${priced.revisions || def.includedRevisions || 2}회까지 가능합니다!!`);
+  lines.push(`${priced.materialsBased ? '자료 받고' : '영상 받고'} ${days} 안에 MP4로 보내드리고, 수정은 ${priced.revisions || def.includedRevisions || 2}회까지 가능합니다!!`);
   return lines.join(' ');
 }
 

@@ -47,12 +47,12 @@ const run = (input, state = {}) => {
   const long = run(mk('V25-3H', '3시간 이상'));
   assert.equal(long.quote.autoSend, false); assert.equal(long.quote.videoEdit.autoDecision, 'length_open_ended');
   const none = run(mk('V25-NONE', ''));
-  assert.equal(none.quote.autoSend, false); assert.equal(none.quote.videoEdit.autoDecision, 'length_unknown');
+  assert.equal(none.quote.autoSend, true); assert.equal(none.quote.videoEdit.autoDecision, 'ok'); // 9/25: 길이 모름은 시작가 + 자료 보고 확정
 }
-// 4) 하루 10건 상한 그대로
+// 4) 하루 상한(9/25부터 30건)
 {
   const now = Date.now();
-  const state = { videoEditAutoQuotes: Array.from({ length: 10 }, (_, i) => ({ at: new Date(now).toISOString(), requestId: `D${i}` })) };
+  const state = { videoEditAutoQuotes: Array.from({ length: 30 }, (_, i) => ({ at: new Date(now).toISOString(), requestId: `D${i}` })) };
   const capped = run(mk('V25-CAP', '45분'), state);
   assert.equal(capped.quote.autoSend, false); assert.equal(capped.quote.videoEdit.autoDecision, 'daily_cap');
 }

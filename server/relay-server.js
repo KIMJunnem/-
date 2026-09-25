@@ -6365,10 +6365,12 @@ function applyChatReplyPolicy(body = {}, reply = {}) {
   if (videoQuestion && !pricedQuote && reply.autoSend && !reply.manualReview && !reply.workflowHandled) {
     let priced = null;
     try { priced = require('./video-edit-quote').videoEditQuote({ volume: message, topic: message, text: message }); } catch (_) { priced = null; }
-    if (priced && priced.amount) {
+    if (priced && priced.amount && !priced.materialsBased) {
       const days = priced.days ? `작업 기간은 ${priced.days}이고` : '작업 기간은 영상을 받아 본 뒤 날짜로 알려드리고';
       return { ...reply, templateKey: 'video_edit_price', messageId: 'video_edit.chat_price.v1', text: `영상 편집은 원본 ${priced.minutes}분 기준 ${priced.amount.toLocaleString('ko-KR')}원입니다. ${days}, 수정 ${priced.revisions}회가 포함됩니다.`, videoEdit: { amount: priced.amount, minutes: priced.minutes } };
     }
+    // 9/25: 식전영상처럼 사진 위주 요청은 길이 대신 "자료 보고 확정" + 시작가
+    if (priced && priced.materialsBased === 'photo') return { ...reply, templateKey: 'video_edit_materials', messageId: 'video_edit.chat_materials.v1', text: `보내주실 사진·영상 자료를 보고 금액을 확정해 드리겠습니다. 기본 구성 기준으로 ${priced.amount.toLocaleString('ko-KR')}원부터이고, 자료 받고 ${priced.days} 안에 보내드릴 수 있습니다!` };
     return { ...reply, templateKey: 'video_edit_length', messageId: 'video_edit.chat_length.v1', text: '영상 편집 가능합니다. 원본 영상 길이를 알려주시면 금액을 바로 안내해 드리겠습니다.' };
   }
   return reply;

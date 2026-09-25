@@ -79,7 +79,7 @@ assert.equal(noCategory.result.ruleId, 'service_mismatch'); assert.equal(noCateg
 // 안전장치: 기술 오류(본문 부족)는 삭제 금지, 하루 30건 상한, 삭제 기록 1회
 assert.equal(run({ requestId: 'E', text: '통계 분석' }).result.action, 'retain_technical');
 // 영상 편집: 삭제하지 않고 기록·사람 확인(9/24 준희), 짧은 본문이어도 삭제 없음
-assert.equal(run({ requestId: 'E2', text: '영상 편집' }).result.action, 'retain_review');
+assert.equal(run({ requestId: 'E2', text: '영상 편집' }).result.action, 'quote'); // 9/25: 길이 모름도 "자료 보고 확정" 시작가로 견적
 assert.equal(run(mk('영상 편집', '유튜브 영상 컷 편집 부탁드립니다 10분 분량')).quote.deleteRequest, false);
 const full = { soomgoAutoDeletes: Array.from({ length: 30 }, (_, i) => ({ at: new Date().toISOString(), requestId: `D${i}` })) };
 const capped = run(deleted.unsold_category, { state: full });
