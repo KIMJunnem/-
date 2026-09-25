@@ -1,3 +1,4 @@
+const { checkHonorific, holdReason } = require('./honorific-guard');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -205,6 +206,14 @@ function createAstraRoomBridge(options = {}) {
     event.deliveryStatus = event.eventType === 'customer_message'
       ? (parsed.mode === 'CUSTOMER_REPLY' && parsed.decision === 'SEND' ? 'ready' : 'held')
       : 'not_applicable';
+    // 9/25 준희 지시: 채팅봇은 무조건 존댓말. 반말 문장이 있으면 내보내지 않고 사람 확인(held)으로 둔다.
+    if (event.deliveryStatus === 'ready') {
+      const honorific = checkHonorific(parsed.reply);
+      if (!honorific.ok) {
+        event.deliveryStatus = 'held';
+        event.honorificHold = { reason: holdReason(honorific), problems: honorific.problems.slice(0, 5) };
+      }
+    }
     event.completedAt = now();
     event.updatedAt = event.completedAt;
     current.updatedAt = event.updatedAt;

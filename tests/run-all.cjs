@@ -46,6 +46,7 @@ const suites = [
   ['빈 요청(화면 로딩 전) 거절', 'tests/empty-request-guard.cjs'],
   ['요청봇 카드 키 겹침 방지', 'tests/request-bot-card-key.cjs'],
   ['고객응대실 합치기 (Astra→Claude→정해진 문구, 가짜 호출)', 'tests/customer-room-fallback.cjs'],
+  ['채팅봇 존댓말 필수', 'tests/honorific-guard.cjs'],
   ['알림방 같은 이상 중복 방지', 'tests/attention-dedupe.cjs'],
   ['깔때기 숫자에서 자체 점검 기록 제외', 'tests/funnel-synthetic-filter.cjs'],
   ['견적 발송 결과 미기록 알림', 'tests/quote-result-missing.cjs'],

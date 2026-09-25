@@ -35,6 +35,7 @@ const codexTranslation = require('./codex-subtitle-translation');
 const selfRestart = require('./self-restart');
 const linkInspector = require('./link-inspector');
 const replyGuards = require('./reply-guards');
+const honorificGuard = require('./honorific-guard');
 const attachmentReader = require('./attachment-reader');
 const quoteReviewAttention = require('./quote-review-attention');
 const productionHold = require('./production-hold');
@@ -9313,6 +9314,11 @@ async function route(req, res) {
         : linkReply || attachmentReply || judgeReply || humanViaClaude || (isSoomgoEmergencySignal(replyBody, deterministicReply)
           ? await invokeSoomgoEmergencyAstra(replyBody, deterministicReply)
           : await conversationalSoomgoReply(replyBody, deterministicReply));
+      // 9/25 준희 지시: 채팅봇은 무조건 존댓말. 반말 문장이 있으면 보내지도 예약하지도 않고 사람 확인으로 넘긴다.
+      if (reply && reply.text && !reply.skip) {
+        const honorific = honorificGuard.checkHonorific(reply.text);
+        if (!honorific.ok) reply = { ...reply, autoSend: false, manualReview: true, attention: true, honorificHold: { problems: honorific.problems.slice(0, 5) }, reason: honorificGuard.holdReason(honorific) };
+      }
       // 9/24 지시 28: 안부 멘트는 견적을 읽은 뒤 2~4시간(밤 12시~아침 8시면 아침 8시~9시 30분), 정해진 문구 답장도 1분 30초~4분 뒤에 나간다.
       try {
         if (body.quoteReadFollowup === true && reply.autoSend && reply.text && !reply.skip) {

@@ -5,5 +5,9 @@
   "description": "Relay Desk single-writer server and read-only viewer",
   "scripts": {
     "start": "node server/relay-server.js"
+  },
+  "dependencies": {
+    "jszip": "^3.10.2",
+    "pptxgenjs": "^4.0.1"
   }
 }
