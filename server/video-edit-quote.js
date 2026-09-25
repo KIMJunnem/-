@@ -197,7 +197,8 @@ function autoQuoteMessage(parsed = {}, priced = {}, decision = {}, opts = {}) {
   if (opts.variant === 'B') lines.push('원하시는 완성 날짜만 알려주시면 바로 일정 잡아드릴 수 있습니다!');
   // 샘플 영상 링크(유튜브 일부공개). services/video_edit.json quoteCopy.sampleUrl이 있을 때만
   const sampleUrl = String(def.quoteCopy?.sampleUrls?.[videoType(parsed)] || def.quoteCopy?.sampleUrl || '').trim();
-  if (/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//.test(sampleUrl)) lines.push(`작업 예시 영상: ${sampleUrl}`);
+  // 9/25: Descript 일부공개 링크도 허용
+  if (/^https:\/\/(?:(?:www\.)?(?:youtube\.com|youtu\.be)|share\.descript\.com)\//.test(sampleUrl)) lines.push(`작업 예시 영상: ${sampleUrl}`);
   return lines.join(' ');
 }
 
