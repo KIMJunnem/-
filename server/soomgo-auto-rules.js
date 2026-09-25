@@ -91,13 +91,15 @@ function attachVideoEditQuote(quote, request, ctx = {}) {
     if (decision.reason !== 'switch_off') quote.reason = `${quote.reason || ''} · 영상 편집 자동 견적 안 함(${decision.reason}) — 준희 확인`.replace(/^ · /, '');
     return;
   }
-  const version = video.DEFINITION?.autoQuote?.messageVersion || 'auto-v1';
+  // 9/25 준희 "다 필요할 듯": 견적 문구 A/B 시험. 요청 번호로 반반 나눠(같은 요청은 늘 같은 판) 통계 byQuoteVersion으로 비교
+  const variant = video.abVariant(ctx.requestId);
+  const version = `${video.DEFINITION?.autoQuote?.messageVersion || 'auto-v1'}${variant === 'B' ? '-B' : ''}`;
   // 9/24 지시 25: 끝이 열린 길이는 상한 금액·3~4일로(계산값 대신)
   if (decision.override) Object.assign(quote, { amount: decision.override.amount, regularAmount: decision.override.amount, originalAmount: decision.override.amount, days: decision.override.days });
   if (decision.excludedMixed) quote.videoEdit.excludedMixed = true;
   Object.assign(quote, {
     serviceId: 'video_edit',
-    message: video.autoQuoteMessage(request, priced, decision),
+    message: video.autoQuoteMessage(request, priced, decision, { variant }),
     quoteMessageId: `video_edit.quote.${version}`, quoteMessageVersion: version, messageId: `video_edit.quote.${version}`, messageVersion: version,
     autoSend: true, manualReview: false, reason: null, unsupportedService: null,
     autoRule: { ruleId: 'video_edit_auto', action: 'quote', category: '영상 편집' }

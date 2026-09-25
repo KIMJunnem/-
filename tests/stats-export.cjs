@@ -29,7 +29,9 @@ const state = {
     { conversationId: '235777001', createdAt: at, incoming: '010-1234-5678 로 연락주세요 비밀대화', reply: { templateKey: 'hire_ready', autoSend: true, agreedAmount: 62000 } },
     { conversationId: '235777002', createdAt: at, incoming: '결제했어요', reply: { templateKey: 'astra_room_pending', paymentCheck: true, honorificHold: { problems: [{ sentence: '반말문장' }] } } }
   ],
-  jevGateLog: [{ at, choice: 'thanks', action: 'thanks', called: true }]
+  jevGateLog: [{ at, choice: 'thanks', action: 'thanks', called: true }],
+  botStatus: { chat: { at: now - 45 * 60000, status: '채팅 확인 오류 · Resource::kQuotaBytes quota exceeded 홍길순' }, request: { at: now - 60000, status: '정상' } },
+  soomgoWorkflows: [{ id: 'WF-1', stage: 'payment_requested', updatedAt: new Date(now - 130 * 60000).toISOString() }, { id: 'WF-TEST-2', stage: 'x', updatedAt: at }]
 };
 const stateFile = path.join(tmp, 'state.json');
 fs.writeFileSync(stateFile, JSON.stringify(state));
@@ -48,6 +50,10 @@ assert.strictEqual(stats.extra.paymentClaims, 1);
 assert.strictEqual(stats.extra.honorificHeld, 1);
 assert.strictEqual(stats.extra.jevGate['thanks:thanks'], 1);
 assert.strictEqual(stats.funnel, null, '서버 꺼짐이면 깔때기 없음');
+assert.ok(stats.extra.botHealth.chat.minutesSinceHeartbeat >= 44 && stats.extra.botHealth.chat.errorWord === true);
+assert.strictEqual(stats.extra.botHealth.request.errorWord, false);
+assert.deepStrictEqual(stats.extra.workflows.byStage, { payment_requested: 1 });
+assert.ok(stats.extra.workflows.oldestStuckMinutes >= 129);
 for (const secret of ['홍길순', '비밀', '010-1234', '235777', '9999111', '반말문장']) assert.ok(!text.includes(secret), `새면 안 됨: ${secret}`);
 sh(['show', `relay-stats:stats/${stats.kstDay}.json`], origin);
 // 두 번째는 앞 커밋 위에 쌓인다. 이 PC의 브랜치·작업 파일은 그대로
