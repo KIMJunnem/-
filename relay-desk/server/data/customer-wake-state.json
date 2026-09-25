@@ -1,0 +1,230 @@
+{
+  "version": 1,
+  "sources": {
+    "list": {
+      "platform": "soomgo",
+      "at": 1790222761811,
+      "url": "https://soomgo.com/pro/chats",
+      "health": "observing",
+      "rowCount": 20,
+      "maxMessageId": 0,
+      "baselineReady": true
+    },
+    "room-235981692": {
+      "platform": "soomgo",
+      "at": 1790220712972,
+      "url": "https://soomgo.com/pro/chats/235981692",
+      "health": "observing",
+      "rowCount": 4,
+      "maxMessageId": 2237945790,
+      "baselineReady": true
+    }
+  },
+  "rows": {
+    "soomgo:235970286:list": {
+      "signature": "56486f4c4c2bfef54ab2576aa35f9cda2c3ca33c8ff6dff516a765b015b81a9b",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "오전 09:36",
+      "at": 1790222761811
+    },
+    "soomgo:235758730:list": {
+      "signature": "16c5072325aa123cfb739ca30692cba18da3ba7692ce4851cc2cbf28861b40b8",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "오전 07:49",
+      "at": 1790222761811
+    },
+    "soomgo:235755654:list": {
+      "signature": "fb37ffe5703288ccf252ce627019f3469888c9ea2e19c4271719ac72cdb36666",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "오전 06:54",
+      "at": 1790222761811
+    },
+    "soomgo:235963246:list": {
+      "signature": "87e8be72123235e33b9d2e8d63ce4f1b44d9ddf13857ea760358dd85a4d08546",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "오전 06:44",
+      "at": 1790222761811
+    },
+    "soomgo:235953314:list": {
+      "signature": "56486f4c4c2bfef54ab2576aa35f9cda2c3ca33c8ff6dff516a765b015b81a9b",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "오전 05:21",
+      "at": 1790222761811
+    },
+    "soomgo:235751111:list": {
+      "signature": "10b08aa5678d9dbd24531f49d2b0acf4d4ac69cc846e28e5f5522dd3c2faad0e",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "오전 01:16",
+      "at": 1790222761811
+    },
+    "soomgo:235952601:list": {
+      "signature": "d723972df6498bf6900361e02de576b1c1091f5f8a2cc032f7dc565e4fe08983",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235738234:list": {
+      "signature": "d9b878e98d3af521b29e23acb7bb05580390382f94c81d217e9e4c6b2595a2f5",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235736467:list": {
+      "signature": "16c5072325aa123cfb739ca30692cba18da3ba7692ce4851cc2cbf28861b40b8",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235946402:list": {
+      "signature": "6e70519669eed5ddec8c2ff066be11f1e62887eba4d2256b44a6b8b0931acb46",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235725428:list": {
+      "signature": "16c5072325aa123cfb739ca30692cba18da3ba7692ce4851cc2cbf28861b40b8",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235747088:list": {
+      "signature": "b89d1ec57ded0020e3a3e60a59ad04ebd787e12df99c3a3047d39ba31cb9ddaa",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235721251:list": {
+      "signature": "16c5072325aa123cfb739ca30692cba18da3ba7692ce4851cc2cbf28861b40b8",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235940800:list": {
+      "signature": "23e95a905da5f68ef80c81079cb90d4f6285ae4245bdd30d29a8f4e26edcd143",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235890999:list": {
+      "signature": "56486f4c4c2bfef54ab2576aa35f9cda2c3ca33c8ff6dff516a765b015b81a9b",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235932543:list": {
+      "signature": "6329ae9aeea344e413ca036056da8b8fac47ae1a269e243144ce2ba07e2a9bcf",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235929088:list": {
+      "signature": "6ff49fd1ed947506552f6297365d7dff4d221683b117b9b15d8c3f093937ddf6",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235927834:list": {
+      "signature": "ccabee1e87a66c0ae1bc406c93aaab574761b822ebe2fcd3d267691b9fe44702",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222761811
+    },
+    "soomgo:235919723:list": {
+      "signature": "7a5c45ddedb9babed137a1350a3373cd80a8b921e2a0388aa76d26fa7bf883d2",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790222581821
+    },
+    "soomgo:235671978:list": {
+      "signature": "16c5072325aa123cfb739ca30692cba18da3ba7692ce4851cc2cbf28861b40b8",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790220541770
+    },
+    "soomgo:235981692:list": {
+      "signature": "7a39e2ac2df91db358d03c9664c1d8272c1233478dc070b19c55b4497b06c533",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "오후 12:30",
+      "at": 1790222761811
+    },
+    "soomgo:235981692:detail:message-2237941862": {
+      "signature": "203aeef159bf0bf507f2f9e4369a1c89e9b0a033ff73b38d4242752ff394be63",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790220712972
+    },
+    "soomgo:235981692:detail:message-2237941865": {
+      "signature": "a5f326f5330a5bcd88a18fcd0cfac227c56ea2d73026ad4fdbfa9f0872978693",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790220712972
+    },
+    "soomgo:235981692:detail:message-2237944513": {
+      "signature": "2521e4db8506939e2c8d4e2ac8e51567cdfc9f14a3db2d6ab1824bd443e1fc6b",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790220712972
+    },
+    "soomgo:235981692:detail:message-2237945790": {
+      "signature": "d9ef8f6bf5b5ca96ef1c2753981eb9efb8a3c5bffc9463d81c3e655a04f164c2",
+      "unread": false,
+      "unreadCount": 0,
+      "clock": "",
+      "at": 1790220712972
+    },
+    "soomgo:235796919:list": {
+      "signature": "b89d1ec57ded0020e3a3e60a59ad04ebd787e12df99c3a3047d39ba31cb9ddaa",
+      "unread": true,
+      "unreadCount": 1,
+      "clock": "",
+      "at": 1790222761811
+    }
+  },
+  "events": {
+    "deef1c38eefb63f3883dd4f62bbefa8cc0fd6a836f445cb9f31e115fe9307c97": {
+      "id": "deef1c38eefb63f3883dd4f62bbefa8cc0fd6a836f445cb9f31e115fe9307c97",
+      "platform": "soomgo",
+      "conversationId": "235981692",
+      "messageId": null,
+      "kind": "review_needed",
+      "preview": "손영교 님이 채팅방을 나갔습니다.",
+      "status": "no_action",
+      "detectedAt": 1790220638772,
+      "notBefore": 1790220643772,
+      "url": "https://soomgo.com/pro/chats/235981692",
+      "sourceId": "list",
+      "attemptedAt": 1790220644004,
+      "queueReceipt": "01a0d177-2fd7-74b2-a881-b1ef4b05be96",
+      "handledAt": 1790220716716
+    }
+  },
+  "outgoing": {
+    "235981692:db240819f5e2847e912a54c8469486a24b8f2594954529340c731eec035f1b21": 1790220712972,
+    "235981692:c2dbdb500aed87a2a07a6febd2269ece33c5100f744c70e1119639180b2fc5ba": 1790220712972
+  },
+  "lastDispatchAt": 1790220644004
+}

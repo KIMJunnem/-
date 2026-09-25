@@ -1,0 +1,42 @@
+{
+  "documentPages": 2,
+  "beforePages": 1,
+  "slideCount": 4,
+  "subtitleBlocks": [
+    {
+      "id": 1,
+      "start": 0.42,
+      "end": 1.98,
+      "cps": 8.33
+    },
+    {
+      "id": 2,
+      "start": 3.07,
+      "end": 6.3,
+      "cps": 6.5
+    },
+    {
+      "id": 3,
+      "start": 8.76,
+      "end": 9.65,
+      "cps": 5.62
+    },
+    {
+      "id": 4,
+      "start": 14.12,
+      "end": 16.55,
+      "cps": 8.23
+    },
+    {
+      "id": 5,
+      "start": 18.31,
+      "end": 20.8,
+      "cps": 6.83
+    }
+  ],
+  "videoDecodeErrors": "",
+  "externalPaidApiCalls": 0,
+  "nativeWordPowerPointTested": false,
+  "phonePlaybackTested": false,
+  "independentTranscription": "medium CPU int8, script not provided, all 5 dialogue groups recovered; word timestamps approximate, not exact sync proof"
+}

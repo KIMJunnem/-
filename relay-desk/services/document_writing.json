@@ -1,0 +1,244 @@
+{
+  "id": "document_writing",
+  "label": "일반 문서·글 작성",
+  "priority": 10,
+  "matchKeywords": [
+    "일반\\s*문서\\s*작성",
+    "문서\\s*[·/]?\\s*글\\s*작성",
+    "문서\\s*작성",
+    "글\\s*작성",
+    "보고서",
+    "리포트",
+    "원고",
+    "에세이",
+    "감상문",
+    "소개서",
+    "블로그",
+    "카페"
+  ],
+  "excludeKeywords": [
+    "자막",
+    "srt",
+    "vtt",
+    "caption",
+    "subtitle",
+    "ppt",
+    "pptx",
+    "파워포인트",
+    "프레젠테이션",
+    "발표\\s*자료",
+    "슬라이드",
+    "번역",
+    "영어",
+    "영문"
+  ],
+  "pricing": {
+    "workTypes": {
+      "_note": "2026-09-21 사용자 지시로 시세보다 조금 낮게 설정. 근거는 server/pricing-table.js 머리말 참고",
+      "writing": {
+        "label": "문서 작성",
+        "base": 21000,
+        "includedPages": 2,
+        "perPage": 9000
+      },
+      "formatting": {
+        "label": "문서 양식·편집 정리",
+        "base": 15000,
+        "includedPages": 5,
+        "perPage": 1500
+      },
+      "proofreading": {
+        "label": "교정·교열·윤문",
+        "base": 21000,
+        "includedPages": 4,
+        "perPage": 5000
+      },
+      "stenography": {
+        "label": "녹취 타이핑(속기)",
+        "base": 21000,
+        "includedMinutes": 10,
+        "perMinute": 1800
+      }
+    },
+    "base": 24000,
+    "packages": [
+      {
+        "when": {
+          "default": true
+        },
+        "regularAmount": 24000,
+        "saleAmount": 21000,
+        "scope": "제공 자료 기반 A4 2쪽 이내·내용 정리·문장 작성·수정 3회"
+      }
+    ],
+    "additionalFees": [
+      {
+        "id": "extra_1000_chars_or_a4_page",
+        "amount": 9000,
+        "_note": "9/23 준희 결정, 이전 10,000(숨고 계산 추가 1쪽 9,000원에 맞춤)"
+      },
+      {
+        "id": "research",
+        "amount": 10000,
+        "_note": "2026-09-22 준희 결정: 자료조사 추가금 문서·PPT 모두 10,000원 고정"
+      },
+      {
+        "id": "revision",
+        "amount": 10000
+      }
+    ],
+    "launchDiscountRate": 0.3,
+    "launchDiscountAppliesTo": "fallbackOnly",
+    "minimumAmount": 15000,
+    "largeDocument": {
+      "_note": "D' 2026-09-21 사용자 승인: 40쪽 초과분은 쪽당 3,500원, 100쪽 초과는 자동 삭제. 양식 정리(formatting)는 쪽당 1,500원 유지",
+      "minPages": 40,
+      "perPageAbove": 3500,
+      "deleteAbovePages": 100,
+      "appliesToTypes": [
+        "writing",
+        "proofreading"
+      ]
+    },
+    "foreignProofreading": {
+      "_note": "D' 2026-09-21 사용자 승인: 영어만 자동 견적, 영어 외 언어는 자동 삭제",
+      "languages": "영어|영문|english",
+      "base": 34000,
+      "includedPages": 4,
+      "perPage": 8000,
+      "deleteAbovePages": 100,
+      "otherLanguages": "delete"
+    }
+  },
+  "leadDaysRules": [
+    {
+      "when": {
+        "pagesGte": 6
+      },
+      "value": "1~2일"
+    },
+    {
+      "when": {
+        "isSubmission": true
+      },
+      "value": "1~2일"
+    },
+    {
+      "default": true,
+      "value": "당일~1일"
+    }
+  ],
+  "intakeQuestions": [
+    "어디에 사용할 문서인지 먼저 알려주세요.",
+    "분량은 어느 정도일까요? 글자 수나 A4 쪽수로 알려주세요.",
+    "원자료의 분량과 결과물 용도, 원하시는 마감일을 알려주세요.",
+    "원하시는 파일 형식과 마감일도 알려주세요."
+  ],
+  "quoteText": "보내주신 자료를 기준으로 한 문서 작성 금액은 {{amountFormatted}}원입니다. {{naturalScope}} 별도 자료 조사와 새 내용 추가는 포함되지 않습니다. 결제는 숨고페이로 진행하고, 결과물을 확인하신 뒤 거래를 확정하시면 됩니다.",
+  "quoteMessageVersion": "v8",
+  "includedRevisions": 3,
+  "scope": "기본 포함 범위: 요청하신 {{label}} 1건을 보내주신 자료 중심으로 작업하고, 수정 {{revisionCount}}회를 포함합니다.",
+  "scopeRules": [
+    {
+      "when": {
+        "hasPageScope": true
+      },
+      "value": "기본 포함 범위: {{pages}}쪽 이내를 보내주신 자료 중심으로 정리·작성하고, 수정 {{revisionCount}}회를 포함합니다."
+    },
+    {
+      "default": true,
+      "value": "기본 포함 범위: 요청하신 {{label}} 1건을 보내주신 자료 중심으로 작업하고, 수정 {{revisionCount}}회를 포함합니다."
+    }
+  ],
+  "optionLines": [
+    "문서 작성 · A4 2쪽까지 21,000원, 추가 1쪽마다 9,000원 · 수정 3회",
+    "교정·교열 · A4 4쪽까지 21,000원, 추가 1쪽마다 5,000원 · 수정 3회",
+    "녹취 타이핑 · 10분까지 21,000원, 추가 1분마다 1,800원 · 수정 3회"
+  ],
+  "extraScope": "추가금 기준: 기본 범위를 넘는 작업은 범위와 금액을 먼저 안내하고 동의 후 진행합니다.",
+  "nextQuestion": "원하시는 분량과 마감일을 알려주실 수 있을까요?",
+  "deliverFormats": [
+    "docx",
+    "hwp",
+    "pdf"
+  ],
+  "qualityChecks": [
+    {
+      "id": "doc_open",
+      "blocking": true
+    },
+    {
+      "id": "doc_length",
+      "blocking": true
+    }
+  ],
+  "soomgoAutoQuote": false,
+  "_soomgoAutoQuoteNote": "decisions 7-13(9/24 준희 \"응\"): 숨고 문서/글 작성·교정/교열(대본·시나리오 포함) 요청에는 자동 견적을 보내지 않고 삭제도 하지 않는다. 켜기·끄기는 doc-quote-on/off.bat(scripts/soomgo-quote-switch.cjs)만. 크몽·이미 견적 보낸 채팅방 응대는 그대로",
+  "channels": {
+    "soomgo": true,
+    "kmong": true
+  },
+  "migrationNotes": [
+    "기존 SOOMGO_FIXED_QUOTE_PRICES의 blog 키는 3단계 제거 대상"
+  ],
+  "reviewCriteria": [
+    "요구사항·자료 대조",
+    "사실·근거·논리 검토",
+    "수치·계산·출처 재확인",
+    "파일·데이터 무결성 및 결과 형식 확인",
+    "문장·구성·중복·가독성 편집 검수",
+    "참고자료·고객 지시·브랜드 톤 반영 검수",
+    "보안·개인정보·위조·표절 위험 검수",
+    "실행 가능성·납품 절차·추가금 조건 검수",
+    "독립 최종 검수: 누락·모순·계산·형식·오탈자 확인"
+  ],
+  "followupMessages": [
+    {
+      "id": "document_writing.followup.material_status_a.v1",
+      "version": "v2",
+      "text": "현재 자료는 어느 정도 준비되어 있으신가요? 편하게 알려주세요."
+    },
+    {
+      "id": "document_writing.followup.material_status_b.v1",
+      "version": "v1",
+      "text": "자료는 ① 준비됨 ② 정리 필요 ③ 아직 없음 중 어느 상태인가요? 숫자만 보내주셔도 됩니다."
+    }
+  ],
+  "soomgoCategories": [
+    {
+      "name": "문서/글 작성",
+      "match": "^문서\\s*[/·]?\\s*글\\s*작성$"
+    },
+    {
+      "name": "교정/교열",
+      "match": "^교정\\s*[/·]?\\s*교열$",
+      "foreignLanguage": {
+        "action": "auto_rules",
+        "reason": "외국어 교정 — 영어는 영어 교정 단가로 자동 견적, 그 외 언어는 자동 삭제",
+        "languageFields": [
+          "작성\\s*언어",
+          "문서\\s*언어",
+          "언어"
+        ],
+        "koreanValues": "한국어|한글|국문|korean",
+        "foreignHints": "영문|영어|english|외국어|일본어|일문|중국어|중문|japanese|chinese"
+      }
+    },
+    {
+      "name": "속기(타이핑)",
+      "match": "^속기\\s*(?:\\(\\s*타이핑\\s*\\)|[/·]?\\s*타이핑)?$"
+    },
+    {
+      "name": "보고서",
+      "match": "^보고서$"
+    },
+    {
+      "name": "대본/시나리오",
+      "match": "^대본\\s*[/·]?\\s*시나리오$",
+      "_note": "2026-09-23 준희 결정: 판매. 대본·시나리오는 자동 견적하지 않고 견적 판단 알림으로 준희가 가격을 정한다(scriptRequest)."
+    }
+  ],
+  "soomgoPurposeFallback": "속기|타이핑|녹취|교정|교열|윤문",
+  "schoolAssignmentRevisions": 2,
+  "_schoolAssignmentNote": "2026-09-22 준희 결정: 학교 과제는 교수 확인에 따라 자주 바뀌므로 기본 수정 2회, 3번째부터 추가 수정 요금(pricing.additionalFees revision)"
+}

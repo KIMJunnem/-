@@ -1,0 +1,70 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {createRequire} from 'node:module';
+import {Presentation,PresentationFile,FileBlob} from '@oai/artifact-tool';
+const B=path.dirname(fileURLToPath(import.meta.url)),R=path.dirname(B),O=path.join(R,'ready');
+const SK='C:/Users/vdfr7/.codex/plugins/cache/openai-primary-runtime/presentations/26.905.11957/skills/presentations';
+const PY='C:/Users/vdfr7/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe';
+const p=Presentation.create({slideSize:{width:1280,height:720}});let n=0;
+function txt(s,text,x,y,w,h,size=28,bold=false,color='#111111'){
+ const q=s.shapes.add({name:'copy-'+(++n),geometry:'textbox',position:{left:x,top:y,width:w,height:h},fill:'none',line:{fill:'none',width:0}});
+ q.text=text;q.text.style={typeface:'Pretendard',fontSize:size,bold,color,autoFit:'none'};return q;
+}
+function slide(i,section,dark=false){
+ const s=p.slides.add();s.background.fill=dark?'#111111':'#FFFFFF';
+ txt(s,section,64,35,900,32,18,true,dark?'#BBBBBB':'#555555');
+ txt(s,'swan · SAMPLE',915,651,310,38,28,true,dark?'#777777':'#B6B6B6');
+ txt(s,'자체 제작 운영 설계 · 실제 성과 분석 아님',64,665,770,22,14,false,dark?'#AAAAAA':'#666666');
+ txt(s,String(i).padStart(2,'0'),1160,36,65,32,18,false,dark?'#BBBBBB':'#777777');
+ s.speakerNotes.textFrame.setText('출처: Swan_Professional_Report.docx. 자체 제작 운영 설계 샘플이며 실제 고객 실적이나 검증된 전환 성과가 아니다. 가상 수치는 설명용이다. 측정 원칙 참고: https://www.gov.uk/service-manual/measuring-success/measuring-completion-rate (2021-02-19). 기간·절차·실험안은 본 보고서의 제안이다.');return s;
+}
+function heading(s,t){txt(s,t,61,117,1158,122,48,true);}
+let s=slide(1,'OPERATIONS BRIEF  /  2026.09',true);
+txt(s,'고객 문의에서\n결제까지',60,182,1130,220,76,true,'#FFFFFF');
+txt(s,'디지털 제작 서비스의 상담 전환 개선안',67,471,1140,62,34,true,'#FFFFFF');
+txt(s,'측정 기준 · 고객 응대 · 샘플 제공 실험',67,555,1100,40,24,false,'#BBBBBB');
+s=slide(2,'01  /  PRIORITY');heading(s,'가격을 바꾸기 전에\n어느 단계에서 멈추는지 확인한다');
+const cols=[['01','응대 누락','고객의 실제 질문을 먼저 찾고\n답변 발송까지 확인한다.','증거: 질문·답변 시각'],['02','결과물 이해','요청과 가장 가까운 샘플 1개로\n입력과 결과를 보여준다.','증거: 샘플·검수 기록'],['03','결제 전 불확실성','총액·납기·수정 범위를\n합의한 뒤 결제를 안내한다.','증거: 범위 동의·결제 확인']];
+cols.forEach((v,i)=>{const x=66+i*402;txt(s,v[0],x,302,350,42,28,false,'#888888');txt(s,v[1],x,367,370,52,32,true);txt(s,v[2],x,452,370,85,24);txt(s,v[3],x,575,370,35,18,false,'#555555');});
+s=slide(3,'02  /  MEASUREMENT');heading(s,'전체 견적 대비 결제율을\n주지표로 둔다');
+txt(s,'가상 계산 사례 · 실제 swan 실적 및 업계 평균 아님',66,245,1120,30,18,false,'#666666');
+const values=[['단계','건수','직전 단계 대비','전체 견적 대비'],['발송 확인','120','—','100.0%'],['읽음 관측','72','60.0%','60.0%'],['실제 고객 문의','18','25.0%','15.0%'],['범위 동의','12','66.7%','10.0%'],['결제 확인','6','50.0%','5.0%']];
+const t=s.tables.add({rows:6,columns:4,left:66,top:297,width:1145,height:270,columnWidths:[405,180,290,270],values});
+t.borders.assign({fill:'#FFFFFF',width:0});
+t.cells.block({row:0,column:0,rowCount:6,columnCount:4}).assign({fill:'#FFFFFF',textStyle:{typeface:'Pretendard',fontSize:23,color:'#222222'},margins:{left:12,right:10,top:6,bottom:6}});
+t.cells.block({row:0,column:0,rowCount:1,columnCount:4}).assign({fill:'#111111',textStyle:{typeface:'Pretendard',fontSize:21,bold:true,color:'#FFFFFF'}});
+t.cells.block({row:5,column:0,rowCount:1,columnCount:4}).assign({fill:'#F1F1F1',textStyle:{typeface:'Pretendard',fontSize:23,bold:true,color:'#111111'}});
+txt(s,'같은 집단을 같은 기간 관찰한다.  단계별 순서를 모두 거친 가상 사례다.',66,596,1140,30,20,false,'#555555');
+s=slide(4,'03  /  INTERPRETATION');heading(s,'낮은 전환율은 관찰 결과다.\n원인을 단정하는 근거는 아니다.');
+txt(s,'측정할 것',66,304,505,55,32,true);txt(s,'고객·요청별 첫 견적을 기준으로 집계\n시스템 알림과 실제 답장을 분리\n결제 확인과 결제 의향을 구분',66,397,535,140,26);
+txt(s,'분리해 볼 것',685,304,500,55,32,true);txt(s,'읽음 미관측 ≠ 미열람\n관찰 기간 미경과 ≠ 미결제 확정\n결제액 ≠ 비용을 뺀 순이익',685,397,525,140,26);
+txt(s,'문의 누락과 기록 오류를 먼저 확인한 뒤, 고객 대화로 원인 가설을 좁힌다.',66,581,1148,40,23,true);
+s=slide(5,'04  /  CUSTOMER RESPONSE');heading(s,'고객이 묻는 일정부터 답한다');
+txt(s,'원본을 받기 전 · 응대 예시',66,266,1110,35,22,false,'#666666');
+txt(s,'“원본 분량을 아직 못 봐서 완료 시각은\n파일을 확인한 뒤 말씀드릴게요.\n보고서와 필요한 슬라이드 수, 발표 시간을 보내주시면\n가능한 일정부터 먼저 확인하겠습니다.”',66,335,1140,188,31,true);
+txt(s,'이미 가능한 일정을 확인했다면 그 일정을 첫 문장에 제시한다.\n받은 자료를 다시 요청하거나, 확인하지 않은 당일 납품을 약속하지 않는다.',66,567,1140,66,22,false,'#555555');
+s=slide(6,'05  /  EXPERIMENT');heading(s,'샘플 제공의 효과는\n한 변수만 바꿔 비교한다');
+txt(s,'A',66,288,460,60,42,true);txt(s,'기존 견적',66,367,495,54,32,true);
+txt(s,'B',690,288,460,60,42,true);txt(s,'같은 견적 + 관련 샘플 1개',690,367,510,90,30,true);
+txt(s,'같은 서비스 안에서 고객 단위 무작위 배정\n가격·범위·후속 연락 정책은 동일하게 유지',66,472,1120,82,26);
+txt(s,'주지표: 견적 발송 후 7일 이내 결제 확인 비율\n7일은 이 샘플의 제안이다. 표본수·종료 기준은 실험 전에 별도로 확정한다.',66,573,1135,61,21,false,'#555555');
+s=slide(7,'06  /  EXECUTION',true);
+txt(s,'샘플은 약속을 보여주고,\n검수는 그 약속을 지킨다.',63,127,1160,150,54,true,'#FFFFFF');
+const row=[['운영','미답변·중복·실패 발송 점검'],['제작','샘플과 실제 제공 범위의 일치 확인'],['검수','내용·파일 열림·전 페이지 시각 확인'],['책임자','성숙 표본과 비용을 보고 다음 변경 1개 결정']];
+row.forEach((v,i)=>{txt(s,v[0],67,324+i*66,150,42,25,true,'#FFFFFF');txt(s,v[1],248,324+i*66,945,45,26,false,'#DDDDDD');});
+txt(s,'잘못된 금액·깨진 링크·응대 누락이 나오면 해당 자동 안내를 중단한다.',67,611,1140,32,20,false,'#BBBBBB');
+const raw=path.join(B,'candidate.pptx');await(await PresentationFile.exportPptx(p)).save(raw);
+const {embedFonts}=await import('file:///C:/Users/vdfr7/Documents/Codex/relay-desk-site/server/pptx-embed-fonts.js');
+const candidate=path.join(B,'candidate-embedded.pptx');await embedFonts({src:raw,out:candidate});
+const JSZip=createRequire('file:///C:/Users/vdfr7/Documents/Codex/relay-desk-site/server/pptx-embed-fonts.js')('jszip');
+const z=await JSZip.loadAsync(await fs.readFile(candidate));let xml=await z.file('ppt/presentation.xml').async('string');
+if(!/<p:presentation\b[^>]*xmlns:r=/.test(xml))xml=xml.replace('<p:presentation ','<p:presentation xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ');
+z.file('ppt/presentation.xml',xml);await fs.writeFile(candidate,await z.generateAsync({type:'nodebuffer',compression:'DEFLATE'}));
+const {finalizePresentation}=await import(pathToFileURL(path.join(SK,'container_tools/artifact_tool_utils.mjs')));
+const final=path.join(O,'Swan_Professional_Presentation_v2.pptx');
+const result=await finalizePresentation({workspaceDir:R,candidatePath:candidate,finalPath:final,pythonExecutable:PY,integrityValidatorPath:path.join(SK,'container_tools/inspect_presentation_package_integrity.py'),layoutValidatorPath:path.join(SK,'container_tools/inspect_presentation_layout_geometry.py'),layoutArgs:['--expected-slide-size-emu','12192000,6858000','--validate-bullet-geometry','--validate-heading-fit','--require-native-table-slide','3'],explicitTotalSlideCount:7,requiredNativeTableOwnerSlides:[3],fontPolicy:{basis:'design',families:['Pretendard']},verifyArtifactToolImport:true,receiptPath:path.join(B,'deck-validation-v2.json')});
+console.log(JSON.stringify(result));
+const fin=await PresentationFile.importPptx(await FileBlob.load(final));await fs.mkdir(path.join(B,'slides-v2'),{recursive:true});
+for(let i=0;i<fin.slides.items.length;i++){const img=await fin.export({slide:fin.slides.items[i],format:'png',scale:1});await fs.writeFile(path.join(B,'slides-v2',`slide-${i+1}.png`),new Uint8Array(await img.arrayBuffer()));}
+console.log('7 slides rendered');

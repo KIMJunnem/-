@@ -1,0 +1,17 @@
+{
+  "server": "http://127.0.0.1:8787",
+  "pollMs": 3000,
+  "extensions": [".txt", ".md", ".json", ".html", ".htm", ".csv", ".pdf", ".docx", ".zip"],
+  "folders": [
+    {
+      "path": "C:\\Users\\YOUR_NAME\\Downloads\\relay-openai",
+      "source": "OpenAI",
+      "recursive": true
+    },
+    {
+      "path": "C:\\Users\\YOUR_NAME\\Downloads\\relay-gemini",
+      "source": "Gemini",
+      "recursive": true
+    }
+  ]
+}

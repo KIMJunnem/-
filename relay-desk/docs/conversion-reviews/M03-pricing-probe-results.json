@@ -1,0 +1,67 @@
+{
+  "observedAt": "2026-09-23T17:17:20.043Z",
+  "syntheticInputs": true,
+  "externalCalls": 0,
+  "results": [
+    {
+      "id": "infographic",
+      "input": {
+        "id": "infographic",
+        "purpose": "인포그래픽 디자인",
+        "topic": "기관 연구과제의 간행물 인포그래픽 디자인",
+        "volume": "A4 기준 1",
+        "pages": 1
+      },
+      "type": "writing",
+      "amount": 21000,
+      "days": "당일~1일",
+      "schoolAssignment": true,
+      "includedRevisions": 2
+    },
+    {
+      "id": "existing-report-design",
+      "input": {
+        "id": "existing-report-design",
+        "purpose": "기술문서",
+        "topic": "기존 보고서를 좀더 보기 좋게 디자인",
+        "volume": "A4 기준 16",
+        "pages": 16
+      },
+      "type": "writing",
+      "amount": 147000,
+      "days": "2~3일",
+      "schoolAssignment": false,
+      "includedRevisions": 3
+    },
+    {
+      "id": "explicit-layout-control",
+      "input": {
+        "id": "explicit-layout-control",
+        "purpose": "기술문서",
+        "topic": "기존 보고서의 내용은 유지하고 레이아웃 편집",
+        "volume": "A4 기준 16",
+        "pages": 16
+      },
+      "type": "formatting",
+      "amount": 32000,
+      "days": "당일~1일",
+      "schoolAssignment": false,
+      "includedRevisions": 3
+    },
+    {
+      "id": "writing-control",
+      "input": {
+        "id": "writing-control",
+        "purpose": "브랜드 소개글",
+        "topic": "제공 자료로 소개글 작성",
+        "volume": "A4 기준 1",
+        "pages": 1
+      },
+      "type": "writing",
+      "amount": 21000,
+      "days": "당일~1일",
+      "schoolAssignment": false,
+      "includedRevisions": 3
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "file": "08_ko_Subtitle_60s.mp4",
+    "decode": "passed",
+    "captionCount": 14,
+    "allCaptionFrames": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260924-balanced\\build\\08_ko_Subtitle_60s\\all-captions.jpg",
+    "newListeningReview": false,
+    "timingEvidence": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\render-sync-verification.json"
+  },
+  {
+    "file": "08_fr_Subtitle_60s.mp4",
+    "decode": "passed",
+    "captionCount": 19,
+    "allCaptionFrames": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260924-balanced\\build\\08_fr_Subtitle_60s\\all-captions.jpg",
+    "newListeningReview": false,
+    "timingEvidence": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\render-sync-verification.json"
+  },
+  {
+    "file": "08_ja_Subtitle_60s.mp4",
+    "decode": "passed",
+    "captionCount": 13,
+    "allCaptionFrames": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260924-balanced\\build\\08_ja_Subtitle_60s\\all-captions.jpg",
+    "newListeningReview": false,
+    "timingEvidence": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\render-sync-verification.json"
+  },
+  {
+    "file": "08_zh_Subtitle_60s.mp4",
+    "decode": "passed",
+    "captionCount": 14,
+    "allCaptionFrames": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260924-balanced\\build\\08_zh_Subtitle_60s\\all-captions.jpg",
+    "newListeningReview": false,
+    "timingEvidence": "C:\\Users\\vdfr7\\Documents\\Codex\\2026-09-13\\37\\swan-samples-20260923\\multilingual-v2\\output\\render-sync-verification.json"
+  },
+  {
+    "file": "09_English_Korean_Compare_21s.mp4",
+    "decode": "passed",
+    "captionCount": 5,
+    "allCaptionFrames": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260924-balanced\\build\\09_English_Korean_Compare_21s\\all-captions.jpg",
+    "newListeningReview": false,
+    "timingEvidence": "C:\\Users\\vdfr7\\Documents\\Codex\\relay-desk-site\\docs\\samples\\20260923-proof\\ready\\verification.json"
+  }
+]

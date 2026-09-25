@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Relay Desk · 크몽 자동 상담",
+  "version": "0.1.3",
+  "description": "크몽 메시지와 결제 주문을 swan Relay Desk에 연결합니다.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://kmong.com/*",
+    "https://www.kmong.com/*",
+    "http://127.0.0.1:8787/*",
+    "http://localhost:8787/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://kmong.com/inboxes*",
+        "https://www.kmong.com/inboxes*",
+        "https://kmong.com/seller/order-list*",
+        "https://www.kmong.com/seller/order-list*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "auto-update.js"
+  },
+  "action": {
+    "default_title": "Relay Desk 크몽 자동 상담"
+  }
+}

@@ -1,0 +1,37 @@
+[
+  {
+    "file": "01_Writing_Brand_Article.pdf",
+    "pages": 2,
+    "watermarks": true,
+    "renderer": "reportlab PDF + bundled Poppler; not a DOCX rendering",
+    "docxStatus": "authoring draft only; not customer deliverable"
+  },
+  {
+    "file": "02_Proofreading_Before_After.pdf",
+    "pages": 2,
+    "watermarks": true,
+    "renderer": "reportlab PDF + bundled Poppler; not a DOCX rendering",
+    "docxStatus": "authoring draft only; not customer deliverable"
+  },
+  {
+    "file": "03_Formatting_Before_After.pdf",
+    "pages": 2,
+    "watermarks": true,
+    "renderer": "reportlab PDF + bundled Poppler; not a DOCX rendering",
+    "docxStatus": "authoring draft only; not customer deliverable"
+  },
+  {
+    "file": "04_Transcription_Interview.pdf",
+    "pages": 2,
+    "watermarks": true,
+    "renderer": "reportlab PDF + bundled Poppler; not a DOCX rendering",
+    "docxStatus": "authoring draft only; not customer deliverable"
+  },
+  {
+    "file": "05_Script_60s_Brand.pdf",
+    "pages": 2,
+    "watermarks": true,
+    "renderer": "reportlab PDF + bundled Poppler; not a DOCX rendering",
+    "docxStatus": "authoring draft only; not customer deliverable"
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "config": {
+    "paused": false,
+    "mode": "astra_room",
+    "accountName": "swan",
+    "updatedAt": "2026-09-19T09:34:08.535Z"
+  },
+  "heartbeat": {
+    "at": 1790310541762,
+    "status": "새 문의 대기",
+    "url": "https://kmong.com/inboxes?inbox_group_id=&partner_id=",
+    "accountName": "swan",
+    "stats": {
+      "detected": 0,
+      "drafted": 0,
+      "sent": 0,
+      "skipped": 0,
+      "uncertain": 0,
+      "orders": 0
+    }
+  },
+  "messages": [],
+  "orders": [],
+  "updatedAt": "2026-09-25T04:29:03.417Z"
+}

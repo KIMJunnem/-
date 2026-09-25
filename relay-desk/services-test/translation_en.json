@@ -1,0 +1,102 @@
+{
+  "id": "translation_en",
+  "label": "영어 번역",
+  "priority": 20,
+  "matchKeywords": [
+    "영어\\s*번역",
+    "영한",
+    "한영",
+    "영문",
+    "english\\s*translation",
+    "번역"
+  ],
+  "excludeKeywords": [
+    "자막",
+    "srt",
+    "vtt",
+    "caption",
+    "subtitle",
+    "ppt",
+    "pptx",
+    "파워포인트",
+    "프레젠테이션",
+    "발표\\s*자료",
+    "슬라이드"
+  ],
+  "pricing": {
+    "base": 26000,
+    "packages": [
+      {
+        "id": "translation_en_basic_test",
+        "regularAmount": 32000,
+        "saleAmount": 26000
+      }
+    ],
+    "additionalFees": [],
+    "launchDiscountRate": 0.3,
+    "minimumAmount": 15000
+  },
+  "pricingPending": false,
+  "leadDaysRules": [
+    {
+      "when": {
+        "pagesGte": 6
+      },
+      "value": "1~2일"
+    },
+    {
+      "when": {
+        "isSubmission": true
+      },
+      "value": "1~2일"
+    },
+    {
+      "default": true,
+      "value": "당일~1일"
+    }
+  ],
+  "intakeQuestions": [
+    "번역 방향이 영어→한국어인지 한국어→영어인지 알려주세요.",
+    "일반 문장, 업무·공식 문체, 전문 용어 포함 중 필요한 문체를 알려주세요."
+  ],
+  "quoteText": "",
+  "scope": "",
+  "nextQuestion": "원문과 원하는 결과 언어를 보내주세요.",
+  "deliverFormats": [
+    "docx"
+  ],
+  "qualityChecks": [
+    {
+      "id": "doc_open",
+      "blocking": true
+    },
+    {
+      "id": "doc_length",
+      "blocking": true
+    }
+  ],
+  "channels": {
+    "soomgo": true,
+    "kmong": true
+  },
+  "pricingEvidence": [
+    {
+      "source": "server/relay-server.js:2300",
+      "regularAmount": 32000,
+      "saleAmount": 26000,
+      "volumeBasis": null
+    },
+    {
+      "source": "server/relay-server.js:2920",
+      "base": 79000,
+      "volumeBasis": null
+    }
+  ],
+  "reviewCriteria": [
+    "원문 의미·용어집·고유명사 확인",
+    "문맥에 맞는 자연스러운 번역 확인",
+    "번역 용어의 문서 전체 일관성 확인",
+    "파일·데이터 무결성 및 결과 형식 확인",
+    "독립 최종 검수: 누락·모순·형식·오탈자 확인"
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "id": "translation_en",
+  "label": "영어 번역",
+  "priority": 20,
+  "matchKeywords": [
+    "영어\\s*번역",
+    "영한",
+    "한영",
+    "영문",
+    "english\\s*translation",
+    "번역"
+  ],
+  "excludeKeywords": [
+    "자막",
+    "srt",
+    "vtt",
+    "caption",
+    "subtitle",
+    "ppt",
+    "pptx",
+    "파워포인트",
+    "프레젠테이션",
+    "발표\\s*자료",
+    "슬라이드"
+  ],
+  "pricing": null,
+  "pricingPending": true,
+  "leadDaysRules": [
+    {
+      "when": {
+        "pagesGte": 6
+      },
+      "value": "1~2일"
+    },
+    {
+      "when": {
+        "isSubmission": true
+      },
+      "value": "1~2일"
+    },
+    {
+      "default": true,
+      "value": "당일~1일"
+    }
+  ],
+  "intakeQuestions": [
+    "번역 방향이 영어→한국어인지 한국어→영어인지 알려주세요.",
+    "일반 문장, 업무·공식 문체, 전문 용어 포함 중 필요한 문체를 알려주세요."
+  ],
+  "quoteText": "",
+  "scope": "",
+  "nextQuestion": "원문과 원하는 결과 언어를 보내주세요.",
+  "deliverFormats": [],
+  "qualityChecks": [],
+  "channels": {
+    "soomgo": false,
+    "kmong": false
+  },
+  "pricingEvidence": [
+    {
+      "source": "server/relay-server.js:2300",
+      "regularAmount": 32000,
+      "saleAmount": 26000,
+      "volumeBasis": null
+    },
+    {
+      "source": "server/relay-server.js:2920",
+      "base": 79000,
+      "volumeBasis": null
+    }
+  ],
+  "reviewCriteria": [
+    "원문 의미·용어집·고유명사 확인",
+    "문맥에 맞는 자연스러운 번역 확인",
+    "번역 용어의 문서 전체 일관성 확인",
+    "파일·데이터 무결성 및 결과 형식 확인",
+    "독립 최종 검수: 누락·모순·형식·오탈자 확인"
+  ],
+  "followupMessages": [
+    {
+      "id": "translation_en.followup.material_status_a.v1",
+      "version": "v2",
+      "text": "현재 자료는 어느 정도 준비되어 있으신가요? 편하게 알려주세요."
+    },
+    {
+      "id": "translation_en.followup.material_status_b.v1",
+      "version": "v1",
+      "text": "자료는 ① 준비됨 ② 정리 필요 ③ 아직 없음 중 어느 상태인가요? 숫자만 보내주셔도 됩니다."
+    }
+  ],
+  "soomgoCategories": [
+    {
+      "name": "영어 번역",
+      "match": "^영어\\s*번역$"
+    }
+  ]
+}

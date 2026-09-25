@@ -1,0 +1,104 @@
+{
+  "description": "D' 숨고 요청 자동 처리 규칙(2026-09-21 준희 승인). 금액 숫자는 services/document_writing.json의 pricing.largeDocument·foreignProofreading에 있다.",
+  "version": "d-prime-v3",
+  "deleteSafety": {
+    "dailyCap": 30,
+    "timezone": "Asia/Seoul",
+    "minRequestTextLength": 20,
+    "logLimit": 500,
+    "capReachedReason": "자동 삭제 하루 상한(30건)에 도달해 삭제하지 않고 사람 확인으로 넘깁니다."
+  },
+  "deleteRules": [
+    {
+      "id": "unsold_category",
+      "when": "unmappedCategory",
+      "reason": "판매하지 않는 숨고 카테고리 요청이라 견적 없이 삭제합니다.",
+      "reviewCategories": [
+        "영상 편집"
+      ],
+      "reviewReason": "영상 편집 요청은 삭제하지 않고 기록만 합니다(견적 안 보냄). 수요 확인·분류용 — 준희 확인.",
+      "_reviewNote": "2026-09-24 준희 결정(영상 편집 다시 넣기): 삭제 대신 기록·사람 확인. 판매 여부·가격은 정하지 않음"
+    },
+    {
+      "id": "translation_en",
+      "when": "serviceId",
+      "serviceIds": [
+        "translation_en"
+      ],
+      "reason": "영어 번역은 아직 판매하지 않아 견적 없이 삭제합니다."
+    },
+    {
+      "id": "resume_self_intro",
+      "when": "text",
+      "fields": [
+        "purpose",
+        "topic",
+        "notes",
+        "scope"
+      ],
+      "pattern": "자기소개서|자소서|이력서|경력기술서|레주메|resume|\\bcv\\b",
+      "reason": "자기소개서·이력서 작성은 제공하지 않아 견적 없이 삭제합니다.",
+      "_note": "원문(text)은 보지 않는다: 숨고 상세 화면의 '최근 작성한 견적' 예시·다른 요청 카드에 섞인 단어로 오삭제된 사례(제브 시뮬레이션 2026-09-21)"
+    },
+    {
+      "id": "academic",
+      "when": "flag",
+      "flag": "academic",
+      "reason": "논문·학위·학술 의뢰는 제공하지 않아 견적 없이 삭제합니다.",
+      "onlyServiceIds": [
+        "document_writing"
+      ],
+      "_note": "자막·PPT의 학회 발표 등은 삭제하지 않고 기존대로 사람 확인"
+    },
+    {
+      "id": "forgery",
+      "when": "text",
+      "fields": [
+        "purpose",
+        "topic",
+        "scope",
+        "notes",
+        "volume"
+      ],
+      "pattern": "위조|가짜\\s*(?:서류|문서|영수증|증명)|허위\\s*(?:서류|문서|증빙|작성)|fake|forgery|(?:영수증|진단서|처방전|재직\\s*증명서?|졸업\\s*증명서?|증빙\\s*서류)\\s*(?:을|를)?\\s*(?:만들|제작|작성해|꾸며|새로\\s*만들)",
+      "reason": "증빙 서류 제작·위조 관련 요청이라 견적 없이 삭제합니다.",
+      "_note": "원문(text)은 보지 않는다: 숨고 상세 화면의 '최근 작성한 견적' 예시·다른 요청 카드에 섞인 단어로 오삭제된 사례(제브 시뮬레이션 2026-09-21)"
+    },
+    {
+      "id": "cad_quantity",
+      "when": "text",
+      "fields": [
+        "purpose",
+        "topic",
+        "scope",
+        "notes",
+        "volume"
+      ],
+      "pattern": "오토\\s*캐드|autocad|\\bcad\\b|캐드|도면\\s*(?:작성|제작|수정|변환|작업)|물량\\s*(?:산출|산정)|적산",
+      "reason": "도면·CAD·물량 산출 요청은 제공하지 않아 견적 없이 삭제합니다.",
+      "_note": "2026-09-22 고객 …3346(오토캐드 덕트 물량 산출)이 문서 작성으로 견적 발송된 사례"
+    }
+  ],
+  "largeDocument": {
+    "serviceId": "document_writing",
+    "deleteReason": "문서 100쪽 초과 대량 작업은 자동 견적 범위를 넘어 삭제합니다."
+  },
+  "foreignProofreading": {
+    "serviceId": "document_writing",
+    "otherLanguageReason": "영어 외 외국어 교정은 제공하지 않아 견적 없이 삭제합니다."
+  },
+  "unclassified": {
+    "retries": 1,
+    "retryReason": "서비스 분류 불가 · 한 번 다시 조회한 뒤 판단합니다.",
+    "deleteReason": "두 번 조회해도 서비스를 분류하지 못해 삭제합니다."
+  },
+  "serviceMismatch": {
+    "withCategory": "quote_by_category",
+    "withoutCategory": "delete",
+    "deleteReason": "요청 서비스와 견적 서비스가 다르고 숨고 카테고리도 없어 삭제합니다."
+  },
+  "negotiation": {
+    "keepAmount": true,
+    "autoSend": true
+  }
+}

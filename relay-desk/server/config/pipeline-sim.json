@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "note": "제작 파이프라인 A/B/C 시뮬레이션 설정 (2026-09-22). enabled=false면 실제 API 호출 금지(가짜 제공자만). 단가 null이면 비용을 계산하지 않고 토큰만 기록한다. Fable 5.1 단가는 claudeQuote 정책과 같은 $10/$50(준희 승인 2026-09-22). 실제 실행(--real)은 준희가 이 파일의 enabled를 true로 바꾼 뒤에만 되고, --cap-krw가 없으면 defaultCapKrw에서 멈춘다.",
+  "enabled": false,
+  "defaultCapKrw": 3000,
+  "pricing": { "krwPerUsd": 1500 },
+  "models": {
+    "low": { "id": "claude-sonnet-4-5", "label": "하위(Sonnet)", "pricing": { "inputUsdPerMTok": 3, "outputUsdPerMTok": 15 }, "fakeSkill": { "fix": 0.7, "overEdit": 0.12, "translate": 0.7 } },
+    "high": { "id": "claude-fable-5-1", "label": "상위(Fable 5.1)", "pricing": { "inputUsdPerMTok": 10, "outputUsdPerMTok": 50 }, "fakeSkill": { "fix": 0.95, "overEdit": 0.03, "translate": 0.92 } }
+  },
+  "jev": {
+    "pricing": { "inputUsdPerMTok": 0.042, "outputUsdPerMTok": 0 },
+    "fakeAccuracy": 0.85,
+    "questions": {
+      "hard": { "type": "noul", "instructions": "Is this task hard: a translation task, or a Korean sentence that contains a spelling, spacing, or grammar error? (state has original or transcript)", "criteria": { "true": "hard", "false": "easy" } },
+      "same_content": { "type": "noul", "instructions": "Does srt_block express the same content as transcript? They may be in different languages. Judge meaning only.", "criteria": { "true": "same content", "false": "different content" } },
+      "omits_meaning": { "type": "noul", "instructions": "Does srt_block leave out meaning that is present in transcript?", "criteria": { "true": "something omitted", "false": "nothing omitted" } },
+      "adds_meaning": { "type": "noul", "instructions": "Does srt_block add meaning that is not in transcript?", "criteria": { "true": "something added", "false": "nothing added" } },
+      "meaning_changed": { "type": "noul", "instructions": "Does edited change the meaning of original?", "criteria": { "true": "meaning changed", "false": "meaning kept" } }
+    }
+  },
+  "prompts": {
+    "edit": {
+      "generate": "다음 한국어 문장을 교정하세요. 맞춤법·띄어쓰기·문법 오류만 고치고, 뜻과 말투는 바꾸지 마세요. 오류가 없으면 원문을 그대로 돌려주세요. 설명 없이 문장만 출력하세요.\n\n{input}",
+      "repair": "아래 원문과 교정문이 있습니다. 교정문이 원문의 뜻을 바꿨거나 오류를 놓쳤다면 고치고, 아니면 교정문을 그대로 돌려주세요. 설명 없이 문장만 출력하세요.\n\n원문: {input}\n교정문: {prev}",
+      "verify": "아래 원문과 교정문을 최종 확인하세요. 맞춤법·띄어쓰기·문법이 모두 맞고 뜻이 유지되면 교정문을 그대로, 아니면 고친 문장만 출력하세요. 설명 없이 문장만 출력하세요.\n\n원문: {input}\n교정문: {prev}"
+    },
+    "translate": {
+      "generate": "다음 영어 문장을 자막용 한국어로 번역하세요. 빠뜨리거나 덧붙이지 말고, 설명 없이 한국어 문장만 출력하세요.\n\n{input}",
+      "repair": "아래 영어 원문과 한국어 번역이 있습니다. 번역에 빠진 뜻이나 덧붙인 뜻이 있으면 고치고, 아니면 그대로 돌려주세요. 설명 없이 한국어 문장만 출력하세요.\n\n원문: {input}\n번역: {prev}",
+      "verify": "아래 영어 원문과 한국어 번역을 최종 확인하세요. 뜻이 정확히 같으면 번역을 그대로, 아니면 고친 번역만 출력하세요. 설명 없이 한국어 문장만 출력하세요.\n\n원문: {input}\n번역: {prev}"
+    }
+  },
+  "arms": {
+    "A": { "label": "A 하위 단독", "steps": [ { "type": "generate", "model": "low" } ] },
+    "B": { "label": "B 상위 단독", "steps": [ { "type": "generate", "model": "high" } ] },
+    "C": { "label": "C Jev 문지기 → 하위/상위 → Jev 재판정 → 상위 보정 → 상위 검증", "steps": [
+      { "type": "gate", "question": "hard", "ifTrue": "high", "ifFalse": "low" },
+      { "type": "generate", "model": "$route" },
+      { "type": "judge", "questions": [ "meaning_changed", "same_content", "omits_meaning", "adds_meaning" ] },
+      { "type": "repair", "model": "high" },
+      { "type": "verify", "model": "high" }
+    ] },
+    "D": { "label": "D 하위 → Jev 재판정 → 상위 보정 (검증 없음)", "steps": [
+      { "type": "generate", "model": "low" },
+      { "type": "judge", "questions": [ "meaning_changed", "same_content", "omits_meaning", "adds_meaning" ] },
+      { "type": "repair", "model": "high" }
+    ] }
+  }
+}

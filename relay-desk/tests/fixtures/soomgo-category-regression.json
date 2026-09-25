@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "purpose": "숨고 카테고리 우선 분류 회귀 기준(B, 2026-09-21). 6ab11a5d… 원문 구조(고객명은 가명) + 한국어 교정 샘플.",
+  "cases": [
+    {
+      "caseId": "foreign-proofreading-6ab11-structure",
+      "input": {
+        "requestId": "REGRESS-FOREIGN-1",
+        "text": "요청 상세\n고객 정보\n견적 보낸 고수 6명\n1시간 전\n교정/교열\n\n일주일 이내로 진행하고 싶어요\n\n서울 강서구\n\n희망 서비스\n교정교열 + 윤문\n작성 언어\n영어\n문서 유형\n보고서\n작업 분량\n영문 보고서 워드 150쪽 내외 영문 요약보고서 워드 25쪽\n고객 정보\n신고하기\n\n홍길순\n\n2026년 9월 21일 가입숨고 1회 이용\n"
+      },
+      "expect": {
+        "soomgoCategory": "교정/교열",
+        "serviceId": "document_writing",
+        "notServiceId": "translation_en",
+        "manualReview": true,
+        "autoSend": false,
+        "reason": "외국어 교정 — 영어는 영어 교정 단가로 자동 견적, 그 외 언어는 자동 삭제",
+        "customerName": "홍길순"
+      }
+    },
+    {
+      "caseId": "korean-proofreading-5p",
+      "input": {
+        "requestId": "REGRESS-KOREAN-1",
+        "text": "요청 상세\n고객 정보\n견적 보낸 고수 2명\n30분 전\n교정/교열\n\n3일 이내로 진행하고 싶어요\n\n희망 서비스\n교정교열\n작성 언어\n한국어\n문서 유형\n보고서\n작업 분량\nA4 5쪽\n고객 정보\n신고하기\n\n김가명\n\n2026년 9월 20일 가입숨고 2회 이용\n"
+      },
+      "expect": {
+        "soomgoCategory": "교정/교열",
+        "serviceId": "document_writing",
+        "manualReview": false,
+        "autoSend": true,
+        "customerName": "김가명"
+      }
+    }
+  ]
+}

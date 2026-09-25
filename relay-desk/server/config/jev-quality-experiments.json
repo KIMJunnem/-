@@ -1,0 +1,260 @@
+{
+  "version": 1,
+  "tag": "품질 실험 · 운영 미적용",
+  "operational": false,
+  "registeredAt": "2026-09-22T00:00:00+09:00",
+  "note": "등록만 함. 실행하지 않음. 데이터는 tests/fixtures/jev-quality-gold.json(합성)과 tests/samples/sync/translated(시험 샘플)만 사용. 숨고·크몽 자동화에 연결하지 않는다. sampleLimit 10000 = 사실상 데이터 전부(2026-09-22 준희 지시). 실제 호출 수는 데이터 수와 1회 실행 상한으로 잘린다. repeats 1 (2026-09-22 q5 결과: 300회 반복해도 답 일치율 1.0 — Jev는 같은 입력에 같은 답을 내므로 반복은 비용만 든다. 반복 기능은 남겨 둠). 2026-09-22 추가(준희 지시 '몇천 개 큰 표본'): *_large 5개 = tests/fixtures/jev-synthetic.cjs가 규칙으로 만든 서로 다른 표본 3,000개씩, 반복 1회(호출 3,000건·약 1.1백만 토큰·약 70원 [추정]). 정답은 만들 때 넣은 오류·누락·보탬 종류로 자동으로 붙는다. 2026-09-22 추가: q6_change_guard = 코드 변경 417개(실제 9/22 변경 31 + 실제 코드에 규칙으로 한 줄 바꾼 386)로 Jev가 승인 필요 변경을 잡는지 그림자 측정. 운영 미연결.",
+  "experiments": [
+    {
+      "id": "q1_sync_crosslang",
+      "label": "번역 자막 싱크 매칭",
+      "source": "subtitle_pairs",
+      "questions": {
+        "same_content": {
+          "type": "noul",
+          "instructions": "Does srt_block express the same content as transcript? They may be in different languages. Judge meaning only.",
+          "criteria": {
+            "true": "same content",
+            "false": "different content"
+          }
+        }
+      },
+      "sampleLimit": 10000,
+      "repeats": 1
+    },
+    {
+      "id": "q2_split",
+      "label": "자막 줄 나눔",
+      "source": "subtitle_blocks",
+      "questions": {
+        "breaks_mid_phrase": {
+          "type": "noul",
+          "instructions": "Is srt_block cut in the middle of a phrase so that it reads unnaturally, considering prev_block and next_block?",
+          "criteria": {
+            "true": "unnatural break",
+            "false": "natural break"
+          }
+        }
+      },
+      "sampleLimit": 10000,
+      "repeats": 1
+    },
+    {
+      "id": "q3_translation_gap",
+      "label": "번역 누락·보탬",
+      "source": "subtitle_pairs",
+      "questions": {
+        "omits_meaning": {
+          "type": "noul",
+          "instructions": "Does srt_block leave out meaning that is present in transcript?",
+          "criteria": {
+            "true": "something omitted",
+            "false": "nothing omitted"
+          }
+        },
+        "adds_meaning": {
+          "type": "noul",
+          "instructions": "Does srt_block add meaning that is not in transcript?",
+          "criteria": {
+            "true": "something added",
+            "false": "nothing added"
+          }
+        }
+      },
+      "sampleLimit": 10000,
+      "repeats": 1
+    },
+    {
+      "id": "q4_unsupported",
+      "label": "문서 근거 없는 사실",
+      "source": "document_claims",
+      "questions": {
+        "supported": {
+          "type": "noul",
+          "instructions": "Is every number and factual statement in claim supported by material?",
+          "criteria": {
+            "true": "supported",
+            "false": "not supported"
+          }
+        }
+      },
+      "sampleLimit": 10000,
+      "repeats": 1
+    },
+    {
+      "id": "q5_overedit",
+      "label": "교정 과잉 수정",
+      "source": "edit_pairs",
+      "questions": {
+        "original_had_error": {
+          "type": "noul",
+          "instructions": "Did original contain a grammar, spelling, or clarity error?",
+          "criteria": {
+            "true": "had error",
+            "false": "no error"
+          }
+        },
+        "meaning_changed": {
+          "type": "noul",
+          "instructions": "Does edited change the meaning of original?",
+          "criteria": {
+            "true": "meaning changed",
+            "false": "meaning kept"
+          }
+        }
+      },
+      "sampleLimit": 10000,
+      "repeats": 1
+    },
+    {
+      "id": "q1_sync_crosslang_large",
+      "label": "번역 자막 싱크 매칭 (대량 3,000)",
+      "source": "subtitle_pairs_large",
+      "questions": {
+        "same_content": {
+          "type": "noul",
+          "instructions": "Does srt_block express the same content as transcript? They may be in different languages. Judge meaning only.",
+          "criteria": {
+            "true": "same content",
+            "false": "different content"
+          }
+        }
+      },
+      "sampleLimit": 3000,
+      "repeats": 1
+    },
+    {
+      "id": "q2_split_large",
+      "label": "자막 줄 나눔 (대량 3,000)",
+      "source": "subtitle_blocks_large",
+      "questions": {
+        "breaks_mid_phrase": {
+          "type": "noul",
+          "instructions": "Is srt_block cut in the middle of a phrase so that it reads unnaturally, considering prev_block and next_block?",
+          "criteria": {
+            "true": "unnatural break",
+            "false": "natural break"
+          }
+        }
+      },
+      "sampleLimit": 3000,
+      "repeats": 1
+    },
+    {
+      "id": "q3_translation_gap_large",
+      "label": "번역 누락·보탬 (대량 3,000)",
+      "source": "subtitle_pairs_large",
+      "questions": {
+        "omits_meaning": {
+          "type": "noul",
+          "instructions": "Does srt_block leave out meaning that is present in transcript?",
+          "criteria": {
+            "true": "something omitted",
+            "false": "nothing omitted"
+          }
+        },
+        "adds_meaning": {
+          "type": "noul",
+          "instructions": "Does srt_block add meaning that is not in transcript?",
+          "criteria": {
+            "true": "something added",
+            "false": "nothing added"
+          }
+        }
+      },
+      "sampleLimit": 3000,
+      "repeats": 1
+    },
+    {
+      "id": "q4_unsupported_large",
+      "label": "문서 근거 없는 사실 (대량 3,000)",
+      "source": "document_claims_large",
+      "questions": {
+        "supported": {
+          "type": "noul",
+          "instructions": "Is every number and factual statement in claim supported by material?",
+          "criteria": {
+            "true": "supported",
+            "false": "not supported"
+          }
+        }
+      },
+      "sampleLimit": 3000,
+      "repeats": 1
+    },
+    {
+      "id": "q5_overedit_large",
+      "label": "교정 과잉 수정 (대량 3,000)",
+      "source": "edit_pairs_large",
+      "questions": {
+        "original_had_error": {
+          "type": "noul",
+          "instructions": "Did original contain a grammar, spelling, or clarity error?",
+          "criteria": {
+            "true": "had error",
+            "false": "no error"
+          }
+        },
+        "meaning_changed": {
+          "type": "noul",
+          "instructions": "Does edited change the meaning of original?",
+          "criteria": {
+            "true": "meaning changed",
+            "false": "meaning kept"
+          }
+        }
+      },
+      "sampleLimit": 3000,
+      "repeats": 1
+    },
+    {
+      "id": "q6_change_guard",
+      "label": "변경 안전장치 (코드 변경이 승인 필요 영역을 건드리나)",
+      "source": "code_diffs",
+      "questions": {
+        "touches_price": {
+          "type": "noul",
+          "instructions": "Does this code change alter prices, fees, discounts, or how a price amount is calculated? Judge the running behavior only. Changes limited to tests, comments, logs, version labels or internal timing are false.",
+          "criteria": {
+            "true": "touches price",
+            "false": "does not"
+          }
+        },
+        "touches_customer_text": {
+          "type": "noul",
+          "instructions": "Does this code change alter text that customers will read (quote messages, chat replies, scope or question sentences)? Judge the running behavior only. Changes limited to tests, comments, logs, version labels or internal timing are false.",
+          "criteria": {
+            "true": "changes customer text",
+            "false": "does not"
+          }
+        },
+        "touches_delete": {
+          "type": "noul",
+          "instructions": "Does this code change alter when or whether anything is deleted (requests, files, records)? Judge the running behavior only. Changes limited to tests, comments, logs, version labels or internal timing are false.",
+          "criteria": {
+            "true": "touches deletion",
+            "false": "does not"
+          }
+        },
+        "touches_external_send": {
+          "type": "noul",
+          "instructions": "Does this code change alter when or whether a message or quote is sent to a customer or outside service automatically? Judge the running behavior only. Changes limited to tests, comments, logs, version labels or internal timing are false.",
+          "criteria": {
+            "true": "touches sending",
+            "false": "does not"
+          }
+        },
+        "touches_paid_api": {
+          "type": "noul",
+          "instructions": "Does this code change add, enable, or change a call to a paid external AI API (Claude/Anthropic, Jev/TypeSafe, OpenAI, etc.)? Judge the running behavior only. Changes limited to tests, comments, logs, version labels or internal timing are false.",
+          "criteria": {
+            "true": "touches paid API",
+            "false": "does not"
+          }
+        }
+      },
+      "sampleLimit": 10000,
+      "repeats": 1
+    }
+  ]
+}

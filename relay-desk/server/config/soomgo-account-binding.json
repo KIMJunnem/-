@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "expectedAccountName": "swan",
+  "verifiedAccountName": "swan",
+  "status": "verified",
+  "verifiedAt": "2026-09-19T16:40:00+09:00",
+  "evidence": "Chrome의 로그인된 숨고 채팅 화면 상단 계정 버튼에서 swan 확인"
+}

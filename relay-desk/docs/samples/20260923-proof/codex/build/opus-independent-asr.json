@@ -1,0 +1,85 @@
+{
+  "method": "faster-whisper small CPU int8, local cache only, independent no script prompt",
+  "elapsedSeconds": 2.62,
+  "segments": [
+    {
+      "start": 0.18,
+      "end": 9.32,
+      "text": " I'm searching for someone someone very dear a kindred spirit a dragon",
+      "words": [
+        {
+          "start": 0.18,
+          "end": 0.66,
+          "word": " I'm",
+          "probability": 0.8649191856384277
+        },
+        {
+          "start": 0.66,
+          "end": 1.06,
+          "word": " searching",
+          "probability": 0.9945964217185974
+        },
+        {
+          "start": 1.06,
+          "end": 1.36,
+          "word": " for",
+          "probability": 0.9950147271156311
+        },
+        {
+          "start": 1.36,
+          "end": 1.7,
+          "word": " someone",
+          "probability": 0.9915926456451416
+        },
+        {
+          "start": 1.7,
+          "end": 3.32,
+          "word": " someone",
+          "probability": 0.07266023755073547
+        },
+        {
+          "start": 3.32,
+          "end": 3.72,
+          "word": " very",
+          "probability": 0.9696730971336365
+        },
+        {
+          "start": 3.72,
+          "end": 4.02,
+          "word": " dear",
+          "probability": 0.99615877866745
+        },
+        {
+          "start": 4.02,
+          "end": 5.42,
+          "word": " a",
+          "probability": 0.7992110848426819
+        },
+        {
+          "start": 5.42,
+          "end": 5.72,
+          "word": " kindred",
+          "probability": 0.8054099082946777
+        },
+        {
+          "start": 5.72,
+          "end": 6.1,
+          "word": " spirit",
+          "probability": 0.9867563247680664
+        },
+        {
+          "start": 6.1,
+          "end": 6.8,
+          "word": " a",
+          "probability": 0.5768405795097351
+        },
+        {
+          "start": 8.84,
+          "end": 9.32,
+          "word": " dragon",
+          "probability": 0.9580381512641907
+        }
+      ]
+    }
+  ]
+}

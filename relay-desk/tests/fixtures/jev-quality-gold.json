@@ -1,0 +1,63 @@
+{
+  "description": "Jev 제작 품질 실험용 정답 샘플(2026-09-22). 전부 직접 만든 합성 데이터이며 실제 고객 자료는 없다. gold의 true/false가 정답이고 null은 그 질문에 정답을 매기지 않음.",
+  "version": 1,
+  "subtitle_pairs": [
+    { "id": "sp-fr-01", "source_lang": "fr", "srt_block": "1\n00:00:01,000 --> 00:00:03,200\n오늘은 파리의 오래된 시장을 소개합니다", "transcript": "Aujourd'hui, je vous présente un vieux marché de Paris.", "gold": { "same_content": true } },
+    { "id": "sp-fr-02", "source_lang": "fr", "srt_block": "2\n00:00:03,400 --> 00:00:05,800\n이곳은 매주 일요일 아침에 열립니다", "transcript": "Il ouvre tous les dimanches matin.", "gold": { "same_content": true } },
+    { "id": "sp-fr-03", "source_lang": "fr", "srt_block": "3\n00:00:06,000 --> 00:00:08,500\n이곳은 매주 일요일 아침에 열립니다", "transcript": "Les producteurs viennent de toute la région.", "gold": { "same_content": false } },
+    { "id": "sp-fr-04", "source_lang": "fr", "srt_block": "4\n00:00:08,700 --> 00:00:11,000\n가장 인기 있는 건 치즈 가게입니다", "transcript": "Il ouvre tous les dimanches matin.", "gold": { "same_content": false } },
+    { "id": "sp-en-01", "source_lang": "en", "srt_block": "5\n00:00:11,200 --> 00:00:13,600\n가격은 한 봉지에 3유로입니다", "transcript": "It costs three euros a bag.", "gold": { "same_content": true, "omits_meaning": false, "adds_meaning": false } },
+    { "id": "sp-gap-01", "source_lang": "en", "srt_block": "10\n00:00:30,000 --> 00:00:33,000\n회의는 월요일에 열립니다", "transcript": "The meeting will be held on Monday at 3 p.m. in room B.", "gold": { "same_content": null, "omits_meaning": true, "adds_meaning": false } },
+    { "id": "sp-gap-02", "source_lang": "en", "srt_block": "11\n00:00:33,200 --> 00:00:36,000\n참가비는 무료이며 점심도 제공됩니다", "transcript": "Participation is free.", "gold": { "same_content": null, "omits_meaning": false, "adds_meaning": true } },
+    { "id": "sp-gap-03", "source_lang": "en", "srt_block": "12\n00:00:36,200 --> 00:00:39,000\n이 제품은 두 가지 색상으로 나옵니다", "transcript": "This product comes in two colors.", "gold": { "same_content": true, "omits_meaning": false, "adds_meaning": false } },
+    { "id": "sp-gap-04", "source_lang": "fr", "srt_block": "13\n00:00:39,200 --> 00:00:42,000\n저는 이 도시에서 태어났습니다", "transcript": "Je suis né dans cette ville et j'y ai vécu vingt ans.", "gold": { "same_content": null, "omits_meaning": true, "adds_meaning": false } },
+    { "id": "sp-gap-05", "source_lang": "fr", "srt_block": "14\n00:00:42,200 --> 00:00:45,000\n이 빵은 세계에서 가장 맛있습니다", "transcript": "Ce pain est très bon.", "gold": { "same_content": null, "omits_meaning": false, "adds_meaning": true } },
+    { "id": "sp-gap-06", "source_lang": "en", "srt_block": "15\n00:00:45,200 --> 00:00:48,000\n다음 주에 다시 뵙겠습니다", "transcript": "See you again next week.", "gold": { "same_content": true, "omits_meaning": false, "adds_meaning": false } },
+    { "id": "sp-gap-07", "source_lang": "en", "srt_block": "16\n00:00:48,200 --> 00:00:51,000\n신청은 홈페이지에서 할 수 있습니다", "transcript": "You can apply on the website until Friday.", "gold": { "same_content": null, "omits_meaning": true, "adds_meaning": false } },
+    { "id": "sp-gap-08", "source_lang": "en", "srt_block": "17\n00:00:51,200 --> 00:00:54,000\n작년보다 매출이 두 배로 늘었습니다", "transcript": "Sales grew compared to last year.", "gold": { "same_content": null, "omits_meaning": false, "adds_meaning": true } },
+    { "id": "sp-gap-09", "source_lang": "fr", "srt_block": "18\n00:00:54,200 --> 00:00:57,000\n감사합니다, 좋은 하루 보내세요", "transcript": "Merci, bonne journée.", "gold": { "same_content": true, "omits_meaning": false, "adds_meaning": false } },
+    { "id": "sp-gap-10", "source_lang": "en", "srt_block": "19\n00:00:57,200 --> 00:01:00,000\n문은 오전 9시에 엽니다", "transcript": "The doors open at 9 a.m. Please bring your ticket.", "gold": { "same_content": null, "omits_meaning": true, "adds_meaning": false } }
+  ],
+  "subtitle_blocks": [
+    { "id": "sb-01", "prev_block": "1\n00:00:01,000 --> 00:00:03,000\n오늘은 여러분께", "srt_block": "2\n00:00:03,100 --> 00:00:05,000\n새로운 서비스를 소개하려고 합니다", "next_block": "3\n00:00:05,100 --> 00:00:07,000\n먼저 가격부터 말씀드리겠습니다", "gold": { "breaks_mid_phrase": false } },
+    { "id": "sb-02", "prev_block": "4\n00:00:07,100 --> 00:00:09,000\n이번 행사는 서울", "srt_block": "5\n00:00:09,100 --> 00:00:10,500\n시청 앞", "next_block": "6\n00:00:10,600 --> 00:00:12,000\n광장에서 열립니다", "gold": { "breaks_mid_phrase": true } },
+    { "id": "sb-03", "prev_block": "7\n00:00:12,100 --> 00:00:14,000\n질문이 있으시면", "srt_block": "8\n00:00:14,100 --> 00:00:16,000\n언제든 손을 들어 주세요", "next_block": "9\n00:00:16,100 --> 00:00:18,000\n그럼 시작하겠습니다", "gold": { "breaks_mid_phrase": false } },
+    { "id": "sb-04", "prev_block": "10\n00:00:18,100 --> 00:00:20,000\n저희 회사는 2015년에", "srt_block": "11\n00:00:20,100 --> 00:00:21,000\n설", "next_block": "12\n00:00:21,100 --> 00:00:23,000\n립되었습니다", "gold": { "breaks_mid_phrase": true } },
+    { "id": "sb-05", "prev_block": "13\n00:00:23,100 --> 00:00:25,000\n다음 화면을 보시면", "srt_block": "14\n00:00:25,100 --> 00:00:27,000\n월별 매출이 나와 있습니다", "next_block": "15\n00:00:27,100 --> 00:00:29,000\n3월이 가장 높았습니다", "gold": { "breaks_mid_phrase": false } },
+    { "id": "sb-06", "prev_block": "16\n00:00:29,100 --> 00:00:31,000\n가장 중요한 것은 고객의", "srt_block": "17\n00:00:31,100 --> 00:00:32,000\n신뢰를 얻는", "next_block": "18\n00:00:32,100 --> 00:00:34,000\n것입니다", "gold": { "breaks_mid_phrase": true } },
+    { "id": "sb-07", "prev_block": "19\n00:00:34,100 --> 00:00:36,000\n오늘 준비한 내용은 여기까지입니다", "srt_block": "20\n00:00:36,100 --> 00:00:38,000\n들어주셔서 감사합니다", "next_block": "", "gold": { "breaks_mid_phrase": false } },
+    { "id": "sb-08", "prev_block": "21\n00:00:38,100 --> 00:00:40,000\n신청 마감은 이번 주", "srt_block": "22\n00:00:40,100 --> 00:00:41,000\n금", "next_block": "23\n00:00:41,100 --> 00:00:43,000\n요일입니다", "gold": { "breaks_mid_phrase": true } },
+    { "id": "sb-09", "prev_block": "24\n00:00:43,100 --> 00:00:45,000\n첫째, 준비물을 챙기세요", "srt_block": "25\n00:00:45,100 --> 00:00:47,000\n둘째, 시간을 지켜 주세요", "next_block": "26\n00:00:47,100 --> 00:00:49,000\n셋째, 휴대폰은 꺼 주세요", "gold": { "breaks_mid_phrase": false } },
+    { "id": "sb-10", "prev_block": "27\n00:00:49,100 --> 00:00:51,000\n이 제품의 가장 큰", "srt_block": "28\n00:00:51,100 --> 00:00:52,500\n장점은 가볍고", "next_block": "29\n00:00:52,600 --> 00:00:54,000\n튼튼하다는 점입니다", "gold": { "breaks_mid_phrase": true } },
+    { "id": "sb-11", "prev_block": "30\n00:00:54,100 --> 00:00:56,000\n자세한 내용은", "srt_block": "31\n00:00:56,100 --> 00:00:58,000\n홈페이지에서 확인하실 수 있습니다", "next_block": "32\n00:00:58,100 --> 00:01:00,000\n다음 영상에서 뵙겠습니다", "gold": { "breaks_mid_phrase": false } },
+    { "id": "sb-12", "prev_block": "33\n00:01:00,100 --> 00:01:02,000\n저희가 만든", "srt_block": "34\n00:01:02,100 --> 00:01:03,000\n앱을 사용하", "next_block": "35\n00:01:03,100 --> 00:01:05,000\n시면 됩니다", "gold": { "breaks_mid_phrase": true } }
+  ],
+  "document_claims": [
+    { "id": "dc-01", "claim": "2025년 매출은 12억 원으로 전년보다 20% 늘었다.", "material": "2024년 매출 10억 원, 2025년 매출 12억 원.", "gold": { "supported": true } },
+    { "id": "dc-02", "claim": "2025년 매출은 15억 원이다.", "material": "2024년 매출 10억 원, 2025년 매출 12억 원.", "gold": { "supported": false } },
+    { "id": "dc-03", "claim": "직원은 모두 35명이며 그중 개발자가 12명이다.", "material": "전체 직원 35명(개발 12, 영업 8, 운영 15).", "gold": { "supported": true } },
+    { "id": "dc-04", "claim": "고객 만족도는 업계 최고 수준인 98%를 기록했다.", "material": "2025년 고객 설문 응답자 200명 중 만족 답변 150명.", "gold": { "supported": false } },
+    { "id": "dc-05", "claim": "행사는 10월 12일 서울 코엑스에서 열린다.", "material": "일시: 10월 12일(토) 오후 2시 / 장소: 코엑스 3층 컨퍼런스룸", "gold": { "supported": true } },
+    { "id": "dc-06", "claim": "행사에는 500명 이상이 참석할 예정이다.", "material": "일시: 10월 12일(토) 오후 2시 / 장소: 코엑스 3층 컨퍼런스룸", "gold": { "supported": false } },
+    { "id": "dc-07", "claim": "시범 사업 기간은 6개월이고 예산은 3천만 원이다.", "material": "시범 사업: 2026년 3월~8월(6개월), 예산 3,000만 원", "gold": { "supported": true } },
+    { "id": "dc-08", "claim": "시범 사업으로 비용이 30% 절감되었다.", "material": "시범 사업: 2026년 3월~8월(6개월), 예산 3,000만 원", "gold": { "supported": false } },
+    { "id": "dc-09", "claim": "회원 수는 1년 만에 두 배가 되었다.", "material": "회원 수: 2024년 말 4,000명 → 2025년 말 8,000명", "gold": { "supported": true } },
+    { "id": "dc-10", "claim": "회원 중 70%가 30대다.", "material": "회원 수: 2024년 말 4,000명 → 2025년 말 8,000명", "gold": { "supported": false } },
+    { "id": "dc-11", "claim": "본사는 부산에 있고 지점은 3곳이다.", "material": "본사: 부산 해운대구 / 지점: 서울, 대구, 광주", "gold": { "supported": true } },
+    { "id": "dc-12", "claim": "대표는 20년 경력의 전문가다.", "material": "본사: 부산 해운대구 / 지점: 서울, 대구, 광주", "gold": { "supported": false } }
+  ],
+  "edit_pairs": [
+    { "id": "ep-01", "original": "회의는 내일 오후 3시에 열릴 예정 입니다.", "edited": "회의는 내일 오후 3시에 열릴 예정입니다.", "gold": { "original_had_error": true, "meaning_changed": false } },
+    { "id": "ep-02", "original": "보고서는 금요일까지 제출해 주시기 바랍니다.", "edited": "보고서는 금요일까지 제출해 주십시오.", "gold": { "original_had_error": false, "meaning_changed": false } },
+    { "id": "ep-03", "original": "참가비는 1만원 입니다.", "edited": "참가비는 2만 원입니다.", "gold": { "original_had_error": true, "meaning_changed": true } },
+    { "id": "ep-04", "original": "우리 팀은 목표를 달성하였다.", "edited": "우리 팀은 목표를 초과 달성하였다.", "gold": { "original_had_error": false, "meaning_changed": true } },
+    { "id": "ep-05", "original": "왠만하면 오늘 안에 끝내 주세요.", "edited": "웬만하면 오늘 안에 끝내 주세요.", "gold": { "original_had_error": true, "meaning_changed": false } },
+    { "id": "ep-06", "original": "신청자는 모두 50명이었습니다.", "edited": "신청자는 모두 50명이었습니다.", "gold": { "original_had_error": false, "meaning_changed": false } },
+    { "id": "ep-07", "original": "이 방법은 효과가 있을수도 있다.", "edited": "이 방법은 효과가 있다.", "gold": { "original_had_error": true, "meaning_changed": true } },
+    { "id": "ep-08", "original": "고객의 의견을 반영하여 서비스를 개선했습니다.", "edited": "고객 의견을 반영해 서비스를 개선했습니다.", "gold": { "original_had_error": false, "meaning_changed": false } },
+    { "id": "ep-09", "original": "그는 회의에 참석 하지 않았다.", "edited": "그는 회의에 참석하지 않았다.", "gold": { "original_had_error": true, "meaning_changed": false } },
+    { "id": "ep-10", "original": "제품 출시는 3월로 연기되었습니다.", "edited": "제품 출시는 3월에 이루어졌습니다.", "gold": { "original_had_error": false, "meaning_changed": true } },
+    { "id": "ep-11", "original": "되도록 빨리 연락 주세요.", "edited": "가능한 한 빨리 연락 주세요.", "gold": { "original_had_error": false, "meaning_changed": false } },
+    { "id": "ep-12", "original": "안되는 이유를 설명해 주세요.", "edited": "안 되는 이유를 설명해 주세요.", "gold": { "original_had_error": true, "meaning_changed": false } }
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "method": "faster-whisper medium CPU int8, VAD off, local cache only, independent no script prompt",
+  "elapsedSeconds": 8.87,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 9.1,
+      "text": " I'm searching for someone someone very dear a kindred spirit a",
+      "words": [
+        {
+          "start": 0.0,
+          "end": 0.8,
+          "word": " I'm",
+          "probability": 0.9322650730609894
+        },
+        {
+          "start": 0.8,
+          "end": 1.18,
+          "word": " searching",
+          "probability": 0.9963216781616211
+        },
+        {
+          "start": 1.18,
+          "end": 1.52,
+          "word": " for",
+          "probability": 0.9969694018363953
+        },
+        {
+          "start": 1.52,
+          "end": 2.3,
+          "word": " someone",
+          "probability": 0.9666041135787964
+        },
+        {
+          "start": 2.3,
+          "end": 3.52,
+          "word": " someone",
+          "probability": 0.579399049282074
+        },
+        {
+          "start": 3.52,
+          "end": 3.92,
+          "word": " very",
+          "probability": 0.9967800974845886
+        },
+        {
+          "start": 3.92,
+          "end": 4.8,
+          "word": " dear",
+          "probability": 0.9865308403968811
+        },
+        {
+          "start": 4.8,
+          "end": 5.58,
+          "word": " a",
+          "probability": 0.8784549832344055
+        },
+        {
+          "start": 5.58,
+          "end": 5.9,
+          "word": " kindred",
+          "probability": 0.8199785351753235
+        },
+        {
+          "start": 5.9,
+          "end": 7.2,
+          "word": " spirit",
+          "probability": 0.9884081482887268
+        },
+        {
+          "start": 7.2,
+          "end": 9.1,
+          "word": " a",
+          "probability": 0.7778105139732361
+        }
+      ]
+    },
+    {
+      "start": 9.1,
+      "end": 9.82,
+      "text": " Dragon",
+      "words": [
+        {
+          "start": 9.1,
+          "end": 9.82,
+          "word": " Dragon",
+          "probability": 0.5855703353881836
+        }
+      ]
+    },
+    {
+      "start": 13.8,
+      "end": 20.72,
+      "text": " A dangerous quest for a lone hunter. I've been alone for as long as I can remember",
+      "words": [
+        {
+          "start": 13.8,
+          "end": 14.6,
+          "word": " A",
+          "probability": 0.10178486257791519
+        },
+        {
+          "start": 14.6,
+          "end": 15.04,
+          "word": " dangerous",
+          "probability": 0.9433108568191528
+        },
+        {
+          "start": 15.04,
+          "end": 15.46,
+          "word": " quest",
+          "probability": 0.97612464427948
+        },
+        {
+          "start": 15.46,
+          "end": 15.76,
+          "word": " for",
+          "probability": 0.9976504445075989
+        },
+        {
+          "start": 15.76,
+          "end": 15.94,
+          "word": " a",
+          "probability": 0.739768385887146
+        },
+        {
+          "start": 15.94,
+          "end": 16.08,
+          "word": " lone",
+          "probability": 0.5273444652557373
+        },
+        {
+          "start": 16.08,
+          "end": 16.74,
+          "word": " hunter.",
+          "probability": 0.9658700227737427
+        },
+        {
+          "start": 18.04,
+          "end": 18.84,
+          "word": " I've",
+          "probability": 0.9955065250396729
+        },
+        {
+          "start": 18.84,
+          "end": 18.98,
+          "word": " been",
+          "probability": 0.9982914328575134
+        },
+        {
+          "start": 18.98,
+          "end": 19.22,
+          "word": " alone",
+          "probability": 0.9664049744606018
+        },
+        {
+          "start": 19.22,
+          "end": 19.46,
+          "word": " for",
+          "probability": 0.9971910119056702
+        },
+        {
+          "start": 19.46,
+          "end": 19.66,
+          "word": " as",
+          "probability": 0.9933564066886902
+        },
+        {
+          "start": 19.66,
+          "end": 19.78,
+          "word": " long",
+          "probability": 0.9995792508125305
+        },
+        {
+          "start": 19.78,
+          "end": 19.94,
+          "word": " as",
+          "probability": 0.998909592628479
+        },
+        {
+          "start": 19.94,
+          "end": 20.06,
+          "word": " I",
+          "probability": 0.9994507431983948
+        },
+        {
+          "start": 20.06,
+          "end": 20.24,
+          "word": " can",
+          "probability": 0.9995225667953491
+        },
+        {
+          "start": 20.24,
+          "end": 20.72,
+          "word": " remember",
+          "probability": 0.998678982257843
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Relay Desk · 숨고 고객 채팅 봇",
+  "version": "0.3.24",
+  "description": "숨고 고객 채팅과 Relay Desk 업무 결과 전달·피드백·결제·리뷰 요청을 자동으로 이어갑니다.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://soomgo.com/*",
+    "https://www.soomgo.com/*",
+    "http://127.0.0.1:8787/*",
+    "http://localhost:8787/*",
+    "http://127.0.0.1:8791/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://soomgo.com/pro/chats*",
+        "https://www.soomgo.com/pro/chats*"
+      ],
+      "js": [
+        "automation-guard.js",
+        "chat-content.js",
+        "customer-observer.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "auto-update.js"
+  },
+  "action": {
+    "default_title": "Relay Desk 숨고 고객 채팅 봇"
+  }
+}

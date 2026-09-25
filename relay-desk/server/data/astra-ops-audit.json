@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "provider": "OpenAI",
+  "model": "gpt-6-astra",
+  "lane": "soomgo_emergency",
+  "reason": "startup-stale",
+  "startedAt": "2026-09-18T19:28:24.281Z",
+  "completedAt": "2026-09-18T19:28:54.926Z",
+  "inputHash": "b433fe14f4a20e77699bd1ef154901a20a68309f99989c6507a8b48621ed1bbc",
+  "responseId": "resp_0bf22bc2f5206ab5016aad90db58e087d0b73a614d68b7ff67",
+  "usage": {
+    "tokens": 2295,
+    "estimatedCostUsd": 0.07095,
+    "estimatedCostKrw": 97,
+    "day": "2026-09-18",
+    "requests": 568,
+    "cumulativeTokens": 2608711,
+    "cumulativeEstimatedCostUsd": 44.62403
+  },
+  "status": "warning",
+  "summary": "채팅 봇 일시 정지와 실패·보류 작업의 확인이 필요하다. 현재 큐 적체나 활성 제공자 장애는 보이지 않는다. 중복 전송 여부, 결제·파일 전달 안전성, API 비용 적정성은 이 요약만으로 확정할 수 없다.",
+  "findings": [
+    {
+      "severity": "P1",
+      "area": "bot",
+      "evidence": "chat 상태가 '일시 정지'이고 ageSeconds는 1602다. request는 '감시 중'이고 ageSeconds는 1825다. ageSeconds의 의미와 최근 순회 성공 시각은 제공되지 않았다.",
+      "action": "사람이 채팅 봇의 의도된 정지 여부와 두 봇의 최근 순회 성공 기록을 확인한다. ageSeconds만으로 순회 장애를 단정하지 않는다. 재개가 필요하면 미처리 대상과 기존 전송 이력을 먼저 대조하고 승인 후 진행한다."
+    },
+    {
+      "severity": "P2",
+      "area": "queue",
+      "evidence": "실행 실패 37건과 보류 3건이 기록되어 있다. busy=false, pendingPosts=0이므로 현재 적체는 확인되지 않으며, 실패 기록의 발생 시각과 해소 여부는 알 수 없다.",
+      "action": "실패·보류 작업이 과거 이력인지 미해결 건인지 검토한다. 재시도를 검토할 때 외부 전송 성공 여부, 작업 식별자, 중복 방지 기록을 대조한다. 일괄 재전송은 제안하지 않으며, 고객 메시지·결제·거래확정·파일 납품 관련 처리는 사람이 개별 승인한다."
+    },
+    {
+      "severity": "P2",
+      "area": "provider",
+      "evidence": "Claude는 configured=false, available=false, availability='key_missing'이다. 나머지 제공자는 ready 상태이며 lastError는 null이다.",
+      "action": "Claude가 선택적 제공자인지, 실제 라우팅 대상인지 확인한다. 필수 경로라면 사람 검토로 구성 보완 여부를 결정하고, 선택 경로라면 불필요한 호출·재시도가 없는지 확인한다. 키 추가나 제공자 전환을 자동 적용하지 않는다."
+    },
+    {
+      "severity": "P2",
+      "area": "provider",
+      "evidence": "2026-09-18 OpenAI 사용량은 567요청, 2,606,416토큰, 추정 비용 44.55308달러다. 예산 기준, 모델·작업별 비용, 재시도 비용 및 다른 제공자의 사용량은 제시되지 않았다.",
+      "action": "비용 초과로 단정하지 말고 집계 범위와 추정 단가를 확인한다. 사람이 일일 예산과 모델·작업별 사용량, 중복 호출·재시도 비중을 검토한다. 비용 절감을 이유로 Astra의 최종 검토 권한이나 결제·납품 승인 절차를 자동 축소하지 않는다."
+    }
+  ],
+  "recommendedChanges": [
+    {
+      "file": "봇 순회·일시 정지 모니터링 설정(실제 파일명 미확인)",
+      "reason": "기존 설정을 검토하여 최근 순회 성공 시각, 정지 사유, ageSeconds 의미 및 예상 순회 주기 대비 경고 기준이 누락된 경우 보완할 필요가 있다. 자동 재개나 고객 대상 동작은 변경 범위에서 제외한다.",
+      "patchRequired": true,
+      "safeToAutoApply": false
+    },
+    {
+      "file": "API 사용량 집계·예산 알림 설정(실제 파일명 미확인)",
+      "reason": "기존 계측 범위를 확인한 뒤 누락된 제공자·모델·작업별 비용과 재시도 비용, 사람이 승인한 예산 알림 기준을 보완하는 안을 검토한다. 자동 모델 전환이나 업무 승인 정책 변경은 포함하지 않는다.",
+      "patchRequired": true,
+      "safeToAutoApply": false
+    }
+  ],
+  "requiresHumanApproval": true,
+  "nextAuditHours": 6
+}

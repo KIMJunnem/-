@@ -1,0 +1,1198 @@
+{
+  "meta": {
+    "name": "Swan PPT 품질 규칙 (잘 만들어진 발표자료의 특징)",
+    "version": "v1-20260922",
+    "purpose": "원고→PPT 자동 변환의 템플릿 설계 기준이자 납품 전 기계 검사(qualityChecks) 후보. 사람이 판단하지 않아도 되게 수치로만 적는다.",
+    "unit_notes": "슬라이드는 16:9, 33.867cm × 19.05cm(13.333in × 7.5in) 기준. 글자는 pt. 위치는 슬라이드 폭·높이 대비 %.",
+    "confidence_legend": {
+      "confirmed": "출처에서 확인한 수치",
+      "judgment": "여러 출처의 원칙을 Swan 기준으로 제가 정한 수치",
+      "estimate": "[추정] 근거가 약해 실제 시안·고객 수정 요청으로 검증해야 하는 값"
+    },
+    "severity_legend": {
+      "fail": "납품 차단",
+      "warn": "보고서에만 표시, 사람이 봄"
+    },
+    "status": "data_only · 운영 미연결 · 검사기 초안만 있음",
+    "resolvedDecisions": [
+      {
+        "id": "D1",
+        "date": "2026-09-22",
+        "by": "준희",
+        "conflict": "fixed_elements(페이지 번호·머리글 y95%, 장 이름 y3%)가 safe_margin 1.5cm(y 7.9%~92.1%) 밖이라 canvas_01과 충돌. 시안은 이 세 요소만 여백 검사에서 제외함 — 준희 확인 필요",
+        "decision": "page_number·footer_text·section_label(fixed_elements)은 canvas_01(안전 여백) 검사에서 제외. 나머지 개체는 1.5cm 안"
+      },
+      {
+        "id": "D2",
+        "date": "2026-09-22",
+        "by": "준희",
+        "conflict": "deck_structure는 summary를 맺음 앞에 둠. design-types 기업형 do의 '첫 장 다음에 요약 1장'과 충돌. 시안은 품질 규칙을 따름 — 준희 확인 필요",
+        "decision": "summary 기본 위치는 closing 바로 앞(필수). corporate_internal만 표지 바로 뒤 요약 1장을 선택으로 추가 허용(summary_first)"
+      },
+      {
+        "id": "D3",
+        "date": "2026-09-22",
+        "by": "준희",
+        "conflict": "color_01(팔레트 6개 값)과 design-types의 accentFill·accentText 분리(대비 기준 때문)가 충돌할 수 있음. 공공형은 두 값이 같아 6개. 기업형은 막대 강조를 쓰면 7개",
+        "decision": "accent는 accentFill(막대·띠)과 accentText(글자·숫자) 두 값을 한 역할로 본다. color_01 팔레트는 최대 7개 값 허용(이 분리만 예외)"
+      }
+    ],
+    "openIssues": [
+      "file_01: tools/embed-fonts.py로 Pretendard Regular·Bold 원본을 EOT(압축 없음)로 포함. libeot로 되풀었을 때 원본 TTF와 동일함을 확인. PowerPoint에서 복구 창 없이 열리는지, Pretendard 없는 PC에서 글꼴이 유지되는지는 준희 PC 확인 대기"
+    ],
+    "fonts": {
+      "path": "services/presentation-design/fonts/public/static/alternative",
+      "files": [
+        "Pretendard-Regular.ttf",
+        "Pretendard-Bold.ttf"
+      ],
+      "license": "SIL OFL 1.1 (fonts/LICENSE.txt), Reserved Font Name 'Pretendard' → 자르거나 고치지 않고 원본 그대로 포함",
+      "fsType": 0
+    }
+  },
+  "canvas": {
+    "aspect": "16:9",
+    "size_cm": {
+      "w": 33.867,
+      "h": 19.05
+    },
+    "safe_margin_cm": {
+      "top": 1.5,
+      "right": 1.5,
+      "bottom": 1.5,
+      "left": 1.5,
+      "confidence": "confirmed",
+      "source": "simplept 1.5cm 이상"
+    },
+    "content_area_pct": {
+      "x": 4.4,
+      "y": 7.9,
+      "w": 91.2,
+      "h": 84.2
+    },
+    "grid": {
+      "columns": 12,
+      "gutter_cm": 0.5,
+      "baseline_cm": 0.4,
+      "confidence": "confirmed",
+      "source": "simplept 12/16분할 그리드"
+    },
+    "rules": [
+      {
+        "id": "canvas_01",
+        "rule": "모든 개체는 안전 여백 안에 있어야 한다",
+        "check": "개체 bbox가 safe_margin 밖으로 나가면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "canvas_02",
+        "rule": "개체 좌우 가장자리는 12분할 그리드 선에 맞춘다",
+        "check": "개체 x 또는 x+w가 그리드 선에서 0.2cm 초과로 어긋나면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "canvas_03",
+        "rule": "같은 역할의 개체(제목·페이지 번호·머리글)는 모든 슬라이드에서 같은 위치",
+        "check": "슬라이드 간 같은 placeholder 좌표 차이 0.1cm 초과면 실패",
+        "severity": "fail"
+      }
+    ]
+  },
+  "typography": {
+    "families": {
+      "title": "Pretendard Bold(700)",
+      "body": "Pretendard Regular(400)",
+      "number_emphasis": "Pretendard SemiBold(600)",
+      "optional_title_serif": "Noto Serif KR Bold (소상공인 소개형 B안만)",
+      "max_families_per_deck": 2,
+      "max_weights_per_deck": 3,
+      "embed": "파일에 글꼴 포함(OFL 글꼴만). 고객 지정 글꼴은 포함하지 않는다",
+      "confidence": "confirmed",
+      "source": "KRDS 굵기 최대 4단계, 제일기획 글꼴 3종 이내, Pretendard OFL"
+    },
+    "scale_report_pt": {
+      "note": "읽는 자료(공공·기업 보고, 제안서 인쇄본). 화면과 인쇄 겸용",
+      "cover_title": 36,
+      "slide_title": 28,
+      "subtitle": 18,
+      "body": 16,
+      "caption": 12,
+      "table_body": 12,
+      "table_header": 12,
+      "chart_label": 12,
+      "key_number": 48,
+      "page_number": 10,
+      "min_any_text": 10,
+      "confidence": "judgment"
+    },
+    "scale_screen_pt": {
+      "note": "보여주는 자료(강의·세미나·학교 발표). 뒷자리 가독성",
+      "cover_title": 44,
+      "slide_title": 36,
+      "subtitle": 24,
+      "body": 22,
+      "caption": 16,
+      "table_body": 16,
+      "table_header": 16,
+      "chart_label": 18,
+      "key_number": 60,
+      "page_number": 12,
+      "min_any_text": 16,
+      "confidence": "confirmed",
+      "source": "slidesgo 2026 접근성: 본문 24pt, 제목 44~64pt (Swan은 본문 22로 한 단계 낮춤: judgment)"
+    },
+    "ratios": {
+      "title_to_body_min": 1.5,
+      "adjacent_levels_min": 1.25,
+      "line_height_body": 1.5,
+      "line_height_title": 1.2,
+      "paragraph_gap_multiple_of_body": 0.75,
+      "confidence": "confirmed",
+      "source": "KRDS 행간 150% 이상, 단계 간 1.25~1.5배"
+    },
+    "text_limits": {
+      "title_max_chars_ko": 25,
+      "title_max_lines": 2,
+      "body_max_lines_report": 7,
+      "body_max_lines_screen": 5,
+      "bullets_max": 5,
+      "bullet_max_chars_ko": 40,
+      "bullet_max_lines_each": 2,
+      "line_max_words": 8,
+      "nesting_max_depth": 2,
+      "confidence": "confirmed",
+      "source": "simplept 불릿 4~5개, 한 줄 6~8어절 / 줄 수·글자 수는 judgment"
+    },
+    "rules": [
+      {
+        "id": "type_01",
+        "rule": "슬라이드 제목은 결론 문장이다(명사구 금지)",
+        "check": "제목이 서술어로 끝나지 않으면 경고. 예: '3분기 실적' → 경고, '3분기 매출 12% 증가' → 통과",
+        "severity": "warn"
+      },
+      {
+        "id": "type_02",
+        "rule": "최소 글자 크기 미만 텍스트 금지",
+        "check": "type_scale.min_any_text 미만 run이 있으면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "type_03",
+        "rule": "본문 줄 수 상한",
+        "check": "본문 placeholder의 렌더 줄 수가 body_max_lines 초과면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "type_04",
+        "rule": "불릿 개수·깊이 상한",
+        "check": "불릿 6개 이상 또는 3단계 이상 들여쓰기면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "type_05",
+        "rule": "글꼴 종류·굵기 상한",
+        "check": "덱 전체에서 글꼴 3종 이상 또는 굵기 4단계 이상이면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "type_06",
+        "rule": "본문 좌측 정렬, 제목 좌측 정렬. 가운데 정렬은 표지·구분 슬라이드·key_number만",
+        "check": "text·two_column 슬라이드의 본문 정렬이 center면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "type_07",
+        "rule": "강조는 굵기 또는 accent 색 1가지 방식만. 밑줄·기울임·글자 그림자 금지",
+        "check": "underline/italic/shadow 속성이 있으면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "type_08",
+        "rule": "한 슬라이드 안에서 본문 크기는 1가지",
+        "check": "본문 placeholder 내 서로 다른 font size가 2개 초과면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "type_09",
+        "rule": "글자 상자 밖으로 넘치는 텍스트 금지(자동 축소 금지)",
+        "check": "autofit=shrink 또는 overflow면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "type_10",
+        "rule": "한글 줄바꿈은 어절 단위",
+        "check": "단어 중간 줄바꿈(word wrap off)이면 경고",
+        "severity": "warn"
+      }
+    ]
+  },
+  "color": {
+    "roles": {
+      "primary": "제목 띠·표 머리행·주 막대. 슬라이드당 면적 25% 이하",
+      "secondary": "보조 도형·구분선·비강조 막대(회색 계열)",
+      "accent": "강조 1곳: 핵심 숫자, 강조 막대, 결론 한 줄. 슬라이드당 면적 5% 이하",
+      "background": "흰색 또는 밝은 중성색 1가지. 덱 전체 동일",
+      "text": "#1F2937 ~ #222222 범위의 진회색 1가지. 순검정(#000000) 금지",
+      "text_muted": "캡션·출처용 1가지(#6B7280 계열)"
+    },
+    "limits": {
+      "max_hues_per_deck": 3,
+      "max_colors_per_slide_incl_gray": 5,
+      "max_accent_uses_per_slide": 1,
+      "chart_series_colors_max": 2,
+      "confidence": "confirmed",
+      "source": "simplept 슬라이드당 5색 이하·팔레트 3~4색, feekspaper 핵심색 1~2개"
+    },
+    "contrast": {
+      "body_text_min_ratio": 4.5,
+      "large_text_min_ratio": 3.0,
+      "large_text_threshold_pt": 18,
+      "chart_element_vs_bg_min": 3.0,
+      "confidence": "confirmed",
+      "source": "KRDS AA 4.5:1 / 3:1, WCAG"
+    },
+    "rules": [
+      {
+        "id": "color_01",
+        "rule": "덱 전체 색상은 팔레트 6개 값(primary, secondary, accent, background, text, text_muted)만 쓴다",
+        "check": "팔레트 밖 색(회색 명도 변형 제외)이 나오면 실패",
+        "severity": "fail",
+        "exception": "accentFill·accentText 분리(D3)"
+      },
+      {
+        "id": "color_02",
+        "rule": "본문 대비 4.5:1, 18pt 이상 3:1",
+        "check": "텍스트 색 vs 배경 색 대비 계산, 미달 시 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "color_03",
+        "rule": "accent는 슬라이드당 1곳",
+        "check": "accent 색 적용 개체가 2개 이상이면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "color_04",
+        "rule": "그라데이션·네온·형광·투명도 50% 미만 겹침 금지",
+        "check": "gradient fill, 채도 90% 이상 색, alpha<0.5 겹침이 있으면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "color_05",
+        "rule": "사진 위 글자는 어두운 반투명 덮개(검정 40~60%) 위에만",
+        "check": "이미지 bbox와 텍스트 bbox가 겹치는데 사이에 덮개 도형이 없으면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "color_06",
+        "rule": "배경은 덱 전체 1가지(표지·구분 슬라이드는 primary 배경 허용)",
+        "check": "text·table·chart 슬라이드 배경색이 서로 다르면 실패",
+        "severity": "fail"
+      }
+    ]
+  },
+  "hierarchy_and_message": {
+    "principles": [
+      "한 장 한 메시지: 제목이 결론, 본문은 근거. 한 슬라이드가 두 결론을 담으면 두 장으로 나눈다",
+      "숫자가 증거: 핵심 수치는 설명 글자의 2~3배 크기, 설명은 한 줄",
+      "읽는 순서는 좌상→우하. 눈이 처음 닿는 곳(좌상 1/3)에 결론 또는 핵심 수치",
+      "장식은 정보가 아니다: 의미 없는 아이콘·선·도형은 없는 것이 낫다"
+    ],
+    "confidence": "confirmed",
+    "source": "feekspaper(한 장 한 메시지, 숫자 2~3배), simplept(논리 완결)",
+    "rules": [
+      {
+        "id": "msg_01",
+        "rule": "슬라이드당 헤드라인(결론) 1개",
+        "check": "제목 placeholder 비어 있으면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "msg_02",
+        "rule": "key_number 슬라이드는 숫자 최대 3개",
+        "check": "48pt 이상 숫자 run이 4개 이상이면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "msg_03",
+        "rule": "한 슬라이드에 차트·표 합쳐 최대 1개(two_column 비교 예외: 같은 종류 2개)",
+        "check": "차트+표 개수가 2 초과, 또는 종류가 다른 2개면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "msg_04",
+        "rule": "제목과 본문 첫 줄이 같은 문장이면 중복",
+        "check": "제목과 본문 첫 줄 유사도 0.8 이상이면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "msg_05",
+        "rule": "장식 개체 상한",
+        "check": "텍스트·데이터 없는 도형·아이콘이 슬라이드당 3개 초과면 경고",
+        "severity": "warn"
+      }
+    ]
+  },
+  "deck_structure": {
+    "required_order": [
+      "cover",
+      "agenda(6장 이상일 때)",
+      "section(장이 3개 이상일 때)",
+      "content...",
+      "summary",
+      "closing"
+    ],
+    "slide_count": {
+      "report_per_a4_page": 1.0,
+      "screen_per_minute": 1.0,
+      "max_without_section_break": 8,
+      "confidence": "estimate"
+    },
+    "fixed_elements": {
+      "page_number": {
+        "pos_pct": {
+          "x": 93,
+          "y": 95
+        },
+        "size_pt": 10,
+        "format": "n / N",
+        "except": [
+          "cover"
+        ]
+      },
+      "footer_text": {
+        "pos_pct": {
+          "x": 4.4,
+          "y": 95
+        },
+        "size_pt": 10,
+        "content": "기관·회사명 또는 문서명, 고객 요청 시"
+      },
+      "section_label": {
+        "pos_pct": {
+          "x": 4.4,
+          "y": 3
+        },
+        "size_pt": 10,
+        "content": "현재 장 이름"
+      },
+      "exemptFromSafeMargin": true
+    },
+    "rules": [
+      {
+        "id": "deck_01",
+        "rule": "표지 필수: 제목·부제(기관/회사/과목)·날짜",
+        "check": "첫 슬라이드 layout=cover이고 제목·날짜 있음",
+        "severity": "fail"
+      },
+      {
+        "id": "deck_02",
+        "rule": "6장 이상이면 목차 필수, 목차 항목은 최대 6개",
+        "check": "slide 수 ≥ 6 && agenda 없음 → 실패. agenda 항목 > 6 → 경고",
+        "severity": "fail"
+      },
+      {
+        "id": "deck_03",
+        "rule": "목차 항목 이름 = section 슬라이드 제목 = section_label 텍스트",
+        "check": "세 곳 문자열 불일치면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "deck_04",
+        "rule": "마지막 앞 슬라이드는 summary(결론 3줄 이내 + 다음 단계)",
+        "check": "summary 없음 → 경고. summary 본문 줄 수 > 5 → 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "deck_05",
+        "rule": "closing은 '감사합니다'만 쓰지 않는다. 문의처·담당·다음 일정 중 1개 이상",
+        "check": "closing 텍스트가 '감사합니다' 포함 & 다른 텍스트 없음 → 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "deck_06",
+        "rule": "페이지 번호 표지 제외 전부",
+        "check": "page_number 없는 슬라이드 있으면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "deck_07",
+        "rule": "빈 슬라이드·placeholder 문구('제목을 입력하십시오', 'Lorem') 금지",
+        "check": "텍스트 없는 슬라이드 또는 기본 placeholder 문자열 존재 시 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "deck_08",
+        "rule": "원고의 논리 순서 유지: 원고 소제목 순서와 슬라이드 순서 일치",
+        "check": "원고 heading 순서와 section·제목 순서의 순위 상관 < 0.9면 경고",
+        "severity": "warn"
+      }
+    ],
+    "optional": {
+      "summary_first": {
+        "types": [
+          "corporate_internal"
+        ],
+        "position": "cover 바로 다음",
+        "decision": "D2"
+      }
+    }
+  },
+  "slide_layouts": {
+    "note": "위치는 폭·높이 %. 모든 레이아웃은 제목 영역(y 7.9~20%)과 본문 영역(y 24~88%)을 공유한다. 이것이 '일관성'의 실체다.",
+    "common": {
+      "title": {
+        "x": 4.4,
+        "y": 7.9,
+        "w": 91.2,
+        "h": 12,
+        "align": "left",
+        "valign": "bottom"
+      },
+      "title_underline": {
+        "x": 4.4,
+        "y": 20.5,
+        "w": 6,
+        "h": 0.4,
+        "color": "primary",
+        "optional": true
+      },
+      "body_area": {
+        "x": 4.4,
+        "y": 24,
+        "w": 91.2,
+        "h": 64
+      },
+      "footer_band": {
+        "y": 92,
+        "h": 8
+      }
+    },
+    "cover": {
+      "elements": {
+        "title": {
+          "x": 8,
+          "y": 34,
+          "w": 84,
+          "h": 18,
+          "align": "left"
+        },
+        "subtitle": {
+          "x": 8,
+          "y": 54,
+          "w": 84,
+          "h": 8
+        },
+        "org_date": {
+          "x": 8,
+          "y": 82,
+          "w": 84,
+          "h": 6,
+          "size": "caption+2"
+        },
+        "top_band": {
+          "x": 0,
+          "y": 0,
+          "w": 100,
+          "h": 3.5,
+          "color": "primary"
+        }
+      },
+      "rules": [
+        "장식은 상단 띠 1개 또는 좌측 세로 바 1개 중 하나",
+        "사진 배경 금지(소상공인형 예외: 덮개 필수)",
+        "로고는 우상단 또는 org_date 옆, 높이 6% 이하"
+      ]
+    },
+    "agenda": {
+      "elements": {
+        "items": {
+          "x": 8,
+          "y": 26,
+          "w": 84,
+          "h": 60,
+          "max": 6,
+          "row_gap_pct": 9,
+          "number_style": "01 02 …",
+          "number_color": "primary"
+        }
+      },
+      "rules": [
+        "항목 글자 = subtitle 크기",
+        "항목당 1줄",
+        "번호는 굵게, 항목명은 보통 굵기"
+      ]
+    },
+    "section": {
+      "elements": {
+        "number": {
+          "x": 8,
+          "y": 30,
+          "w": 20,
+          "h": 20,
+          "size_pt": 60,
+          "color": "primary"
+        },
+        "title": {
+          "x": 8,
+          "y": 52,
+          "w": 84,
+          "h": 12
+        }
+      },
+      "rules": [
+        "배경 primary + 흰 글자, 또는 흰 배경 + primary 글자 중 덱 전체 1가지",
+        "본문 없음"
+      ]
+    },
+    "text": {
+      "elements": {
+        "body": {
+          "x": 4.4,
+          "y": 24,
+          "w": 91.2,
+          "h": 64
+        }
+      },
+      "rules": [
+        "본문 폭이 100%면 한 줄이 너무 길다: 글자 상자 폭 최대 70%(report) / 85%(screen)",
+        "불릿 기호는 ‘•’ 또는 숫자, 색은 text 또는 primary",
+        "그림 없이 글만 있을 때 우측 30%는 비워 둔다(여백이 정돈감)"
+      ]
+    },
+    "two_column": {
+      "elements": {
+        "left": {
+          "x": 4.4,
+          "y": 24,
+          "w": 44,
+          "h": 64
+        },
+        "right": {
+          "x": 51.6,
+          "y": 24,
+          "w": 44,
+          "h": 64
+        },
+        "column_heads": {
+          "h": 7,
+          "style": "subtitle 크기, primary 색, 하단 0.4% 선"
+        }
+      },
+      "rules": [
+        "좌우 열 머리 필수(현황/개선, 계획/실적, 문제/제안)",
+        "두 열의 줄 수 차이 3줄 이내",
+        "열 사이 간격 3.2% 고정"
+      ]
+    },
+    "table": {
+      "elements": {
+        "table": {
+          "x": 4.4,
+          "y": 24,
+          "w": 91.2,
+          "h_max": 60
+        }
+      },
+      "limits": {
+        "max_cols": 7,
+        "max_rows_report": 12,
+        "max_rows_screen": 7,
+        "cell_padding_cm": 0.15,
+        "row_height_min_cm": 0.8
+      },
+      "style": {
+        "header_fill": "primary",
+        "header_text": "#FFFFFF",
+        "body_fill": "none",
+        "grid_line": "#D9D9D9 0.5pt 가로선만",
+        "zebra": "격행 #F4F5F7 허용(행 8개 이상일 때)",
+        "align": "글자 좌측, 숫자 우측, 머리행 가운데",
+        "unit": "머리행에 (단위: 원, %)"
+      },
+      "rules": [
+        {
+          "id": "table_01",
+          "rule": "열·행 상한 초과면 표를 나누거나 부록으로",
+          "check": "cols > 7 또는 rows > 상한이면 실패",
+          "severity": "fail"
+        },
+        {
+          "id": "table_02",
+          "rule": "숫자 열은 우측 정렬, 천 단위 쉼표, 소수점 자릿수 열 안에서 동일",
+          "check": "숫자 셀 정렬·형식 불일치면 경고",
+          "severity": "warn"
+        },
+        {
+          "id": "table_03",
+          "rule": "강조는 셀 1~3개에 굵기 또는 accent 글자색. 셀 배경 강조 금지",
+          "check": "accent 배경 셀 있으면 실패",
+          "severity": "fail"
+        },
+        {
+          "id": "table_04",
+          "rule": "표 글자 12pt(report) / 16pt(screen) 미만 금지",
+          "check": "표 셀 최소 크기 검사",
+          "severity": "fail"
+        }
+      ]
+    },
+    "chart": {
+      "elements": {
+        "chart": {
+          "x": 4.4,
+          "y": 24,
+          "w": 60,
+          "h": 62
+        },
+        "takeaway": {
+          "x": 67,
+          "y": 24,
+          "w": 28.6,
+          "h": 62,
+          "content": "결론 1~3줄, 숫자 강조"
+        }
+      },
+      "type_map": {
+        "비교": "세로 막대",
+        "순위": "가로 막대",
+        "추이": "선",
+        "구성비": "가로 누적 막대 1개 또는 도넛(항목 5개 이하)",
+        "두 변수 관계": "산점도",
+        "금지": [
+          "3D",
+          "원형(항목 6개 이상)",
+          "이중 축(설명 없이)",
+          "레이더",
+          "깔때기"
+        ]
+      },
+      "style": {
+        "series_colors": [
+          "primary",
+          "secondary"
+        ],
+        "highlight": "accent 1개 막대/점",
+        "gridlines": "가로 보조선만 #E5E7EB 0.5pt",
+        "axis_lines": "x축만",
+        "data_labels": "값 직접 표기, 소수 1자리 이내",
+        "legend": "계열 2개 이상일 때만, 상단",
+        "title": "차트 안 제목 없음(슬라이드 제목이 결론)",
+        "source_note": "차트 아래 caption 크기로 '출처·기준일'"
+      },
+      "rules": [
+        {
+          "id": "chart_01",
+          "rule": "계열 색 2개 + accent 1개까지",
+          "check": "계열 색 3개 이상 또는 accent 2곳이면 실패",
+          "severity": "fail"
+        },
+        {
+          "id": "chart_02",
+          "rule": "3D·그림자·그라데이션 금지",
+          "check": "chart style 속성 검사",
+          "severity": "fail"
+        },
+        {
+          "id": "chart_03",
+          "rule": "막대는 0에서 시작",
+          "check": "값 축 최소값 ≠ 0이면 실패(선 차트 예외)",
+          "severity": "fail"
+        },
+        {
+          "id": "chart_04",
+          "rule": "축·레이블 글자 최소 크기",
+          "check": "chart_label 미만이면 실패",
+          "severity": "fail"
+        },
+        {
+          "id": "chart_05",
+          "rule": "차트 옆에 결론 텍스트 필수",
+          "check": "takeaway 영역 비어 있으면 경고",
+          "severity": "warn"
+        },
+        {
+          "id": "chart_06",
+          "rule": "항목 8개 초과 막대는 상위 7개 + 기타",
+          "check": "category 수 > 8이면 경고",
+          "severity": "warn"
+        }
+      ]
+    },
+    "key_number": {
+      "elements": {
+        "cards": {
+          "count_max": 3,
+          "x_start": 4.4,
+          "y": 30,
+          "w_each": 29,
+          "gap": 2.1,
+          "h": 46
+        },
+        "number": {
+          "size_pt": 48,
+          "color": "primary",
+          "highlight_one": "accent"
+        },
+        "label": {
+          "size": "body",
+          "lines_max": 2
+        },
+        "delta": {
+          "size": "caption+2",
+          "format": "▲ 12.3%p / ▼ 4건"
+        }
+      },
+      "rules": [
+        "카드 배경은 #F4F5F7 또는 테두리 0.75pt #D9D9D9 중 덱 전체 1가지",
+        "숫자에 단위·기간 필수",
+        "증감 화살표는 색이 아닌 기호로도 읽히게"
+      ]
+    },
+    "summary": {
+      "elements": {
+        "points": {
+          "max": 3,
+          "style": "번호 + 굵은 한 줄 + 보통 한 줄 설명"
+        },
+        "next_step": {
+          "y": 74,
+          "h": 14,
+          "style": "primary 얇은 상단선 + '다음 단계·요청 사항'"
+        }
+      },
+      "rules": [
+        "결론은 원고에 있는 문장만. 새 주장 금지",
+        "요청·결정 사항은 동사로 끝낸다('승인 요청', '예산 확정 필요')"
+      ]
+    },
+    "closing": {
+      "elements": {
+        "line": {
+          "x": 8,
+          "y": 40,
+          "w": 84,
+          "h": 10,
+          "content": "문의처·담당·다음 일정 중 1개 이상"
+        }
+      },
+      "rules": [
+        "표지와 같은 배경 처리",
+        "연락처는 고객이 준 것만"
+      ]
+    }
+  },
+  "images_and_shapes": {
+    "images": {
+      "per_slide_max": 1,
+      "min_resolution_px_per_cm": 60,
+      "aspect": "원본 비율 유지(늘림 금지)",
+      "corner_radius_cm": 0.2,
+      "stock_or_ai_generated": "금지. 고객 제공 이미지만",
+      "confidence": "confirmed",
+      "source": "simplept 300dpi, envato 진짜 사진 흐름"
+    },
+    "icons": {
+      "per_slide_max": 3,
+      "style": "선 두께 동일한 단색(primary 또는 text) 세트 1종",
+      "size_pct_h": 6,
+      "meaning": "텍스트 없는 아이콘 금지(항상 레이블 동반)"
+    },
+    "shapes": {
+      "corner_radius_cm": 0.2,
+      "stroke_pt": 0.75,
+      "fill": "팔레트 색만",
+      "effects": "그림자·반사·입체 금지",
+      "lines": "구분선 0.5~0.75pt #D9D9D9"
+    },
+    "rules": [
+      {
+        "id": "img_01",
+        "rule": "이미지 비율 왜곡 금지",
+        "check": "원본 대비 종횡비 차이 2% 초과면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "img_02",
+        "rule": "저해상도 금지",
+        "check": "표시 크기 기준 60px/cm 미만이면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "img_03",
+        "rule": "효과 금지",
+        "check": "shadow/reflection/3d/glow 속성 있으면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "img_04",
+        "rule": "개체 간 최소 간격",
+        "check": "인접 개체 간격 0.4cm 미만이면 경고(표·차트 내부 제외)",
+        "severity": "warn"
+      }
+    ]
+  },
+  "motion": {
+    "transitions": "없음 또는 페이드 0.3~0.5초 덱 전체 동일",
+    "animations": "없음. 예외: 강의형에서 불릿 순차 표시(나타내기, 0.3초)만",
+    "rules": [
+      {
+        "id": "motion_01",
+        "rule": "보고·제안·과제형은 애니메이션 0",
+        "check": "animation 요소 있으면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "motion_02",
+        "rule": "전환 효과 종류는 덱 전체 1가지",
+        "check": "transition type 2종 이상이면 실패",
+        "severity": "fail"
+      }
+    ],
+    "confidence": "confirmed",
+    "source": "simplept 페이드 0.5~1초, 절제"
+  },
+  "numbers_and_text_conventions": {
+    "korean": {
+      "thousands": "1,234,567 / 큰 수는 '억·만' 단위 표기 일관(한 덱에서 혼용 금지)",
+      "percent": "12.3% / 증감은 %p",
+      "date": "2026.09.22 또는 2026년 9월 22일 중 1가지",
+      "unit_position": "표·차트는 머리행/축에, 본문은 숫자 뒤",
+      "spacing": "숫자와 단위 사이 띄어쓰기 없음(94,000원), 영문 단위는 띄움(5 GB)",
+      "quotes": "“ ” 사용, 영문 인용은 \" \"",
+      "ellipsis": "… 1개(... 금지)",
+      "bullet_end": "불릿 문장은 마침표 없이 명사·서술형 종결 통일",
+      "honorific": "보고형은 '~함', '~임' 개조식 통일. 강의형은 '~합니다' 통일"
+    },
+    "rules": [
+      {
+        "id": "num_01",
+        "rule": "숫자 표기 형식 덱 내 통일",
+        "check": "천 단위 쉼표 유무·소수 자릿수·날짜 형식이 섞이면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "num_02",
+        "rule": "출처 없는 수치는 [확인 필요] 표시",
+        "check": "원고에 없는 숫자가 슬라이드에 있으면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "num_03",
+        "rule": "개조식/경어체 혼용 금지",
+        "check": "불릿 종결 형태가 2종 이상이면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "num_04",
+        "rule": "오탈자·이중 공백·문장부호 중복(!!, ??) 금지",
+        "check": "정규식 검사",
+        "severity": "warn"
+      }
+    ]
+  },
+  "consistency_checks": {
+    "note": "'깔끔하다'의 대부분은 일관성이다. 사람 눈이 느끼는 어긋남을 수치로 잡는다.",
+    "rules": [
+      {
+        "id": "cons_01",
+        "rule": "제목 위치·크기·색 전 슬라이드 동일",
+        "check": "제목 bbox 편차 0.1cm, 크기 편차 0pt",
+        "severity": "fail"
+      },
+      {
+        "id": "cons_02",
+        "rule": "본문 시작 y 동일",
+        "check": "본문 첫 줄 y 편차 0.2cm 초과면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "cons_03",
+        "rule": "불릿 기호·들여쓰기 전 슬라이드 동일",
+        "check": "bullet char·indent 값 2종 이상이면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "cons_04",
+        "rule": "표 스타일 전 슬라이드 동일",
+        "check": "머리행 색·선 두께·글자 크기 불일치면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "cons_05",
+        "rule": "차트 스타일 전 슬라이드 동일",
+        "check": "계열 색 순서·보조선·레이블 크기 불일치면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "cons_06",
+        "rule": "카드·도형 모서리·선 두께 동일",
+        "check": "radius·stroke 값 2종 이상이면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "cons_07",
+        "rule": "용어 통일(원고 용어집 우선)",
+        "check": "같은 뜻 다른 표기(예: 'PPT'/'피피티'/'프레젠테이션') 혼용 시 경고",
+        "severity": "warn"
+      }
+    ]
+  },
+  "whitespace": {
+    "targets": {
+      "text_slide_fill_ratio_max": 0.55,
+      "chart_slide_fill_ratio_max": 0.7,
+      "min_empty_side_pct_text_slide": 25,
+      "confidence": "estimate"
+    },
+    "rules": [
+      {
+        "id": "ws_01",
+        "rule": "텍스트 슬라이드는 콘텐츠 영역의 55%까지만 채운다",
+        "check": "개체 bbox 합집합 면적 / 콘텐츠 영역 > 0.55면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "ws_02",
+        "rule": "가장자리에 붙은 개체 금지",
+        "check": "canvas_01과 동일",
+        "severity": "fail"
+      }
+    ]
+  },
+  "file_hygiene": {
+    "rules": [
+      {
+        "id": "file_01",
+        "rule": "OFL 글꼴 파일 포함, 기타 글꼴 미포함",
+        "check": "embedded fonts 목록이 허용 목록 밖이면 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "file_02",
+        "rule": "슬라이드 마스터 1개, 레이아웃은 정의된 10종만",
+        "check": "master > 1 또는 미정의 layout 사용 시 실패",
+        "severity": "fail"
+      },
+      {
+        "id": "file_03",
+        "rule": "숨김 슬라이드·발표자 노트에 작업 메모 금지",
+        "check": "hidden slide 또는 notes에 '[확인 필요]' 외 텍스트 있으면 경고",
+        "severity": "warn"
+      },
+      {
+        "id": "file_04",
+        "rule": "파일명: {고객명 없이}{문서제목}_{YYYYMMDD}_v{n}.pptx",
+        "check": "정규식",
+        "severity": "warn"
+      },
+      {
+        "id": "file_05",
+        "rule": "문서 속성(작성자·회사)에 고객 개인정보 없음",
+        "check": "core properties 검사",
+        "severity": "fail"
+      },
+      {
+        "id": "file_06",
+        "rule": "PDF 동봉(고객 요청 시), 글꼴 포함된 PDF",
+        "check": "pdf fonts embedded",
+        "severity": "warn"
+      },
+      {
+        "id": "file_07",
+        "rule": "파일 크기 20MB 이하",
+        "check": "size",
+        "severity": "warn"
+      }
+    ]
+  },
+  "anti_patterns": {
+    "note": "'대충 만든 티'가 나는 패턴. 검출 조건과 함께.",
+    "items": [
+      {
+        "pattern": "원고를 그대로 붙여 넣은 글 벽",
+        "detect": "본문 8줄 이상 또는 글자 300자 이상",
+        "fix": "두 장으로 나누거나 표·카드로"
+      },
+      {
+        "pattern": "제목이 원고 소제목 그대로(명사구)",
+        "detect": "type_01",
+        "fix": "결론 문장으로 바꿈"
+      },
+      {
+        "pattern": "빈 공간을 아이콘·이미지로 메움",
+        "detect": "레이블 없는 아이콘, 스톡 사진",
+        "fix": "삭제. 여백은 결점이 아니다"
+      },
+      {
+        "pattern": "슬라이드마다 다른 정렬·크기",
+        "detect": "cons_01~06",
+        "fix": "마스터 레이아웃으로 강제"
+      },
+      {
+        "pattern": "무지개 차트",
+        "detect": "chart_01",
+        "fix": "primary+회색, 강조 1"
+      },
+      {
+        "pattern": "3D 원형 차트",
+        "detect": "chart_02",
+        "fix": "가로 막대"
+      },
+      {
+        "pattern": "표를 사진으로 캡처해 넣음",
+        "detect": "이미지 안에 표 격자 감지 또는 원고에 표가 있는데 슬라이드에 table 개체 없음",
+        "fix": "표 개체로 재작성"
+      },
+      {
+        "pattern": "'감사합니다' 한 장으로 끝",
+        "detect": "deck_05",
+        "fix": "문의처·다음 단계"
+      },
+      {
+        "pattern": "템플릿 기본 문구 잔존",
+        "detect": "deck_07",
+        "fix": "삭제"
+      },
+      {
+        "pattern": "자동 축소로 글자가 9pt",
+        "detect": "type_02, type_09",
+        "fix": "내용을 줄이거나 장을 나눔"
+      },
+      {
+        "pattern": "강조가 너무 많아 강조가 없음",
+        "detect": "굵은 글자 비율 > 30% 또는 accent 2곳 이상",
+        "fix": "강조 1곳"
+      },
+      {
+        "pattern": "느낌표·이모지·유행어",
+        "detect": "정규식(!, 이모지 범위)",
+        "fix": "삭제(강의형·소상공인형은 이모지만 금지, 느낌표 1회 허용)"
+      },
+      {
+        "pattern": "AI 생성 티: 모든 슬라이드가 3열 카드+아이콘",
+        "detect": "동일 레이아웃 4장 연속",
+        "fix": "text/two_column/table 섞기. 연속 동일 레이아웃 최대 3장"
+      }
+    ]
+  },
+  "machine_check_summary": {
+    "note": "presentation.json qualityChecks에 넣을 후보. blocking=true는 fail 규칙만.",
+    "blocking": [
+      "canvas_01",
+      "canvas_03",
+      "type_02",
+      "type_03",
+      "type_04",
+      "type_05",
+      "type_07",
+      "type_09",
+      "color_01",
+      "color_02",
+      "color_04",
+      "color_05",
+      "color_06",
+      "msg_01",
+      "msg_02",
+      "msg_03",
+      "deck_01",
+      "deck_02",
+      "deck_03",
+      "deck_06",
+      "deck_07",
+      "table_01",
+      "table_03",
+      "table_04",
+      "chart_01",
+      "chart_02",
+      "chart_03",
+      "chart_04",
+      "img_01",
+      "img_03",
+      "motion_01",
+      "motion_02",
+      "num_02",
+      "cons_01",
+      "cons_03",
+      "cons_04",
+      "cons_05",
+      "ws_02",
+      "file_01",
+      "file_02",
+      "file_05"
+    ],
+    "warn_only": [
+      "canvas_02",
+      "type_01",
+      "type_06",
+      "type_08",
+      "type_10",
+      "color_03",
+      "msg_04",
+      "msg_05",
+      "deck_04",
+      "deck_05",
+      "deck_08",
+      "table_02",
+      "chart_05",
+      "chart_06",
+      "img_02",
+      "img_04",
+      "num_01",
+      "num_03",
+      "num_04",
+      "cons_02",
+      "cons_06",
+      "cons_07",
+      "ws_01",
+      "file_03",
+      "file_04",
+      "file_06",
+      "file_07"
+    ],
+    "warn_escalation": "warn이 슬라이드 수의 30% 초과면 덱 전체 fail [추정]",
+    "checkParams_proposal": {
+      "provisional": true,
+      "safeMarginCm": 1.5,
+      "gridColumns": 12,
+      "minFontPtReport": 10,
+      "minFontPtScreen": 16,
+      "bodyMaxLinesReport": 7,
+      "bodyMaxLinesScreen": 5,
+      "bulletsMax": 5,
+      "bulletDepthMax": 2,
+      "fontFamiliesMax": 2,
+      "fontWeightsMax": 3,
+      "colorsPerSlideMax": 5,
+      "accentPerSlideMax": 1,
+      "contrastBody": 4.5,
+      "contrastLarge": 3.0,
+      "chartSeriesColorsMax": 2,
+      "tableColsMax": 7,
+      "tableRowsMaxReport": 12,
+      "tableRowsMaxScreen": 7,
+      "imagesPerSlideMax": 1,
+      "iconsPerSlideMax": 3,
+      "sameLayoutRunMax": 3,
+      "titlePositionToleranceCm": 0.1,
+      "fillRatioMaxTextSlide": 0.55,
+      "warnRatioFail": 0.3,
+      "fileSizeMaxMb": 20
+    }
+  },
+  "sources": [
+    "https://www.krds.go.kr/html/site/style/style_03.html",
+    "https://feekspaper.com/%EA%B3%B5%EA%B3%B5%EA%B8%B0%EA%B4%80-ppt-%EB%94%94%EC%9E%90%EC%9D%B8/",
+    "https://www.simplept.co.kr/post/%EC%B2%AD%EC%A4%91%EC%9D%84-%EC%82%AC%EB%A1%9C%EC%9E%A1%EB%8A%94-ppt-%EB%94%94%EC%9E%90%EC%9D%B8%EC%9D%98-7%EA%B0%80%EC%A7%80-%EC%9B%90%EC%B9%99%EA%B3%BC-2026%EB%85%84-%EC%98%88%EC%B8%A1-%ED%8A%B8%EB%A0%8C%EB%93%9C",
+    "https://slidesgo.com/slidesgo-school/ai-presentations/presentation-design-trends-2026",
+    "https://presenti.ai/kr/blog/design-trends-and-free-templates/",
+    "https://elements.envato.com/learn/presentation-design-trends-ppt",
+    "https://blog.cheil.com/30718",
+    "https://github.com/orioncactus/pretendard/blob/main/LICENSE"
+  ],
+  "may_be_wrong_when": [
+    "고객사 CI·사내 템플릿이 있으면 색·글꼴·위치 규칙 전부가 그쪽에 밀린다. 요청서에 '회사 양식'이 있으면 이 파일은 검사 규칙(줄 수·대비·일관성)만 적용한다.",
+    "학회·논문 발표는 텍스트 밀도가 높은 것이 관행이라 body_max_lines가 너무 빡빡할 수 있다. 실제 요청이 오면 별도 유형으로 뺀다.",
+    "fill ratio 0.55, warn 30% 같은 [추정] 값은 시안 10건에 적용해 본 뒤 조정한다. 정상 시안이 자꾸 걸리면 검사가 아니라 수치가 틀린 것이다."
+  ]
+}
