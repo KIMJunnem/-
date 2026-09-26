@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "roles": {
+    "teacher_reasoning": {
+      "candidates": [
+        {"provider":"OpenAI","model":"gpt-6-astra","inputUsdPerMillion":10,"outputUsdPerMillion":50},
+        {"provider":"Claude","model":"claude-opus-5-5","inputUsdPerMillion":4,"outputUsdPerMillion":20}
+      ]
+    },
+    "teacher_creative": {
+      "candidates": [
+        {"provider":"OpenAI","model":"gpt-6-astra","inputUsdPerMillion":10,"outputUsdPerMillion":50},
+        {"provider":"Claude","model":"claude-opus-5-5","inputUsdPerMillion":4,"outputUsdPerMillion":20}
+      ]
+    },
+    "worker_reasoning": {
+      "candidates": [
+        {"provider":"OpenAI","model":"gpt-5.6-sol","inputUsdPerMillion":4,"outputUsdPerMillion":20},
+        {"provider":"Gemini","model":"gemini-3.1-flash-lite","inputUsdPerMillion":0.25,"outputUsdPerMillion":1.5}
+      ]
+    },
+    "worker_writing": {
+      "candidates": [
+        {"provider":"OpenAI","model":"gpt-5.6-luna","inputUsdPerMillion":0.2,"outputUsdPerMillion":1.2},
+        {"provider":"Gemini","model":"gemini-3.1-flash-lite","inputUsdPerMillion":0.25,"outputUsdPerMillion":1.5},
+        {"provider":"Claude","model":"claude-haiku-4-5","inputUsdPerMillion":1,"outputUsdPerMillion":5}
+      ]
+    },
+    "worker_translation": {
+      "candidates": [
+        {"provider":"Gemini","model":"gemini-3.1-flash-lite","inputUsdPerMillion":0.25,"outputUsdPerMillion":1.5},
+        {"provider":"OpenAI","model":"gpt-5.6-luna","inputUsdPerMillion":0.2,"outputUsdPerMillion":1.2}
+      ]
+    },
+    "cheap_classifier": {
+      "candidates": [
+        {"provider":"OpenAI","model":"gpt-5.6-luna","inputUsdPerMillion":0.2,"outputUsdPerMillion":1.2},
+        {"provider":"Gemini","model":"gemini-3.1-flash-lite","inputUsdPerMillion":0.25,"outputUsdPerMillion":1.5}
+      ]
+    },
+    "cheap_writer": {
+      "candidates": [
+        {"provider":"OpenAI","model":"gpt-5.6-luna","inputUsdPerMillion":0.2,"outputUsdPerMillion":1.2},
+        {"provider":"Gemini","model":"gemini-3.1-flash-lite","inputUsdPerMillion":0.25,"outputUsdPerMillion":1.5}
+      ]
+    },
+    "local_tool": {"candidates":[{"provider":"Local","model":"local_tool","inputUsdPerMillion":0,"outputUsdPerMillion":0}]}
+  },
+  "departmentRoleMap": {
+    "intake": {"teacher":"teacher_reasoning","student":"worker_reasoning"},
+    "sales": {"teacher":"teacher_reasoning","student":"worker_writing"},
+    "document": {"teacher":"teacher_reasoning","student":"worker_writing"},
+    "subtitle": {"teacher":"teacher_reasoning","student":"worker_translation"},
+    "video": {"teacher":"teacher_creative","student":"worker_reasoning"},
+    "creative": {"teacher":"teacher_creative","student":"worker_writing"},
+    "engineering": {"teacher":"teacher_reasoning","student":"worker_reasoning"},
+    "research": {"teacher":"teacher_reasoning","student":"worker_reasoning"},
+    "finance": {"teacher":"local_tool","student":"local_tool"},
+    "qa": {"teacher":"teacher_reasoning","student":"worker_reasoning"},
+    "delivery": {"teacher":"local_tool","student":"local_tool"},
+    "ops": {"teacher":"teacher_reasoning","student":"worker_reasoning"}
+  },
+  "shadow": {
+    "enabled": true,
+    "maxShadowCallsPerDepartmentPerJob": 1,
+    "maxShadowBudgetFraction": 0.20,
+    "subjectiveEvaluatorEnabled": false
+  },
+  "promotion": {
+    "maxAutoLevel": 3,
+    "levels": {
+      "1":{"minSamples":20,"minDecisionMatch":0.95,"minRequiredFieldRecall":0.97,"maxSafetyErrors":0,"maxReworkRate":0.10},
+      "2":{"minSamples":50,"minDecisionMatch":0.97,"minRequiredFieldRecall":0.98,"maxSafetyErrors":0,"maxReworkRate":0.07},
+      "3":{"minSamples":100,"minDecisionMatch":0.98,"minRequiredFieldRecall":0.99,"maxSafetyErrors":0,"maxReworkRate":0.05},
+      "4":{"minSamples":200,"minDecisionMatch":0.99,"minRequiredFieldRecall":0.995,"maxSafetyErrors":0,"maxReworkRate":0.03},
+      "5":{"minSamples":500,"minDecisionMatch":0.995,"minRequiredFieldRecall":0.998,"maxSafetyErrors":0,"maxReworkRate":0.02}
+    }
+  },
+  "escalation": {
+    "confidenceBelow": 0.85,
+    "teacherRequiredFlags": [
+      "new_task_type","rule_conflict","requirements_ambiguous","price_ambiguous","qc_failed",
+      "student_repeat_failure","high_value_order","safety_or_legal","customer_complaint","provider_disagreement"
+    ]
+  },
+  "cache": {
+    "defaultTtlSeconds": 86400,
+    "noCacheFlags": ["safety_or_legal","payment_dispute","refund_dispute","new_task_type"],
+    "maxEntries": 5000
+  }
+}
