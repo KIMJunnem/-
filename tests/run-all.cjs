@@ -103,7 +103,8 @@ const suites = [
   ['9/26 릴스·쇼츠 첫 거래 29,000원(묶음과 안 겹침·채팅 할인 1회)·분류 이름 겹침·자세히 한 줄·준희 실제 말투', 'tests/promo-tone-0926.cjs'],
   ['DevDay 상시 에이전트·서비스 티어 선행 배선', 'tests/future-routing.cjs'],
   ['자율 고객응대 시뮬레이션·학습 후보 저장', 'tests/customer-simulator.cjs'],
-  ['신뢰도 학습·결정 원장·적응형 반복주기', 'tests/learning-ledger.cjs']
+  ['신뢰도 학습·결정 원장·적응형 반복주기', 'tests/learning-ledger.cjs'],
+  ['OpenAI Agents API 구조·Relay Desk 선행 배선', 'tests/openai-agents-api-prep.cjs']
 ];
 
 const results = [];
