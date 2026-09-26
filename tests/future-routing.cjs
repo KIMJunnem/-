@@ -4,6 +4,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const {
   SERVICE_TIERS,
+  MODEL_CLASSES,
+  estimateComplexity,
   normalizeFutureRoutingPolicy,
   resolveRouteMetadata,
   applyProviderTier
@@ -11,6 +13,7 @@ const {
 const { futureRoutingPolicy } = require('../server/operating-policy');
 
 assert.deepEqual(SERVICE_TIERS, ['standard', 'fast', 'ultrafast']);
+assert.deepEqual(MODEL_CLASSES, ['cheap', 'mid', 'top']);
 
 const policy = futureRoutingPolicy();
 assert.equal(policy.enabled, true);
@@ -30,6 +33,8 @@ const fast = resolveRouteMetadata({
 });
 assert.equal(fast.serviceTier, 'fast');
 assert.equal(fast.interactive, true);
+assert.equal(fast.recommendedModelClass, 'cheap');
+assert.equal(fast.complexityScore, 0);
 
 const ultraBlocked = resolveRouteMetadata({
   post: { serviceTier: 'ultrafast' },
@@ -37,6 +42,27 @@ const ultraBlocked = resolveRouteMetadata({
   policy
 });
 assert.equal(ultraBlocked.serviceTier, 'fast', 'ultrafast는 공식 활성화 전 fast로 낮춘다');
+
+const complex = resolveRouteMetadata({
+  post: {
+    lane: 'soomgo_fulfillment',
+    mode: 'implement',
+    urgent: true,
+    retryCount: 1,
+    status: '실행 실패',
+    prompt: '복합 예외 원인을 분석하고 충돌을 해결해라 ' + 'x'.repeat(13000),
+    attachments: [{ name: 'a.pdf' }],
+    astraFinalReview: true
+  },
+  provider: 'OpenAI',
+  policy
+});
+assert.equal(complex.recommendedModelClass, 'top');
+assert.ok(complex.complexityScore >= 70);
+assert.ok(complex.complexityReasons.includes('high_risk_lane'));
+assert.ok(complex.complexityReasons.includes('prior_failure'));
+assert.ok(complex.complexityReasons.includes('attachments'));
+assert.deepEqual(estimateComplexity({ prompt: '짧은 단순 작업' }, {}).recommendedModelClass, 'cheap');
 
 const active = normalizeFutureRoutingPolicy({
   enabled: true,
