@@ -1,0 +1,26 @@
+name: SWAN AI OS CI
+
+on:
+  pull_request:
+    paths:
+      - 'relay-desk/**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: relay-desk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: npm run test:swan-ai-os
+      - run: npm run test:video-worker
+      - run: node --check server/relay-server.js
+      - run: node --check server/swan-ai-os.js
+      - run: node --check server/swan-model-router.js
+      - run: node --check server/swan-learning.js
