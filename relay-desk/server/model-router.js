@@ -106,7 +106,7 @@ function normalizeFutureRoutingPolicy(raw = {}) {
     draft: email.draft === true,
     send: email.send === true,
     // External sending stays gated even if a future product exposes the action.
-    requireApproval: email.requireApproval !== false
+    requireApproval: true
   };
 
   if (!base.agentCapabilities.emailAction.enabled) {
