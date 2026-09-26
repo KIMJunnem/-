@@ -7685,9 +7685,9 @@ function computeRelayAlerts(current) {
   }
   try {
     const sim = customerSimulator.latest(DATA_DIR);
-    if (Number(sim?.hardFailureCount || 0) > 0) alerts.push({
+    if (Number(sim?.hardFailureCount || 0) > 0 && Number(sim?.newHardLearningCandidateCount || 0) > 0) alerts.push({
       level: 'warning', code: 'customer_simulation_failure',
-      message: `합성 고객응대 시뮬레이션에서 하드 실패 ${sim.hardFailureCount}건 발견 · 실제 고객 발송 전 회귀 확인 필요`
+      message: `합성 고객응대 시뮬레이션에서 새 하드 문제 ${sim.newHardLearningCandidateCount}종 발견(실패 ${sim.hardFailureCount}건) · 실제 고객 발송 전 회귀 확인 필요`
     });
   } catch (_) {}
   return alerts;
