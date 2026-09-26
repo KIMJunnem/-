@@ -66,6 +66,7 @@ const BASE_CASES = Object.freeze([
   {
     archetype: 'terse_ack',
     message: '네',
+    mutationLocked: true,
     quote: VIDEO_QUOTE,
     expectation: 'no_reply'
   },
@@ -125,6 +126,7 @@ const BASE_CASES = Object.freeze([
   {
     archetype: 'system_notice',
     message: SYSTEM_NOTICE,
+    mutationLocked: true,
     quote: VIDEO_QUOTE,
     expectation: 'system_skip'
   },
@@ -156,12 +158,14 @@ const BASE_CASES = Object.freeze([
   {
     archetype: 'delivery_ack',
     message: '감사합니다 잘 받았어요',
+    mutationLocked: true,
     quote: VIDEO_QUOTE,
     expectation: 'completion_true'
   },
   {
     archetype: 'delivery_revision',
     message: '잘 받았는데 자막 한 군데 수정 부탁드려요',
+    mutationLocked: true,
     quote: VIDEO_QUOTE,
     expectation: 'completion_false'
   }
@@ -267,7 +271,7 @@ function generateCases(count, seedText) {
   for (let i = 0; i < count; i += 1) {
     const base = clone(BASE_CASES[i % BASE_CASES.length]);
     base.id = `SIM-${String(i + 1).padStart(4, '0')}-${hash(`${seedText}:${i}`).slice(0, 8)}`;
-    base.message = mutateMessage(base.message, random);
+    base.message = base.mutationLocked ? base.message : mutateMessage(base.message, random);
     base.quote = clone(base.quote || VIDEO_QUOTE);
     base.history = String(base.history || '');
     output.push(base);
