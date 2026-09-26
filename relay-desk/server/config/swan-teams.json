@@ -1,0 +1,208 @@
+{
+  "version": 2,
+  "defaults": {
+    "budgetUsd": 5,
+    "maxProviderCalls": 12,
+    "knowledgeTopK": 6,
+    "highValueKrw": 300000
+  },
+  "teams": {
+    "intake": {
+      "name": "접수·요구사항 분석부",
+      "lane": "teacher",
+      "mission": "고객 원문과 첨부 메타데이터를 한 번 읽고 facts, requirements, unknowns, risk로 구조화한다. 후속 부서가 원문을 재판단하지 않게 한다."
+    },
+    "quote": {
+      "name": "견적·가격 결정부",
+      "lane": "local",
+      "mission": "서비스 정의와 가격표, 구조화 요구사항으로 가격을 결정한다. 규칙으로 계산 가능하면 AI를 사용하지 않는다."
+    },
+    "customer_reply": {
+      "name": "고객응대부",
+      "lane": "cheap",
+      "mission": "facts, requirements, conversation_state와 최신 메시지만 사용해 자연스러운 고객 답변을 만든다. 가격·결제·분쟁·민감 예외는 승격한다."
+    },
+    "planning": {
+      "name": "작업 감독·기획부",
+      "lane": "teacher",
+      "mission": "복잡한 실제 작업을 단계별 실행계획과 department_handoffs로 분해한다. 직접 반복 생산하지 않는다."
+    },
+    "document": {
+      "name": "문서 제작부",
+      "lane": "producer",
+      "mission": "문서 구조·문안을 만들고 실제 파일 생성은 deterministic 문서 도구에 넘긴다. 고객 자료에 없는 사실을 만들지 않는다."
+    },
+    "video_analysis": {
+      "name": "영상 분석부",
+      "lane": "local",
+      "mission": "ffprobe, FFmpeg, faster-whisper 등 로컬 도구로 영상 메타데이터·프레임·전사를 만든다."
+    },
+    "video_director": {
+      "name": "영상 감독부",
+      "lane": "teacher",
+      "mission": "사용 장면, 제거 장면, 순서, 자막 스타일, 속도, 효과, 생성형 컷 필요 여부를 판단하고 edit_plan.json 형태로 지시한다."
+    },
+    "video_production": {
+      "name": "영상 제작부",
+      "lane": "local",
+      "mission": "Video Worker와 FFmpeg로 cut, subtitle, render, qc를 실행한다. 창작 판단은 하지 않는다."
+    },
+    "generation_media": {
+      "name": "생성형 미디어부",
+      "lane": "specialized",
+      "mission": "생성이 정말 필요한지 확인하고 무료·저비용의 적합한 전문 이미지/영상 Provider를 선택한다. 감독 모델이 Provider를 하드코딩하지 않게 한다."
+    },
+    "transcription": {
+      "name": "전사부",
+      "lane": "local",
+      "mission": "로컬 faster-whisper를 우선해 타임코드 전사를 만든다. 전체 음성을 고급 모델에게 반복 전송하지 않는다."
+    },
+    "translation": {
+      "name": "번역부",
+      "lane": "producer",
+      "mission": "저비용 번역 모델로 초안을 만들고 자동 검사 후 불확실 문장만 상위 모델로 승격한다."
+    },
+    "subtitle": {
+      "name": "자막부",
+      "lane": "producer",
+      "mission": "전사·번역 결과를 자막 단위로 정리하고 발화 타임코드를 보존하며 SRT 기계검사를 통과시킨다."
+    },
+    "qa": {
+      "name": "품질검수부",
+      "lane": "qa",
+      "mission": "코드 기반 무결성 검사를 먼저 수행하고 의미·창작 품질은 필요한 샘플만 모델에 제공한다. 실패는 구체적 재작업 지시로 반환한다."
+    },
+    "exception": {
+      "name": "예외 처리부",
+      "lane": "teacher",
+      "mission": "가격·결제·요구사항·품질·안전 규칙 충돌과 반복 실패 등 일반 부서가 해결하지 못한 사건만 처리한다."
+    },
+    "final_audit": {
+      "name": "최종 감독부",
+      "lane": "teacher",
+      "mission": "고액·신규·불만·낮은 confidence·QC 실패·첫 자동화 사례 등 조건부 작업만 상위 모델로 최종 감사한다."
+    },
+    "finance": {
+      "name": "비용·손익부",
+      "lane": "local",
+      "mission": "작업별 API 비용, 예산 상한, 예상 마진, Teacher 호출 수와 중단 조건을 코드로 계산한다."
+    },
+    "delivery": {
+      "name": "납품준비부",
+      "lane": "local",
+      "mission": "필수 산출물과 QC 상태, 미확인 사항을 점검해 전달 가능 여부만 판정한다. 외부 전송은 하지 않는다."
+    },
+    "creative": {
+      "name": "콘텐츠·크리에이티브부",
+      "lane": "director",
+      "mission": "콘텐츠 구성, 카피, 쇼츠, 썸네일 등 창작 결과를 만든다. 검증된 Gold Sample과 Playbook을 먼저 재사용한다."
+    },
+    "engineering": {
+      "name": "개발·자동화부",
+      "lane": "director",
+      "mission": "코드·자동화·API 연동·테스트·장애 수정안을 구현하고 실행 검증 전 완료라고 보고하지 않는다."
+    },
+    "research": {
+      "name": "조사·검증부",
+      "lane": "director",
+      "mission": "구조화된 자료를 우선 재사용하고 추가 조사가 필요한 사실만 새로 확인한다. 사실·추정·미확인을 분리한다."
+    },
+    "ops": {
+      "name": "운영총괄부",
+      "lane": "director",
+      "mission": "부서 충돌, 비용·품질 지표, 재작업 원인을 조정하고 반복 가능한 개선을 조직 자산으로 만든다."
+    }
+  },
+  "pipelines": {
+    "subtitle": [
+      "intake",
+      "quote",
+      "transcription",
+      "subtitle",
+      "qa",
+      "delivery"
+    ],
+    "subtitle_translate": [
+      "intake",
+      "quote",
+      "transcription",
+      "translation",
+      "subtitle",
+      "qa",
+      "delivery"
+    ],
+    "video_edit": [
+      "intake",
+      "quote",
+      "video_analysis",
+      "video_director",
+      "video_production",
+      "qa",
+      "delivery"
+    ],
+    "video_translate": [
+      "intake",
+      "quote",
+      "video_analysis",
+      "transcription",
+      "translation",
+      "subtitle",
+      "video_production",
+      "qa",
+      "delivery"
+    ],
+    "document": [
+      "intake",
+      "quote",
+      "planning",
+      "document",
+      "qa",
+      "delivery"
+    ],
+    "resume": [
+      "intake",
+      "quote",
+      "planning",
+      "document",
+      "qa",
+      "delivery"
+    ],
+    "creative": [
+      "intake",
+      "quote",
+      "planning",
+      "creative",
+      "qa",
+      "delivery"
+    ],
+    "software": [
+      "intake",
+      "quote",
+      "planning",
+      "engineering",
+      "qa",
+      "delivery"
+    ],
+    "research": [
+      "intake",
+      "quote",
+      "planning",
+      "research",
+      "qa",
+      "delivery"
+    ],
+    "customer_support": [
+      "intake",
+      "customer_reply",
+      "qa"
+    ],
+    "generic": [
+      "intake",
+      "quote",
+      "planning",
+      "ops",
+      "qa",
+      "delivery"
+    ]
+  }
+}

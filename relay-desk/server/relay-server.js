@@ -44,6 +44,7 @@ const productionHold = require('./production-hold');
 const messageRegistry = require('./message-registry');
 const { runChecks: runQualityChecks } = require('./quality-runner');
 const internalOps = require('./internal-ops');
+const { createSwanAiOs } = require('./swan-ai-os');
 
 const ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
@@ -7607,7 +7608,7 @@ async function runGemini(prompt, options = {}) {
   assertPaidCallAllowed('Gemini', options);
   const key = String(runtimeProviderKeys.Gemini || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
   if (!key) throw new Error('gemini_key_missing');
-  const model = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+  const model = options.model ? String(options.model) : (process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite');
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
     headers: { 'x-goog-api-key': key, 'content-type': 'application/json' },
@@ -8220,6 +8221,34 @@ function mergeStateUpdate(current, body) {
   return next;
 }
 
+
+// SWAN AI OS v1: 부서·모델·비용·학습을 한 계층에서 관리한다.
+// 외부 고객 발송은 수행하지 않으며, 유료 모델 실행 API는 로컬 + 전용 관리자 헤더 + allowPaid:true가 필요하다.
+const SWAN_AI_OS_ADMIN = 'swan-ai-os';
+const swanAiOs = createSwanAiOs({
+  root: path.join(DATA_DIR, 'swan-ai-os'),
+  configDir: path.join(__dirname, 'config'),
+  playbookRoot: path.join(ROOT, 'playbooks'),
+  videoWorker,
+  providerAvailable: provider => provider === 'Local' || providerAvailable(provider),
+  modelExecutor: async ({ provider, model, prompt, maxTokens, timeoutMs }) => {
+    let result;
+    const common = { trigger: 'manual', timeoutMs };
+    if (provider === 'OpenAI') result = await runOpenAI(prompt, model, common);
+    else if (provider === 'Claude') result = await runClaude(prompt, { ...common, model, maxTokens });
+    else if (provider === 'Gemini') result = await runGemini(prompt, { ...common, model });
+    else throw new Error('swan_provider_not_supported:' + provider);
+    const current = readState();
+    const recorded = recordUsage(current, provider, result.usage, result.model);
+    writeState(current);
+    return { ...result, costUsd: recorded.estimatedCostUsd };
+  }
+});
+
+function swanAdminAllowed(req) {
+  return String(req.headers['x-relay-admin'] || '') === SWAN_AI_OS_ADMIN;
+}
+
 async function route(req, res) {
   const parsed = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = parsed.pathname;
@@ -8259,6 +8288,69 @@ async function route(req, res) {
       'access-control-max-age': '600'
     });
     return res.end();
+  }
+
+  // SWAN AI OS v1 — 기존 Relay Desk 흐름을 깨지 않고 별도 로컬 API로 점진 도입한다.
+  if (pathname.startsWith('/api/swan/')) {
+    if (!local) return sendJson(res, 403, { error: 'local_only' });
+    try {
+      if (pathname === '/api/swan/status' && req.method === 'GET') {
+        return sendJson(res, 200, swanAiOs.status());
+      }
+      if (pathname === '/api/swan/jobs' && req.method === 'GET') {
+        return sendJson(res, 200, { ok: true, items: swanAiOs.listJobs(parsed.searchParams.get('limit') || 50) });
+      }
+      if (pathname === '/api/swan/jobs' && req.method === 'POST') {
+        if (!swanAdminAllowed(req)) return sendJson(res, 403, { error: 'admin_header_required' });
+        return sendJson(res, 201, { ok: true, job: swanAiOs.createJob(await readBody(req)) });
+      }
+      const jobMatch = pathname.match(/^\/api\/swan\/jobs\/([^/]+)$/);
+      if (jobMatch && req.method === 'GET') {
+        return sendJson(res, 200, { ok: true, ...swanAiOs.getJob(decodeURIComponent(jobMatch[1])) });
+      }
+      const runMatch = pathname.match(/^\/api\/swan\/jobs\/([^/]+)\/run$/);
+      if (runMatch && req.method === 'POST') {
+        if (!swanAdminAllowed(req)) return sendJson(res, 403, { error: 'admin_header_required' });
+        const body = await readBody(req);
+        if (body.allowPaid !== true) return sendJson(res, 409, { error: 'explicit_allowPaid_required' });
+        const result = await swanAiOs.runDepartment(decodeURIComponent(runMatch[1]), body.department, body.input || {});
+        return sendJson(res, 200, result);
+      }
+      const videoMatch = pathname.match(/^\/api\/swan\/jobs\/([^/]+)\/video$/);
+      if (videoMatch && req.method === 'POST') {
+        if (!swanAdminAllowed(req)) return sendJson(res, 403, { error: 'admin_header_required' });
+        const body = await readBody(req);
+        const result = await swanAiOs.runVideoAction(decodeURIComponent(videoMatch[1]), body.action, body.payload || {});
+        return sendJson(res, 200, { ok: true, result });
+      }
+      const goldMatch = pathname.match(/^\/api\/swan\/jobs\/([^/]+)\/gold$/);
+      if (goldMatch && req.method === 'POST') {
+        if (!swanAdminAllowed(req)) return sendJson(res, 403, { error: 'admin_header_required' });
+        const body = await readBody(req);
+        return sendJson(res, 200, { ok: true, gold: swanAiOs.promoteGold(decodeURIComponent(goldMatch[1]), body.department, body) });
+      }
+      if (pathname === '/api/swan/knowledge' && req.method === 'GET') {
+        return sendJson(res, 200, { ok: true, items: swanAiOs.searchKnowledge(parsed.searchParams.get('q') || '', { serviceType: parsed.searchParams.get('serviceType') || undefined, limit: parsed.searchParams.get('limit') || 6 }) });
+      }
+      if (pathname === '/api/swan/sync-existing' && req.method === 'POST') {
+        if (!swanAdminAllowed(req)) return sendJson(res, 403, { error: 'admin_header_required' });
+        return sendJson(res, 200, { ok: true, ...swanAiOs.syncExisting({ stateFile: STATE_FILE, storageRoot: FILE_DIR }) });
+      }
+      if (pathname === '/api/swan/student-level' && req.method === 'POST') {
+        if (!swanAdminAllowed(req)) return sendJson(res, 403, { error: 'admin_header_required' });
+        const body = await readBody(req);
+        return sendJson(res, 200, { ok: true, metrics: swanAiOs.approveStudentLevel(String(body.department || ''), Number(body.level || 0)) });
+      }
+      const costMatch = pathname.match(/^\/api\/swan\/jobs\/([^/]+)\/cost$/);
+      if (costMatch && req.method === 'GET') {
+        return sendJson(res, 200, { ok: true, ...swanAiOs.costSummary(decodeURIComponent(costMatch[1])) });
+      }
+      return sendJson(res, 404, { error: 'swan_route_not_found' });
+    } catch (error) {
+      const message = String(error.message || error);
+      const status = /not_found/.test(message) ? 404 : /budget|call_limit|explicit/.test(message) ? 409 : 400;
+      return sendJson(res, status, { error: message, details: error.details || null });
+    }
   }
 
   // 구독형 Astra 작업방과 Relay Desk 사이의 로컬 중계 큐다.
