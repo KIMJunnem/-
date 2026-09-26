@@ -1,0 +1,35 @@
+name: relay-regression-diagnose
+
+on:
+  push:
+    branches:
+      - ci/relay-regression-diagnose-20260927
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Quote result order
+        run: node tests/quote-result-order.cjs
+        env:
+          NODE_ENV: test
+          OPENAI_API_KEY: ""
+          GEMINI_API_KEY: ""
+          ANTHROPIC_API_KEY: ""
+          CLAUDE_API_KEY: ""
+      - name: Full regression
+        run: node tests/run-all.cjs
+        env:
+          NODE_ENV: test
+          OPENAI_API_KEY: ""
+          GEMINI_API_KEY: ""
+          ANTHROPIC_API_KEY: ""
+          CLAUDE_API_KEY: ""
