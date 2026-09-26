@@ -46,6 +46,7 @@ function createSwanAiOs(options={}){
   });
   const playbookRoot=path.resolve(options.playbookRoot||path.join(path.dirname(configDir),'..','playbooks'));
   const videoWorker=options.videoWorker||null;
+  const localExecutors=options.localExecutors&&typeof options.localExecutors==='object'?options.localExecutors:{};
 
   function playbook(department){
     const file=path.join(playbookRoot,String(department)+'.md');
@@ -61,7 +62,7 @@ function createSwanAiOs(options={}){
     if(ctx.job.taskTypeKnown!==true)flags.push('new_task_type');
     if(Number(input.orderValueKrw||0)>=Number(teamConfig.defaults?.highValueKrw||300000))flags.push('high_value_order');
     if(Number.isFinite(Number(input.confidence))&&Number(input.confidence)<threshold)flags.push('low_confidence');
-    const requiredTeacher=flags.some(x=>required.has(x))||flags.includes('low_confidence');
+    const requiredTeacher=department==='exception'||department==='final_audit'||flags.some(x=>required.has(x))||flags.includes('low_confidence');
     return {required:requiredTeacher,flags:[...new Set(flags)]};
   }
   function deployment(jobId,department,level){
@@ -87,7 +88,7 @@ function createSwanAiOs(options={}){
       '고객 자료에 없는 사실·금액·경력·출처를 만들지 않는다. 불명확하면 unknowns에 남긴다.',
       '응답은 JSON 객체 하나만 반환한다.',
       '공통 형식: {"summary":"짧은 요약","facts":{},"requirements":{},"unknowns":[],"decisions":{},"risk":{"level":"low|medium|high|critical","flags":[]},"artifacts":[],"confidence":0.0,"lessons":[]}.',
-      department==='video'?'영상 감독은 실제 편집 명령을 decisions.edit_plan에 구조화한다. 렌더링 자체는 Video Worker가 수행한다.':'',
+      department==='video_director'?'영상 감독은 실제 편집 명령을 decisions.edit_plan에 구조화한다. 렌더링 자체는 Video Worker가 수행한다.':'',
       department==='qa'?'검수는 decisions.pass(boolean), decisions.issues[], decisions.rework[]를 포함한다.':'',
       department==='intake'?'접수는 facts/requirements/unknowns/risk를 가장 엄격하게 채운다.':'',
       'PLAYBOOK:\n'+playbook(department),
@@ -109,7 +110,7 @@ function createSwanAiOs(options={}){
       store.writeDoc(jobId,'qc.json',{at:new Date().toISOString(),status:parsed.decisions?.pass===true?'passed':'failed',...parsed});
     }
     if(Array.isArray(parsed.lessons))for(const lesson of parsed.lessons.slice(0,10)){
-      const text=typeof lesson==='string'?lesson:JSON.stringify(lesson);store.addKnowledge({kind:'candidate_lesson',team:department,serviceType:store.getJob(jobId).serviceType,sourceJobId:jobId,reusable:true,title:department+' lesson',summary:text,tags:[department,'candidate']});
+      const text=typeof lesson==='string'?lesson:JSON.stringify(lesson);store.addKnowledge({kind:'candidate_lesson',team:department,serviceType:store.getJob(jobId).serviceType,sourceJobId:jobId,reusable:false,title:department+' lesson',summary:text,tags:[department,'candidate']});
     }
     store.appendHistory(jobId,{type:'department.completed',department,provider:meta.provider||'Local',model:meta.model||'local_tool',role:meta.role||null,cached:meta.cached===true});
     return parsed;
@@ -135,7 +136,7 @@ function createSwanAiOs(options={}){
     const metrics=learning.recordShadow({caseId:learning.shadowCaseId(),jobId,department,teacherRole:roles(department).teacher,studentRole,comparison,safetyError:input.shadowSafetyError===true,rework:false,failed:false});
     return {result:{provider:result.provider,model:result.model,costUsd:result.costUsd},student:studentParsed,comparison,metrics};
   }
-  function localDepartment(jobId,department,input,ctx){
+  async function localDepartment(jobId,department,input,ctx){
     if(department==='finance'){
       const b=budget(jobId);const result={summary:'작업별 AI 예산과 현재 사용량을 계산했습니다.',facts:{budgetUsd:b.cap,spentUsd:b.spent,remainingUsd:b.remaining,providerCalls:b.providerCalls,maxProviderCalls:b.maxCalls},requirements:{},unknowns:[],decisions:{continue:b.remaining>0&&b.providerCalls<b.maxCalls},risk:{level:b.remaining>0?'low':'high',flags:b.remaining>0?[]:['budget_exhausted']},artifacts:[],confidence:1,lessons:[]};
       ledger.record(jobId,{department,role:'local_tool',provider:'Local',model:'cost_router',costUsd:0});return result;
@@ -146,6 +147,37 @@ function createSwanAiOs(options={}){
       ledger.record(jobId,{department,role:'local_tool',provider:'Local',model:'delivery_gate',costUsd:0});
       return {summary:pass?'납품 준비 조건을 통과했습니다.':'납품 전 확인이 필요합니다.',facts:{artifactCount:arts.length},requirements:{},unknowns,decisions:{pass,externalDeliveryExecuted:false},risk:{level:pass?'low':'high',flags:pass?[]:['delivery_gate_failed']},artifacts:arts,confidence:1,lessons:[]};
     }
+    if(department==='quote'){
+      if(typeof localExecutors.quote==='function'){
+        const quoted=await localExecutors.quote({job:ctx.job,docs:ctx.docs,input});
+        ledger.record(jobId,{department,role:'local_tool',provider:'Local',model:'pricing_rules',costUsd:0});
+        return quoted;
+      }
+      if(input.ruleResult){ledger.record(jobId,{department,role:'local_tool',provider:'Local',model:'validated_pricing_rule',costUsd:0});return input.ruleResult;}
+      throw new Error('quote_rule_input_required');
+    }
+    if(['video_analysis','transcription','video_production'].includes(department)){
+      if(!videoWorker)throw new Error('video_worker_unavailable');
+      let action=input.action;
+      if(department==='video_analysis')action=action||'video.inspect';
+      if(department==='transcription')action=action||'video.transcribe';
+      if(department==='video_production'&&!action)throw new Error('video_production_action_required');
+      const allowedByDepartment={
+        video_analysis:new Set(['video.inspect','video.qc']),
+        transcription:new Set(['video.transcribe']),
+        video_production:new Set(['video.cut','video.subtitle','video.render','video.qc'])
+      };
+      if(!allowedByDepartment[department].has(action))throw new Error('video_action_not_allowed_for_department:'+department+':'+action);
+      const result=await videoWorker.runAction(action,input.payload||input);
+      ledger.record(jobId,{department,role:'local_tool',provider:'Local',model:'video-worker',costUsd:0,note:action});
+      if(result.outputPath)store.registerArtifact({jobId,team:department,kind:action,label:path.basename(result.outputPath),path:result.outputPath,sha256:result.sha256,bytes:result.outputBytes,metadata:{action}});
+      if(action==='video.qc')store.writeDoc(jobId,'qc.json',{status:result.ok?'passed':'failed',at:new Date().toISOString(),...result});
+      return {summary:action+' 완료',facts:{action,result},requirements:{},unknowns:[],decisions:{localTool:true},risk:{level:result.ok===false?'high':'low',flags:result.ok===false?['qc_failed']:[]},artifacts:result.outputPath?[{path:result.outputPath,sha256:result.sha256||null}]:[],confidence:1,lessons:[]};
+    }
+    if(typeof localExecutors[department]==='function'){
+      const result=await localExecutors[department]({job:ctx.job,docs:ctx.docs,input});
+      ledger.record(jobId,{department,role:'local_tool',provider:'Local',model:'local_executor',costUsd:0});return result;
+    }
     if(input.ruleResult){ledger.record(jobId,{department,role:'local_tool',provider:'Local',model:'validated_rule',costUsd:0});return input.ruleResult;}
     throw new Error('local_execution_unavailable:'+department);
   }
@@ -153,11 +185,11 @@ function createSwanAiOs(options={}){
   async function runDepartment(jobId,department,input={}){
     const ctx=store.jobContext(jobId),team=teamConfig.teams?.[department];if(!team)throw new Error('unknown_department');
     const esc=escalation(ctx,department,input),roleMap=roles(department),level=learning.level(department),deploy=deployment(jobId,department,level);
-    const localCapable=['finance','delivery'].includes(department)||Boolean(input.ruleResult);
+    const localCapable=['finance','delivery','quote','video_analysis','transcription','video_production'].includes(department)||Boolean(input.ruleResult)||typeof localExecutors[department]==='function';
     const plan=chooseExecution({localCapable,playbookCapable:Boolean(input.ruleResult),ruleConfidence:Number(input.ruleConfidence||0),studentLevel:level,confidence:Number(input.confidence||1),escalation:esc.required,teacherRole:roleMap.teacher,studentRole:roleMap.student,budgetRemainingUsd:budget(jobId).remaining});
     if(plan.mode==='blocked')throw new Error(plan.reason);
     if(plan.mode==='local'||plan.mode==='rule'){
-      const parsed=persistOutput(jobId,department,localDepartment(jobId,department,input,ctx),{role:'local_tool'});
+      const parsed=persistOutput(jobId,department,await localDepartment(jobId,department,input,ctx),{role:'local_tool'});
       const ho=createHandoff(jobId,department,nextDepartment(ctx.job.serviceType,department),parsed,ctx);return {ok:true,mode:'local',department,output:parsed,handoff:ho,budget:budget(jobId)};
     }
     const knowledge=store.searchKnowledge([ctx.job.serviceType,department,ctx.job.title].join(' '),{serviceType:ctx.job.serviceType,customerId:ctx.job.customerId,limit:Number(teamConfig.defaults?.knowledgeTopK||6)});
@@ -186,8 +218,8 @@ function createSwanAiOs(options={}){
   async function runVideoAction(jobId,action,payload={}){
     if(!videoWorker)throw new Error('video_worker_unavailable');
     const allowed=['video.inspect','video.transcribe','video.cut','video.subtitle','video.render','video.qc'];if(!allowed.includes(action))throw new Error('video_action_not_allowed');
-    const result=await videoWorker.runAction(action,payload);ledger.record(jobId,{department:'video',role:'local_tool',provider:'Local',model:'video-worker',costUsd:0,note:action});
-    if(result.outputPath)store.registerArtifact({jobId,team:'video',kind:action,label:path.basename(result.outputPath),path:result.outputPath,sha256:result.sha256,bytes:result.outputBytes,metadata:{action}});
+    const result=await videoWorker.runAction(action,payload);ledger.record(jobId,{department:'video_production',role:'local_tool',provider:'Local',model:'video-worker',costUsd:0,note:action});
+    if(result.outputPath)store.registerArtifact({jobId,team:'video_production',kind:action,label:path.basename(result.outputPath),path:result.outputPath,sha256:result.sha256,bytes:result.outputBytes,metadata:{action}});
     if(action==='video.qc')store.writeDoc(jobId,'qc.json',{status:result.ok?'passed':'failed',at:new Date().toISOString(),...result});
     store.appendHistory(jobId,{type:'video.action',action,ok:result.ok!==false});return result;
   }
