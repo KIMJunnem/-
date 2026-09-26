@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { normalizeFutureRoutingPolicy } = require('./model-router');
 
 const POLICY_FILE = path.join(__dirname, 'config', 'astra-relay-operating-policy.json');
 
@@ -37,6 +38,15 @@ function astraLaneAllowed(lane) {
 
 function finalGradeMode() {
   return readOperatingPolicy().finalGrade.mode;
+}
+
+function futureRoutingPolicy() {
+  try {
+    return normalizeFutureRoutingPolicy(readOperatingPolicy().futureRouting || {});
+  } catch (_) {
+    // 새 기능은 실패 시 보수적으로 shadow/default로 돌아가며 기존 운영을 건드리지 않는다.
+    return normalizeFutureRoutingPolicy({ enabled: true, mode: 'shadow' });
+  }
 }
 
 // 유료 제작(숨고·크몽 제작물 작성과 교차검수) 모델 제공자.
@@ -111,4 +121,4 @@ function queueProviderAllowed(provider) {
   return raw[key] !== false;
 }
 
-module.exports = { automaticPaidCallsPaused, queueProviderAllowed, jevReviewPolicy, jevSimulationLimits, POLICY_FILE, PRODUCTION_PROVIDERS, readOperatingPolicy, paidOrderBudget, astraLaneAllowed, finalGradeMode, productionProvider, productionState, attachmentReadEnabled };
+module.exports = { automaticPaidCallsPaused, queueProviderAllowed, jevReviewPolicy, jevSimulationLimits, POLICY_FILE, PRODUCTION_PROVIDERS, readOperatingPolicy, paidOrderBudget, astraLaneAllowed, finalGradeMode, futureRoutingPolicy, productionProvider, productionState, attachmentReadEnabled };
