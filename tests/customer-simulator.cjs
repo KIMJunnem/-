@@ -33,6 +33,7 @@ try {
   const b = sim.generateCases(36, 'same-seed');
   assert.deepEqual(a, b, '같은 seed면 완전히 재현 가능');
   assert.ok(new Set(a.map(x => x.archetype)).size >= 15, '다양한 고객 유형 포함');
+  assert.ok(a.filter(x => x.archetype === 'system_notice').every(x => x.message === sim.BASE_CASES.find(y => y.archetype === 'system_notice').message), '시스템 알림은 의미 보존을 위해 변형하지 않음');
 
   const deps = {
     soomgoReply: R.soomgoReply,
