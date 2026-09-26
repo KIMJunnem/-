@@ -20,6 +20,7 @@ const subtitlePipeline = require('./transcribe/pipeline');
 const t5Tools = require('./transcribe/t5-tools');
 const videoPipeline = require('./video-pipeline');
 const customerRoomFallback = require('./customer-room-fallback');
+const customerSimulator = require('./customer-simulator');
 const chatTiming = require('./chat-timing');
 const quoteJudge = require('./quote-judge');
 const attachmentJudge = require('./attachment-judge');
@@ -7682,6 +7683,13 @@ function computeRelayAlerts(current) {
   for (const [provider, item] of Object.entries(usage)) {
     if (Number(item.percent || 0) >= 80) alerts.push({ level: Number(item.percent) >= 100 ? 'error' : 'warning', code: 'provider_usage_high', provider, message: `${provider} 오늘 사용량이 ${item.percent}%입니다.` });
   }
+  try {
+    const sim = customerSimulator.latest(DATA_DIR);
+    if (Number(sim?.hardFailureCount || 0) > 0) alerts.push({
+      level: 'warning', code: 'customer_simulation_failure',
+      message: `합성 고객응대 시뮬레이션에서 하드 실패 ${sim.hardFailureCount}건 발견 · 실제 고객 발송 전 회귀 확인 필요`
+    });
+  } catch (_) {}
   return alerts;
 }
 
@@ -7809,6 +7817,58 @@ async function runCustomerRoomFallback() {
   } finally {
     customerRoomFallbackRunning = false;
   }
+}
+
+function customerSimulationDeps() {
+  return {
+    soomgoReply,
+    applyChatReplyPolicy,
+    humanChatViaClaude,
+    supervisorReply,
+    isSoomgoSystemMessage,
+    isWorkflowCompletion,
+    validSoomgoAiReply
+  };
+}
+
+let customerSimulationBusy = false;
+function runCustomerSimulation(reason = 'scheduled') {
+  if (customerSimulationBusy) return customerSimulator.latest(DATA_DIR);
+  customerSimulationBusy = true;
+  try {
+    const result = customerSimulator.runSimulation({
+      policy: readOperatingPolicy(),
+      dataDir: DATA_DIR,
+      deps: customerSimulationDeps(),
+      reason
+    });
+    if (result && !result.skipped) {
+      console.log(`Customer simulation: ${result.caseCount} cases · hard ${result.hardFailureCount} · warnings ${result.warningCount} · new learning ${result.newLearningCandidateCount}`);
+    }
+    return result;
+  } finally {
+    customerSimulationBusy = false;
+  }
+}
+
+function startCustomerSimulationScheduler() {
+  let cfg;
+  try { cfg = customerSimulator.readConfig(readOperatingPolicy()); } catch (error) {
+    console.error(`Customer simulation config error: ${error.message}`);
+    return;
+  }
+  if (!cfg.enabled) return;
+  const runIfDue = reason => {
+    try {
+      const status = customerSimulator.status(DATA_DIR, readOperatingPolicy());
+      if (status.enabled && status.due) runCustomerSimulation(reason);
+    } catch (error) {
+      console.error(`Customer simulation error: ${error.message}`);
+    }
+  };
+  setTimeout(() => runIfDue('startup-stale'), cfg.startupDelaySeconds * 1000);
+  // 정책의 intervalMinutes를 재시작 없이 반영할 수 있도록 15분마다 due만 확인한다.
+  setInterval(() => runIfDue('scheduled'), 15 * 60 * 1000);
 }
 
 // 견적 판단(server/quote-judge.js, 지시 19)에 넘기는 의존성
@@ -8788,6 +8848,32 @@ async function route(req, res) {
     return sendJson(res, 200, { ok: true, run: full ? run : { ...run, results: Object.fromEntries(Object.entries(run.results || {}).map(([k, v]) => [k, v.length])) } });
   }
 
+  if (pathname === '/api/customer-simulation' && req.method === 'GET') {
+    if (!local) return sendJson(res, 403, { error: 'read_server_local_only' });
+    try {
+      const full = parsed.searchParams.get('full') === '1';
+      const state = customerSimulator.readState(DATA_DIR);
+      const status = customerSimulator.status(DATA_DIR, readOperatingPolicy());
+      return sendJson(res, 200, {
+        ok: true,
+        status,
+        latest: state.latest || null,
+        learningCandidates: full ? (state.learningCandidates || []) : (state.learningCandidates || []).filter(item => item.status === 'open').slice(0, 20),
+        history: full ? (state.history || []) : (state.history || []).slice(0, 5)
+      });
+    } catch (error) {
+      return sendJson(res, 500, { error: `customer_simulation_read_failed:${String(error.message || error).slice(0, 160)}` });
+    }
+  }
+  if (pathname === '/api/customer-simulation/run' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
+    try {
+      const run = runCustomerSimulation('manual');
+      return sendJson(res, 200, { ok: true, run, status: customerSimulator.status(DATA_DIR, readOperatingPolicy()) });
+    } catch (error) {
+      return sendJson(res, 500, { error: `customer_simulation_run_failed:${String(error.message || error).slice(0, 160)}` });
+    }
+  }
   if (pathname === '/api/providers' && req.method === 'GET') {
     return sendJson(res, 200, { ...providerSnapshot(), readOnly: !local });
   }
@@ -11102,13 +11188,14 @@ if (require.main === module) {
     ensureAstraChatHandler();
     startReportScheduler();
     startAstraOpsAuditScheduler();
+    startCustomerSimulationScheduler();
     processPendingQueue().catch(error => console.error(`Automatic queue startup error: ${error.message}`));
   });
   setInterval(() => processPendingQueue().catch(error => console.error(`Automatic queue error: ${error.message}`)), 1500);
   setInterval(() => runCustomerRoomFallback().catch(error => console.error(`Customer room fallback error: ${error.message}`)), 15000);
 }
 
-module.exports = { quietHoursConfig, quietReleaseAt, quietHoursNow, quietScheduleAllowed, nightFollowupReleaseAt, nightFollowupTextAt, quoteReadNightConfig, soomgoRequestPostedAt, isNightSoomgoRequest, releaseDueRevisionBatches, revisionBatchConfig, revisionSize, revisionFeeQuote, workflowDeadlineDays, revisionUrgent, customerRevisionRounds, intakeAttachmentLine, largeFileEmailText, workflowPaymentPlan, quoteReadFollowupEnabled, setPaymentSplitForTest, videoEditMaterialsLine, soomgoWorkflowStatusReply, supersedesOlderRoomReplies, isWorkflowCompletion, honorificCheckApplies, mergeSoomgoCardQuote, workflowPaymentSplitAllowed, SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, agreedDiscountFor, supervisorReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
+module.exports = { runCustomerSimulation, startCustomerSimulationScheduler, customerSimulationDeps, quietHoursConfig, quietReleaseAt, quietHoursNow, quietScheduleAllowed, nightFollowupReleaseAt, nightFollowupTextAt, quoteReadNightConfig, soomgoRequestPostedAt, isNightSoomgoRequest, releaseDueRevisionBatches, revisionBatchConfig, revisionSize, revisionFeeQuote, workflowDeadlineDays, revisionUrgent, customerRevisionRounds, intakeAttachmentLine, largeFileEmailText, workflowPaymentPlan, quoteReadFollowupEnabled, setPaymentSplitForTest, videoEditMaterialsLine, soomgoWorkflowStatusReply, supersedesOlderRoomReplies, isWorkflowCompletion, honorificCheckApplies, mergeSoomgoCardQuote, workflowPaymentSplitAllowed, SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, agreedDiscountFor, supervisorReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
 
 
 
