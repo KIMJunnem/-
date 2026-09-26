@@ -4,7 +4,10 @@
   "version": "0.2.0",
   "description": "Relay Desk single-writer server and read-only viewer",
   "scripts": {
-    "start": "node server/relay-server.js"
+    "start": "node server/relay-server.js",
+    "video:status": "node tools/video-worker-cli.js status",
+    "video:worker": "node tools/video-worker-cli.js",
+    "test:video-worker": "node tests/video-worker.cjs"
   },
   "dependencies": {
     "jszip": "^3.10.2",
