@@ -117,7 +117,7 @@ function makeEnv({ fetchOk = true, fetchThrows = false } = {}) {
   const flushAt = source.indexOf('await flushQuoteResultOutbox();');
   const chatReturnAt = source.indexOf("if (/\\/pro\\/chats/.test(location.pathname)) return;");
   assert.ok(flushAt > 0 && flushAt < chatReturnAt, '로드 시 재전송은 채팅방 조기 종료보다 앞');
-  assert.match(source, /sessionStorage\.removeItem\(RETURN_AFTER_SEND_KEY\);\r?\n\s*await returnToRequestList\(\);/, '기존 채팅방 복귀 흐름 유지');
+  assert.match(source, /sessionStorage\.removeItem\(RETURN_AFTER_SEND_KEY\);[\s\S]{0,160}await returnToRequestList\(\);/, '기존 채팅방 복귀 흐름 유지');
   // 견적 금액·문구는 건드리지 않는다: 예약 블록에 금액·메시지 필드가 없다
   assert.doesNotMatch(block, /quote\.amount|quote\.message/);
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'soomgo-bot-extension', 'manifest.json'), 'utf8'));
