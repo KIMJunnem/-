@@ -132,7 +132,7 @@ function passMetrics(results = [], history = [], fingerprint = '') {
 function appendDecisionLedger(dataDir, entry = {}) {
   const file = path.join(dataDir, DECISION_LEDGER_FILE);
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, \`\${JSON.stringify(entry)}\n\`, 'utf8');
+  fs.appendFileSync(file, `${JSON.stringify(entry)}\n`, 'utf8');
   return file;
 }
 
