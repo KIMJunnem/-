@@ -356,7 +356,7 @@ function checkExpectation(item, context) {
 function guardProbes(deps) {
   const authoritative = '견적 금액은 69,000원입니다. 예상 작업 기간은 1~2일입니다. 수정은 2회까지 가능합니다.';
   const cases = [
-    { id: 'correct_amount', text: '원본 10분 이내면 69,000원이고, 영상 받고 1~2일 안에 보내드릴 수 있습니다.', expected: true },
+    { id: 'correct_amount', text: '원본 10분 이내면 69,000원이고, 영상 받고 1~2일 안에 보내드릴 수 있습니다. 수정은 2회까지 가능합니다.', expected: true },
     { id: 'wrong_amount', text: '원본 10분 이내면 99,000원입니다.', expected: false },
     { id: 'guarantee', text: '무조건 가능합니다. 100% 성공 보장합니다.', expected: false },
     { id: 'bank_account', text: '계좌 번호 알려드릴게요. 69,000원 보내주세요.', expected: false },
@@ -448,6 +448,7 @@ function issueKey(issue, result) {
 function mergeLearningCandidates(previous, results, nowIso, maxItems) {
   const byKey = new Map((Array.isArray(previous) ? previous : []).map(item => [item.key, item]));
   let newCount = 0;
+  let newHardCount = 0;
   for (const result of results) {
     for (const issue of [...result.hard, ...result.warnings]) {
       const key = issueKey(issue, result);
@@ -467,6 +468,7 @@ function mergeLearningCandidates(previous, results, nowIso, maxItems) {
           .slice(0, 3);
       } else {
         newCount += 1;
+        if (issue.severity === 'hard') newHardCount += 1;
         byKey.set(key, {
           key,
           status: 'open',
@@ -485,7 +487,7 @@ function mergeLearningCandidates(previous, results, nowIso, maxItems) {
   const candidates = [...byKey.values()]
     .sort((a, b) => String(b.lastSeenAt).localeCompare(String(a.lastSeenAt)))
     .slice(0, maxItems);
-  return { candidates, newCount };
+  return { candidates, newCount, newHardCount };
 }
 
 function reportText(run, candidates) {
@@ -497,7 +499,7 @@ function reportText(run, candidates) {
     `합성 고객: ${run.caseCount}건`,
     `하드 실패: ${run.hardFailureCount}건`,
     `사람다움 경고: ${run.warningCount}건`,
-    `새 학습 후보: ${run.newLearningCandidateCount}건`,
+    `새 학습 후보: ${run.newLearningCandidateCount}건 (하드 ${run.newHardLearningCandidateCount}건)`,
     `유료 모델 호출: 0건 (고정)`,
     `자동 코드/프롬프트 수정: 없음 (고정)`,
     '',
@@ -562,6 +564,7 @@ function runSimulation({ policy = {}, dataDir, deps, reason = 'scheduled', now =
     hardFailureCount,
     warningCount,
     newLearningCandidateCount: merged.newCount,
+    newHardLearningCandidateCount: merged.newHardCount,
     paidModelCalls: 0,
     autoPatches: 0,
     teacherReviewEnabled: config.teacherReview.enabled,
