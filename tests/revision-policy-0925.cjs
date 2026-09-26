@@ -244,7 +244,11 @@ const hon = r => assert.ok(checkHonorific(r.text).ok, r.text);
   const src = fs.readFileSync(path.join(ROOT, 'server', 'relay-server.js'), 'utf8');
   assert.match(src, /astraRoomBridge\.cancelScheduled\(conversationId, \['quote_read_followup', 'delayed_reply'\], 'customer_spoke_first'\)/, '고객이 먼저 말하면 취소(같은 kind)');
   const chat = fs.readFileSync(path.join(ROOT, 'soomgo-chat-bot', 'chat-content.js'), 'utf8');
-  assert.doesNotMatch(chat.match(/async function processQuoteReadFollowup\(\)[\s\S]*?\n  }\n/)[0], /getHours|새벽/, '채팅봇은 시각과 상관없이 읽음 이벤트를 서버에 보낸다');
+  const quoteReadStart = chat.indexOf('  async function processQuoteReadFollowup() {');
+  const quoteReadEnd = chat.indexOf('\n  async function processPendingFollowup(', quoteReadStart + 1);
+  assert.ok(quoteReadStart >= 0 && quoteReadEnd > quoteReadStart, '견적 읽음 처리 함수 블록을 찾는다');
+  const quoteReadBlock = chat.slice(quoteReadStart, quoteReadEnd);
+  assert.doesNotMatch(quoteReadBlock, /getHours|새벽/, '채팅봇은 시각과 상관없이 읽음 이벤트를 서버에 보낸다');
 }
 
 // 9) 조용한 시간(02~08시): 자동 답장·예약 발송은 8시 이후로
