@@ -7,7 +7,8 @@
     "start": "node server/relay-server.js",
     "video:status": "node tools/video-worker-cli.js status",
     "video:worker": "node tools/video-worker-cli.js",
-    "test:video-worker": "node tests/video-worker.cjs"
+    "test:video-worker": "node tests/video-worker.cjs",
+    "test:swan-ai-os": "node tests/swan-ai-os.cjs"
   },
   "dependencies": {
     "jszip": "^3.10.2",
