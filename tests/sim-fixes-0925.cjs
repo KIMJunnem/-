@@ -201,7 +201,7 @@ for (const m of ['잘 받았어요 근데 자막 수정 부탁드려요', '잘 �
   assert.equal(manifest('relay-desk-soomgo-bot/manifest.json'), '0.4.27');
   assert.equal(manifest('relay-desk-soomgo-chat-bot/manifest.json'), '0.3.26');
   const published = fs.readFileSync(path.join(dl, 'relay-desk-soomgo-bot', 'content-v3.js'), 'utf8');
-  assert.equal(published, fs.readFileSync(path.join(ROOT, 'soomgo-bot-extension', 'content-v3.js'), 'utf8'), '발행본 = 소스');
+  assert.equal(published.replace(/\r\n/g, '\n'), fs.readFileSync(path.join(ROOT, 'soomgo-bot-extension', 'content-v3.js'), 'utf8').replace(/\r\n/g, '\n'), '발행본 = 소스(EOL 제외)');
   assert.match(published, /하루 최대 30건/);
   assert.match(fs.readFileSync(path.join(dl, 'BOT-LATEST.txt'), 'utf8'), /숨고 요청 봇: 0\.4\.27[\s\S]*숨고 채팅 봇: 0\.3\.26/);
 }
