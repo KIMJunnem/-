@@ -46,6 +46,8 @@ const suites = [
   ['빈 요청(화면 로딩 전) 거절', 'tests/empty-request-guard.cjs'],
   ['요청봇 카드 키 겹침 방지', 'tests/request-bot-card-key.cjs'],
   ['고객응대실 합치기 (Astra→Claude→정해진 문구, 가짜 호출)', 'tests/customer-room-fallback.cjs'],
+  ['Astra 고객응대실 사건·발송 해시 바인딩', 'tests/astra-room-bridge.cjs'],
+  ['Astra 고객응대실 라우팅 우선순위', 'tests/astra-room-customer-routing.cjs'],
   ['채팅봇 존댓말 필수', 'tests/honorific-guard.cjs'],
   ['식전영상·길이 모름 자동 견적(하루 30건)', 'tests/video-materials-quote.cjs'],
   ['지시 32 결제·흥정은 챗봇이(할인 85%·한 번)', 'tests/chat-payment-32.cjs'],
