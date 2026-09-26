@@ -24,6 +24,20 @@ function safeText(value, max = 20000) {
   return String(value ?? '').replace(/\u0000/g, '').slice(0, max);
 }
 
+function replySha256(value) {
+  return crypto.createHash('sha256').update(String(value || ''), 'utf8').digest('hex');
+}
+
+function deliveryBindingValid(event = {}) {
+  const binding = event.deliveryBinding;
+  if (!binding) return true; // 기존 저장 데이터 호환
+  if (!event.response || event.response?.decision !== 'SEND') return false;
+  if (replySha256(event.response.reply) !== String(binding.replySha256 || '')) return false;
+  if (String(event.payload?.conversationId || '') !== String(binding.conversationId || '')) return false;
+  if (String(event.payload?.messageId || '') !== String(binding.messageId || '')) return false;
+  return true;
+}
+
 function parseFields(text) {
   const source = safeText(text, 50000).trim();
   const first = source.match(/^\[MODE:(CUSTOMER_REPLY|OPS_DIAGNOSIS|PRODUCTION_REVIEW|PRODUCTION_DRAFT|SUBTITLE_TRANSLATION|NO_ACTION)\]\s*$/m);
@@ -221,6 +235,15 @@ function createAstraRoomBridge(options = {}) {
       event.deliveryUpdatedAt = now();
     }
     event.completedAt = now();
+    if (event.deliveryStatus === 'ready') {
+      event.deliveryBinding = {
+        version: 1,
+        replySha256: replySha256(parsed.reply),
+        responseEpoch: event.completedAt,
+        conversationId: String(event.payload?.conversationId || ''),
+        messageId: String(event.payload?.messageId || '')
+      };
+    }
     event.updatedAt = event.completedAt;
     current.updatedAt = event.updatedAt;
     writeJson(dataFile, current);
@@ -252,6 +275,7 @@ function createAstraRoomBridge(options = {}) {
         && event.response?.mode === 'CUSTOMER_REPLY'
         && event.response?.decision === 'SEND'
         && event.deliveryStatus === 'ready'
+        && deliveryBindingValid(event)
         && (!filter.conversationId || String(event.payload?.conversationId || '') === String(filter.conversationId))
         && released(event, events, at)
     ).slice(0, limit));
@@ -324,6 +348,7 @@ function createAstraRoomBridge(options = {}) {
     if (!event) throw new Error('astra_room_event_not_found');
     if (event.deliveryStatus === 'sent') return { duplicate: true, event: clone(event) };
     if (event.deliveryStatus !== 'ready' && status === 'sent') throw new Error('astra_room_delivery_not_ready');
+    if (status === 'sent' && !deliveryBindingValid(event)) throw new Error('astra_room_delivery_binding_mismatch');
     event.deliveryStatus = status;
     event.deliveryEvidence = clone(evidence || {});
     event.deliveryUpdatedAt = now();
@@ -373,4 +398,4 @@ function createAstraRoomBridge(options = {}) {
   return { config, summary, enqueue, list, get, claim, complete, outbox, markDelivery, fail, link, parseFields, cancelScheduled, supersedeConversation };
 }
 
-module.exports = { createAstraRoomBridge, parseFields };
+module.exports = { createAstraRoomBridge, parseFields, replySha256, deliveryBindingValid };
