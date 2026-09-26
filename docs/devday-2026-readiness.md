@@ -95,3 +95,31 @@ Relay Desk 내부 표준값:
 - 추가 결제/요금제 변경: 없음
 
 즉 현재 변경은 **실제 신제품이 발표되면 코드 구조를 다시 뜯지 않고 설정과 검증만으로 연결하기 위한 준비 단계**다.
+
+
+## 7. 2026-09-27 공식 확인: Agents API
+
+OpenAI 공식 개발자 문서에 Agents API가 공개되었고, 신규 agent application의 시작점으로 안내된다.
+
+공식 구조:
+- OpenAI-hosted Codex harness
+- durable sessions
+- orchestration
+- context compaction
+- recovery
+- environment 선택: none / openai_hosted / self_hosted
+- application function tools
+- session events / webhooks / traces
+
+따라서 기존 futureRouting의 persistentAgent 슬롯은 더 이상 단순 루머 대비만이 아니다. 다만 Relay Desk에서는 기존 필드를 바로 활성화하지 않고, 별도 openaiAgentsApi shadow 정책으로 공식 API 계약을 먼저 반영한다.
+
+현재 적용:
+- server/openai-agents-api.js
+- read-only function tools 5개
+- environment=none 기본
+- 실제 Agents API 호출 0
+- 고객 발송·결제·납품·코드 수정 권한 0
+- self-hosted executor 0
+- webhook 0
+
+상세 설계: docs/openai-agents-api-relay-prep.md
