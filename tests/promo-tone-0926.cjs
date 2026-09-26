@@ -125,7 +125,8 @@ const hon = text => assert.ok(checkHonorific(text).ok, text);
 // 6) 채팅봇 확장은 바꾸지 않았다(발행본 = 소스, 버전 그대로)
 {
   const dl = path.join(ROOT, 'dist', 'downloads');
-  assert.equal(fs.readFileSync(path.join(dl, 'relay-desk-soomgo-chat-bot', 'chat-content.js'), 'utf8'), fs.readFileSync(path.join(ROOT, 'soomgo-chat-bot', 'chat-content.js'), 'utf8'));
+  const normalizeEol = value => String(value).replace(/\r\n/g, '\n');
+  assert.equal(normalizeEol(fs.readFileSync(path.join(dl, 'relay-desk-soomgo-chat-bot', 'chat-content.js'), 'utf8')), normalizeEol(fs.readFileSync(path.join(ROOT, 'soomgo-chat-bot', 'chat-content.js'), 'utf8')), '발행본과 소스 내용이 줄바꿈 차이 외에는 같음');
 }
 assert.equal(apiCalls, 0);
 console.log('promo-tone-0926: PASS');
