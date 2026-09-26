@@ -243,7 +243,7 @@ const hon = r => assert.ok(checkHonorific(r.text).ok, r.text);
   assert.match(R.nightFollowupTextAt(kst('2026-09-25T08:10:00'), night.nightFollowup), /^안녕하세요! 급하게/);
   const src = fs.readFileSync(path.join(ROOT, 'server', 'relay-server.js'), 'utf8');
   assert.match(src, /astraRoomBridge\.cancelScheduled\(conversationId, \['quote_read_followup', 'delayed_reply'\], 'customer_spoke_first'\)/, '고객이 먼저 말하면 취소(같은 kind)');
-  const chat = fs.readFileSync(path.join(ROOT, 'soomgo-chat-bot', 'chat-content.js'), 'utf8');
+  const chat = fs.readFileSync(path.join(ROOT, 'soomgo-chat-bot', 'chat-content.js'), 'utf8').replace(/\r\n/g, '\n');
   assert.doesNotMatch(chat.match(/async function processQuoteReadFollowup\(\)[\s\S]*?\n  }\n/)[0], /getHours|새벽/, '채팅봇은 시각과 상관없이 읽음 이벤트를 서버에 보낸다');
 }
 
