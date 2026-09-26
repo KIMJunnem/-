@@ -18,6 +18,7 @@ const transcribe = require('./transcribe');
 const subtitlePipeline = require('./transcribe/pipeline');
 const t5Tools = require('./transcribe/t5-tools');
 const videoPipeline = require('./video-pipeline');
+const videoWorker = require('./video-worker');
 const customerRoomFallback = require('./customer-room-fallback');
 const chatTiming = require('./chat-timing');
 const quoteJudge = require('./quote-judge');
@@ -8254,7 +8255,7 @@ async function route(req, res) {
       ...(res.relayAllowOrigin ? { 'access-control-allow-origin': res.relayAllowOrigin } : {}),
       'vary': 'Origin',
       'access-control-allow-methods': 'GET,POST,OPTIONS',
-      'access-control-allow-headers': 'content-type,x-relay-bot',
+      'access-control-allow-headers': 'content-type,x-relay-bot,x-relay-admin',
       'access-control-max-age': '600'
     });
     return res.end();
@@ -8700,6 +8701,32 @@ async function route(req, res) {
       return sendJson(res, 404, { error: 'codex_production_route_not_found' });
     } catch (error) { return sendJson(res, 500, { ok: false, error: error.message }); }
   }
+  // 로컬 전용 영상 작업 플러그인. AI는 edit plan만 만들고 실제 미디어 처리는 FFmpeg/로컬 전사기가 담당한다.
+  if (pathname.startsWith('/api/admin/video-worker')) {
+    if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
+    if (String(req.headers['x-relay-admin'] || '') !== 'video-worker') return sendJson(res, 403, { error: 'admin_header_required' });
+    try {
+      if (pathname === '/api/admin/video-worker/status' && req.method === 'GET') {
+        return sendJson(res, 200, videoWorker.status());
+      }
+      if (pathname === '/api/admin/video-worker/run' && req.method === 'POST') {
+        const body = await readBody(req);
+        const action = String(body.action || '');
+        const payload = body.payload && typeof body.payload === 'object' ? body.payload : body;
+        const result = await videoWorker.runAction(action, payload);
+        return sendJson(res, result && result.ok === false ? 409 : 200, result);
+      }
+      if (pathname === '/api/admin/video-worker/plan' && req.method === 'POST') {
+        const body = await readBody(req);
+        const result = await videoWorker.runPlan(body);
+        return sendJson(res, result.ok ? 200 : 409, result);
+      }
+      return sendJson(res, 404, { error: 'video_worker_route_not_found' });
+    } catch (error) {
+      return sendJson(res, 500, { ok: false, error: error.message });
+    }
+  }
+
   if (pathname === '/api/admin/translated-sync-check' && req.method === 'POST') {
     if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
     if (String(req.headers['x-relay-admin'] || '') !== 'jev-manual') return sendJson(res, 403, { error: 'admin_header_required' });
