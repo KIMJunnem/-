@@ -239,6 +239,44 @@
       "maxCasesPerRun": 5
     }
   },
+  "openaiAgentsApi": {
+    "_note": "2026-09-27 OpenAI 공식 Agents API 대비 선행 배선. OpenAI가 Codex harness·session·orchestration·context compaction·recovery를 관리하고 Relay Desk는 application server와 function tools를 제공하는 구조. 현재 shadow/read-only라 세션 생성·유료 호출·웹훅·self-hosted executor는 시작하지 않는다.",
+    "enabled": true,
+    "mode": "shadow",
+    "executePaidCalls": false,
+    "model": "gpt-6-astra",
+    "reasoningEffort": "low",
+    "environment": {
+      "type": "none",
+      "openaiHostedEnabled": false,
+      "selfHostedEnabled": false
+    },
+    "tools": {
+      "mode": "read_only",
+      "allowed": [
+        "relay_status",
+        "relay_alerts",
+        "relay_usage",
+        "relay_customer_simulation_status",
+        "relay_learning_candidates"
+      ]
+    },
+    "webhooks": {
+      "enabled": false,
+      "signatureVerificationRequired": true
+    },
+    "sessionPersistence": {
+      "enabled": false,
+      "storeSessionIds": false
+    },
+    "externalActions": {
+      "customerSend": false,
+      "payment": false,
+      "delivery": false,
+      "codePatch": false,
+      "requireApproval": true
+    }
+  },
   "futureRouting": {
     "_note": "DevDay 2026 대비 선행 배선. 제품/API가 공식 확인되기 전에는 shadow 모드라 실제 제공자 요청을 바꾸지 않는다. serviceTier·상시 에이전트·외부 정체성·이메일 액션은 내부 메타데이터만 기록하며, 외부 전송은 승인 게이트를 유지한다.",
     "enabled": true,
