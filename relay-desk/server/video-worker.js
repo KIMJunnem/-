@@ -103,6 +103,16 @@ function resolveTools(options) {
   };
 }
 
+function sha256File(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fs.createReadStream(filePath);
+    stream.on('data', chunk => hash.update(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+}
+
 function runProcess(command, args, options) {
   const opts = options || {};
   const spawnImpl = opts.spawnImpl || spawn;
@@ -219,7 +229,7 @@ async function cut(input, options) {
     outputPath,
     segments: cuts,
     outputBytes: fs.statSync(outputPath).size,
-    sha256: crypto.createHash('sha256').update(fs.readFileSync(outputPath)).digest('hex')
+    sha256: await sha256File(outputPath)
   };
 }
 
@@ -293,7 +303,7 @@ async function render(input, options) {
     audioNormalized: Boolean(input && input.normalizeAudio),
     musicVolume: musicPath ? Number(input && input.musicVolume != null ? input.musicVolume : 0.18) : null,
     outputBytes: fs.statSync(outputPath).size,
-    sha256: crypto.createHash('sha256').update(fs.readFileSync(outputPath)).digest('hex')
+    sha256: await sha256File(outputPath)
   };
 }
 
@@ -423,6 +433,7 @@ module.exports = {
   parseTime,
   resolveTools,
   runProcess,
+  sha256File,
   inspect,
   transcribeAction,
   cut,
