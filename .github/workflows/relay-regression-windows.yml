@@ -17,6 +17,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Production provider Windows
+        shell: cmd
+        run: node tests\production-provider-claude.cjs
+        env:
+          NODE_ENV: test
+          OPENAI_API_KEY: ""
+          GEMINI_API_KEY: ""
+          ANTHROPIC_API_KEY: ""
+          CLAUDE_API_KEY: ""
       - name: Quote result order Windows
         shell: cmd
         run: node tests\quote-result-order.cjs
