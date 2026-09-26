@@ -6,7 +6,7 @@ const vm = require('vm');
 const { createWorkflowDocx } = require('./workflow-docx');
 const { createWorkflowXlsx } = require('./workflow-xlsx');
 const { selectDocumentTemplate } = require('./document-template-selector');
-const { automaticPaidCallsPaused, queueProviderAllowed, jevReviewPolicy, readOperatingPolicy, paidOrderBudget, astraLaneAllowed, finalGradeMode, futureRoutingPolicy, productionProvider, productionState, attachmentReadEnabled, jevSimulationLimits } = require('./operating-policy');
+const { automaticPaidCallsPaused, queueProviderAllowed, jevReviewPolicy, readOperatingPolicy, paidOrderBudget, astraLaneAllowed, finalGradeMode, futureRoutingPolicy, openaiAgentsApiPolicy, productionProvider, productionState, attachmentReadEnabled, jevSimulationLimits } = require('./operating-policy');
 const { normalizeServiceTier, resolveRouteMetadata, applyProviderTier } = require('./model-router');
 const { createAstraRoomBridge } = require('./astra-room-bridge');
 const { createKmongAutomation } = require('./kmong-automation');
@@ -21,6 +21,7 @@ const t5Tools = require('./transcribe/t5-tools');
 const videoPipeline = require('./video-pipeline');
 const customerRoomFallback = require('./customer-room-fallback');
 const customerSimulator = require('./customer-simulator');
+const openaiAgentsApi = require('./openai-agents-api');
 const chatTiming = require('./chat-timing');
 const quoteJudge = require('./quote-judge');
 const attachmentJudge = require('./attachment-judge');
@@ -1661,6 +1662,42 @@ function recordUsage(state, provider, usage, model = '', context = {}) {
   };
 }
 
+function openaiAgentsStatus() {
+  const ready = openaiAgentsApi.readiness({
+    policy: openaiAgentsApiPolicy(),
+    hasOpenAIKey: providerConfigured('OpenAI')
+  });
+  return {
+    ...ready,
+    toolDefinitions: openaiAgentsApi.toolDefinitions(ready.policy),
+    activationPlan: openaiAgentsApi.activationPlan(),
+    externalCallMade: false
+  };
+}
+
+function openaiAgentsToolDeps() {
+  return {
+    status: async () => {
+      const snapshot = providerSnapshot();
+      return { generatedAt: snapshot.generatedAt, providers: snapshot.providers, futureRouting: snapshot.futureRouting, agentsApi: snapshot.agentsApi };
+    },
+    alerts: async () => ({ generatedAt: new Date().toISOString(), alerts: computeRelayAlerts(readState()) }),
+    usage: async () => {
+      const snapshot = providerSnapshot();
+      return { generatedAt: snapshot.generatedAt, usage: snapshot.usage };
+    },
+    simulationStatus: async () => {
+      const state = customerSimulator.readState(DATA_DIR);
+      return { status: customerSimulator.status(DATA_DIR, readOperatingPolicy()), latest: state.latest || null };
+    },
+    learningCandidates: async limit => {
+      const state = customerSimulator.readState(DATA_DIR);
+      return (Array.isArray(state.learningCandidates) ? state.learningCandidates : [])
+        .filter(item => item.status === 'open')
+        .slice(0, Math.max(1, Math.min(Number(limit) || 10, 20)));
+    }
+  };
+}
 function providerSnapshot() {
   const has = (...names) => names.some(name => Boolean(String(process.env[name] || '').trim()));
   const configuredFor = provider => {
@@ -1729,7 +1766,15 @@ function providerSnapshot() {
       }
     },
     usage,
-    futureRouting: futureRoutingPolicy()
+    futureRouting: futureRoutingPolicy(),
+    agentsApi: (() => {
+      const item = openaiAgentsStatus();
+      return {
+        prepared: item.prepared, active: item.active, blockers: item.blockers,
+        mode: item.policy.mode, executePaidCalls: item.policy.executePaidCalls,
+        environment: item.policy.environment.type, readOnlyToolCount: item.toolDefinitions.length
+      };
+    })()
   };
 }
 
@@ -8874,6 +8919,45 @@ async function route(req, res) {
       return sendJson(res, 500, { error: `customer_simulation_run_failed:${String(error.message || error).slice(0, 160)}` });
     }
   }
+  if (pathname === '/api/openai-agents/status' && req.method === 'GET') {
+    if (!local) return sendJson(res, 403, { error: 'read_server_local_only' });
+    return sendJson(res, 200, { ok: true, ...openaiAgentsStatus() });
+  }
+
+  // Dry-run only: build the Agents API request shape but never call OpenAI.
+  if (pathname === '/api/openai-agents/preview' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
+    try {
+      const body = await readBody(req);
+      const payload = openaiAgentsApi.sessionCreatePayload({
+        input: String(body.input || 'Inspect Relay Desk status and report anything that needs operator attention.'),
+        policy: openaiAgentsApiPolicy(),
+        metadata: { source: 'relay-desk-preview', requestedBy: 'local-operator' }
+      });
+      return sendJson(res, 200, {
+        ok: true, externalCallMade: false,
+        request: {
+          method: 'POST', path: openaiAgentsApi.AGENTS_API.sessionsPath,
+          headers: { 'OpenAI-Beta': openaiAgentsApi.AGENTS_API.betaHeader },
+          body: payload
+        }
+      });
+    } catch (error) {
+      return sendJson(res, 400, { error: String(error.message || error).slice(0, 300) });
+    }
+  }
+
+  // Local-only test of the read-only function-tool bridge. No provider call.
+  if (pathname === '/api/openai-agents/tool-preview' && req.method === 'POST') {
+    if (!local) return sendJson(res, 403, { error: 'write_server_local_only' });
+    try {
+      const body = await readBody(req);
+      const result = await openaiAgentsApi.executeReadOnlyFunction(body.action || {}, openaiAgentsToolDeps(), openaiAgentsApiPolicy());
+      return sendJson(res, 200, { ok: true, externalCallMade: false, result });
+    } catch (error) {
+      return sendJson(res, 400, { error: String(error.message || error).slice(0, 300) });
+    }
+  }
   if (pathname === '/api/providers' && req.method === 'GET') {
     return sendJson(res, 200, { ...providerSnapshot(), readOnly: !local });
   }
@@ -11195,7 +11279,7 @@ if (require.main === module) {
   setInterval(() => runCustomerRoomFallback().catch(error => console.error(`Customer room fallback error: ${error.message}`)), 15000);
 }
 
-module.exports = { runCustomerSimulation, startCustomerSimulationScheduler, customerSimulationDeps, quietHoursConfig, quietReleaseAt, quietHoursNow, quietScheduleAllowed, nightFollowupReleaseAt, nightFollowupTextAt, quoteReadNightConfig, soomgoRequestPostedAt, isNightSoomgoRequest, releaseDueRevisionBatches, revisionBatchConfig, revisionSize, revisionFeeQuote, workflowDeadlineDays, revisionUrgent, customerRevisionRounds, intakeAttachmentLine, largeFileEmailText, workflowPaymentPlan, quoteReadFollowupEnabled, setPaymentSplitForTest, videoEditMaterialsLine, soomgoWorkflowStatusReply, supersedesOlderRoomReplies, isWorkflowCompletion, honorificCheckApplies, mergeSoomgoCardQuote, workflowPaymentSplitAllowed, SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, agreedDiscountFor, supervisorReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
+module.exports = { openaiAgentsStatus, openaiAgentsToolDeps, runCustomerSimulation, startCustomerSimulationScheduler, customerSimulationDeps, quietHoursConfig, quietReleaseAt, quietHoursNow, quietScheduleAllowed, nightFollowupReleaseAt, nightFollowupTextAt, quoteReadNightConfig, soomgoRequestPostedAt, isNightSoomgoRequest, releaseDueRevisionBatches, revisionBatchConfig, revisionSize, revisionFeeQuote, workflowDeadlineDays, revisionUrgent, customerRevisionRounds, intakeAttachmentLine, largeFileEmailText, workflowPaymentPlan, quoteReadFollowupEnabled, setPaymentSplitForTest, videoEditMaterialsLine, soomgoWorkflowStatusReply, supersedesOlderRoomReplies, isWorkflowCompletion, honorificCheckApplies, mergeSoomgoCardQuote, workflowPaymentSplitAllowed, SOOMGO_TONE_HUMAN_NEWCOMER, humanChatViaClaude, jevGateReply, agreedDiscountFor, supervisorReply, attachmentJudgeReply, attachmentJudgeDeps, soomgoChatFactsText, chatRequestText, soomgoOutboundTextHeads, isOurOwnSoomgoText, chatTemplatesForHumanMessages, applyChatReplyPolicy, chatForbiddenTopic, computeRelayAlerts, usageCostEstimate, soomgoFollowupReply, contextualizeSoomgoReplyBody, applySoomgoQuoteResult, isSoomgoShortProceed, isSoomgoDecline, isHumanSoomgoCustomerReply, pptDesignSampleReply, PPT_DESIGN_SAMPLES, isEmptySoomgoRequestBody, relayAttention, isSoomgoStenographySealRequest, soomgoQuoteResponseMetadata, soomgoReply, workflowReply, isSoomgoAdditionalFeeQuestion, isSoomgoSystemMessage, isSoomgoFraudulentDocumentRequest, isSoomgoEmergencySignal, buildSoomgoEmergencyPrompt, invokeSoomgoEmergencyAstra, buildSoomgoAiReplyPrompt, validSoomgoAiReply, shouldUseSoomgoAiReply, conversationalSoomgoReply, soomgoQuoteReadFollowupReply, soomgoConversationIdFromUrl, workflowPaymentAmount, workflowP0Invariant, intakeConversationReply, buildIntakeForm, parseIntakeReply, intakeFromParsedRequest, intakeFollowupQuestion, intakeSummaryLine, soomgoPricePair, soomgoDiscountedPrice, soomgoSamplePrice, soomgoSampleScope, sampleQuoteFromFull, soomgoSampleCodeHash, soomgoSampleCodeFromText, findSoomgoSampleLink, buildSoomgoQuote, markSoomgoCustomerReplyAfterOutbound, leadForWorkflow, workflowHireConfirmed, buildSoomgoFulfillmentPrompt, buildSoomgoReviewPrompt, extractSoomgoDeliverable, validSoomgoDeliverable, workflowArtifactSection, pythonWorkflowSource, requestedWorkflowFormats, customerDeliveryFilename, isSoomgoSelfIntroContext, isRetryableRunError, isUncertainRunError, createKmongOrderWorkflow, serviceCatalogPriceKrw, buildArtifactVerification, buildWorkflowQualityResult, workflowFormatIssue, finalReviewApproved, queueManualFinalReview, shouldRunAstraFinalGrade, createFollowUp, SOOMGO_SELLABLE_CATALOG, SOOMGO_ADDITIONAL_FEE_RULES, INTAKE_SLOTS, workflowAdditionalFee };
 
 
 
