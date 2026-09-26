@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-26T15:58:44.524Z",
+  "generatedAt": "2026-09-26T17:03:01.329Z",
   "kstDay": "2026-09-27",
   "funnel": {
-    "requests": 430,
-    "quotes": 222,
+    "requests": 463,
+    "quotes": 252,
     "customerReplies": 13,
     "humanConversations": 23,
     "byQuoteVersion": [
@@ -15,7 +15,13 @@
       },
       {
         "version": "video_edit auto-v2",
-        "sent": 24,
+        "sent": 35,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "video_edit auto-v2-B",
+        "sent": 23,
         "replied": 0,
         "replyRate": 0
       },
@@ -34,12 +40,6 @@
       {
         "version": "document_writing v1",
         "sent": 7,
-        "replied": 0,
-        "replyRate": 0
-      },
-      {
-        "version": "video_edit auto-v2-B",
-        "sent": 6,
         "replied": 0,
         "replyRate": 0
       },
@@ -80,6 +80,12 @@
         "replyRate": 0
       },
       {
+        "version": "subtitle v8",
+        "sent": 2,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
         "version": "document_writing v5",
         "sent": 2,
         "replied": 1,
@@ -116,8 +122,8 @@
     "delivered": 0
   },
   "conversionRates": {
-    "requestToQuote": 51.6,
-    "quoteToReply": 5.9,
+    "requestToQuote": 54.4,
+    "quoteToReply": 5.2,
     "replyToHire": 0,
     "hireToPaymentConfirmed": 0,
     "paymentToDelivery": 0
@@ -127,8 +133,8 @@
   "serviceMix": [
     {
       "service": "영상 편집",
-      "requests": 134,
-      "quotes": 40,
+      "requests": 162,
+      "quotes": 68,
       "replies": 0,
       "replyRate": 0
     },
@@ -141,7 +147,7 @@
     },
     {
       "service": "문서/글 작성",
-      "requests": 79,
+      "requests": 81,
       "quotes": 52,
       "replies": 4,
       "replyRate": 7.7
@@ -169,14 +175,14 @@
     },
     {
       "service": "자막 제작",
-      "requests": 8,
-      "quotes": 7,
+      "requests": 10,
+      "quotes": 9,
       "replies": 0,
       "replyRate": 0
     },
     {
       "service": "교정/교열",
-      "requests": 7,
+      "requests": 8,
       "quotes": 3,
       "replies": 0,
       "replyRate": 0
@@ -270,6 +276,7 @@
     "windowDays": 7,
     "leadsByDay": {
       "2026-09-24": 35,
+      "2026-09-27": 33,
       "2026-09-22": 33,
       "2026-09-25": 28,
       "2026-09-21": 27,
@@ -278,11 +285,11 @@
       "2026-09-26": 2
     },
     "videoAutoDecision": {
-      "ok": 41,
+      "ok": 69,
       "(없음)": 5,
       "daily_cap": 2
     },
-    "videoMaterialsQuotes": 1,
+    "videoMaterialsQuotes": 3,
     "repliesByDay": {
       "2026-09-20": 50,
       "2026-09-21": 18,
@@ -329,15 +336,16 @@
     "agreedDiscounts": 0,
     "jevGate": {},
     "videoRequestTypes": {
-      "other": 40,
-      "event": 3,
-      "wedding": 2,
-      "lecture": 2,
-      "youtube": 2
+      "other": 60,
+      "wedding": 6,
+      "event": 4,
+      "youtube": 3,
+      "baby": 2,
+      "lecture": 2
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 1108,
+        "minutesSinceHeartbeat": 1,
         "errorWord": false
       },
       "chat": {
