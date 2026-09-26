@@ -3,7 +3,8 @@
   "defaults": {
     "budgetUsd": 5,
     "maxProviderCalls": 12,
-    "knowledgeTopK": 6
+    "knowledgeTopK": 6,
+    "highValueKrw": 300000
   },
   "teams": {
     "intake": {
@@ -68,15 +69,74 @@
     }
   },
   "pipelines": {
-    "subtitle": ["intake", "finance", "subtitle", "qa", "delivery"],
-    "subtitle_translate": ["intake", "finance", "subtitle", "qa", "delivery"],
-    "video_edit": ["intake", "finance", "video", "subtitle", "qa", "delivery"],
-    "document": ["intake", "finance", "document", "qa", "delivery"],
-    "resume": ["intake", "finance", "document", "qa", "delivery"],
-    "creative": ["intake", "finance", "creative", "qa", "delivery"],
-    "software": ["intake", "finance", "engineering", "qa", "delivery"],
-    "research": ["intake", "finance", "research", "qa", "delivery"],
-    "customer_support": ["intake", "sales", "qa"],
-    "generic": ["intake", "finance", "ops", "qa", "delivery"]
+    "subtitle": [
+      "intake",
+      "finance",
+      "subtitle",
+      "qa",
+      "delivery"
+    ],
+    "subtitle_translate": [
+      "intake",
+      "finance",
+      "subtitle",
+      "qa",
+      "delivery"
+    ],
+    "video_edit": [
+      "intake",
+      "finance",
+      "video",
+      "subtitle",
+      "qa",
+      "delivery"
+    ],
+    "document": [
+      "intake",
+      "finance",
+      "document",
+      "qa",
+      "delivery"
+    ],
+    "resume": [
+      "intake",
+      "finance",
+      "document",
+      "qa",
+      "delivery"
+    ],
+    "creative": [
+      "intake",
+      "finance",
+      "creative",
+      "qa",
+      "delivery"
+    ],
+    "software": [
+      "intake",
+      "finance",
+      "engineering",
+      "qa",
+      "delivery"
+    ],
+    "research": [
+      "intake",
+      "finance",
+      "research",
+      "qa",
+      "delivery"
+    ],
+    "customer_support": [
+      "intake",
+      "sales",
+      "qa"
+    ],
+    "generic": [
+      "intake",
+      "finance",
+      "ops",
+      "qa",
+      "delivery"
+    ]
   }
 }
