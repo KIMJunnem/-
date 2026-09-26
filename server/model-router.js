@@ -1,6 +1,7 @@
 'use strict';
 
 const SERVICE_TIERS = Object.freeze(['standard', 'fast', 'ultrafast']);
+const MODEL_CLASSES = Object.freeze(['cheap', 'mid', 'top']);
 
 const DEFAULT_FUTURE_ROUTING = Object.freeze({
   enabled: true,
@@ -137,12 +138,37 @@ function looksUrgent(post = {}, task = {}) {
     post.lane, post.title, post.prompt,
     task.lane, task.title, task.meta
   ].filter(Boolean).join(' ');
-  return /(urgent|emergency|긴급|급행|즉시|오늘s*(?:마감|까지))/i.test(text);
+  return /(urgent|emergency|긴급|급행|즉시|오늘\s*(?:마감|까지))/i.test(text);
 }
 
 function looksInteractive(post = {}, task = {}) {
   const lane = String(post.lane || task.lane || '').toLowerCase();
   return /(chat|reply|customer|soomgo|kmong|fiverr)/.test(lane);
+}
+
+function estimateComplexity(post = {}, task = {}) {
+  const reasons = [];
+  let score = 0;
+  const text = [post.prompt, post.title, post.meta, task.title, task.meta].filter(Boolean).join('\n');
+  const length = text.length;
+  if (length >= 12000) { score += 35; reasons.push('long_context_12k'); }
+  else if (length >= 4000) { score += 20; reasons.push('long_context_4k'); }
+  if (Array.isArray(post.attachments) && post.attachments.length) { score += 15; reasons.push('attachments'); }
+  if (looksUrgent(post, task)) { score += 10; reasons.push('urgent'); }
+  const lane = String(post.lane || task.lane || '').toLowerCase();
+  if (/fulfillment|production|final|security|payment|delivery/.test(lane) || post.astraFinalReview === true || post.astraProduction === true) {
+    score += 25; reasons.push('high_risk_lane');
+  }
+  if (String(post.mode || '').toLowerCase() === 'implement') { score += 15; reasons.push('implementation'); }
+  if (Number(post.retryCount || 0) > 0 || /실행 실패|결과 확인 필요|uncertain|failed/i.test(String(post.status || ''))) {
+    score += 15; reasons.push('prior_failure');
+  }
+  if (/(모호|애매|판단|예외|충돌|원인|복합|다중|unknown|ambiguous|edge case)/i.test(text)) {
+    score += 10; reasons.push('ambiguity');
+  }
+  const bounded = Math.max(0, Math.min(100, score));
+  const recommendedModelClass = bounded >= 70 ? 'top' : bounded >= 35 ? 'mid' : 'cheap';
+  return { score: bounded, recommendedModelClass, reasons };
 }
 
 function resolveServiceTier({ post = {}, task = {}, policy = {} } = {}) {
@@ -168,6 +194,7 @@ function resolveServiceTier({ post = {}, task = {}, policy = {} } = {}) {
 function resolveRouteMetadata({ post = {}, task = {}, provider = '', policy = {} } = {}) {
   const cfg = normalizeFutureRoutingPolicy(policy);
   const serviceTier = resolveServiceTier({ post, task, policy: cfg });
+  const complexity = estimateComplexity(post, task);
   return {
     version: 1,
     mode: cfg.mode,
@@ -176,6 +203,9 @@ function resolveRouteMetadata({ post = {}, task = {}, provider = '', policy = {}
     urgent: looksUrgent(post, task),
     interactive: looksInteractive(post, task),
     provider: String(provider || ''),
+    complexityScore: complexity.score,
+    recommendedModelClass: complexity.recommendedModelClass,
+    complexityReasons: complexity.reasons,
     providerPassthroughEnabled: cfg.serviceTier.providerPassthrough.enabled === true,
     agentCapabilities: copy(cfg.agentCapabilities)
   };
@@ -199,9 +229,11 @@ function applyProviderTier(body, provider, routeMeta, policy = {}) {
 
 module.exports = {
   SERVICE_TIERS,
+  MODEL_CLASSES,
   DEFAULT_FUTURE_ROUTING,
   normalizeServiceTier,
   normalizeFutureRoutingPolicy,
+  estimateComplexity,
   resolveServiceTier,
   resolveRouteMetadata,
   applyProviderTier

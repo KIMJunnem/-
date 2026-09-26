@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const learningLedger = require('./learning-ledger');
 
 const FILE_NAME = 'customer-simulation-state.json';
 const REPORT_NAME = 'customer-simulation-latest.txt';
@@ -425,6 +426,7 @@ function runCase(item, deps, config) {
   return {
     id: item.id,
     archetype: item.archetype,
+    serviceId: String(item.quote?.serviceId || 'video_edit'),
     expectation: item.expectation,
     message: item.message,
     route: {
@@ -470,10 +472,11 @@ function mergeLearningCandidates(previous, results, nowIso, maxItems) {
         old.examples = [example, ...(Array.isArray(old.examples) ? old.examples : [])]
           .filter((x, i, arr) => arr.findIndex(y => y.evidence === x.evidence && y.archetype === x.archetype) === i)
           .slice(0, 3);
+        byKey.set(key, learningLedger.enrichCandidate(old, { sourceKind: 'synthetic', scope: `customer-support:${result.serviceId || 'general'}` }));
       } else {
         newCount += 1;
         if (issue.severity === 'hard') newHardCount += 1;
-        byKey.set(key, {
+        byKey.set(key, learningLedger.enrichCandidate({
           key,
           status: 'open',
           severity: issue.severity,
@@ -484,7 +487,7 @@ function mergeLearningCandidates(previous, results, nowIso, maxItems) {
           count: 1,
           examples: [example],
           promotionRule: '실제 고객 사례 또는 별도 회귀 테스트로 재현되기 전에는 운영 규칙/프롬프트에 자동 반영하지 않음'
-        });
+        }, { sourceKind: 'synthetic', scope: `customer-support:${result.serviceId || 'general'}` }));
       }
     }
   }
@@ -504,6 +507,8 @@ function reportText(run, candidates) {
     `하드 실패: ${run.hardFailureCount}건`,
     `사람다움 경고: ${run.warningCount}건`,
     `새 학습 후보: ${run.newLearningCandidateCount}건 (하드 ${run.newHardLearningCandidateCount}건)`,
+    `pass@1: ${(Number(run.metrics?.passAt1 || 0) * 100).toFixed(1)}% · 안정 연속 통과 ${run.stablePassStreak || 0}회`,
+    `다음 실행 간격: ${run.effectiveIntervalMinutes || '미정'}분 · 코드 지문 ${String(run.codeFingerprint || '').slice(0, 12)}`,
     `유료 모델 호출: 0건 (고정)`,
     `자동 코드/프롬프트 수정: 없음 (고정)`,
     '',
@@ -542,6 +547,8 @@ function runSimulation({ policy = {}, dataDir, deps, reason = 'scheduled', now =
   const hardFailureCount = results.reduce((sum, item) => sum + item.hard.length, 0);
   const warningCount = results.reduce((sum, item) => sum + item.warnings.length, 0);
   const previous = readState(dataDir);
+  const fingerprint = learningLedger.currentCodeFingerprint();
+  const metrics = learningLedger.passMetrics(results, previous.history, fingerprint.hash);
   const merged = mergeLearningCandidates(previous.learningCandidates, results, startedAt, config.maxLearningCandidates);
 
   const teacherQueue = merged.candidates
@@ -559,7 +566,10 @@ function runSimulation({ policy = {}, dataDir, deps, reason = 'scheduled', now =
     }));
 
   const run = {
-    version: 1,
+    version: 2,
+    rolloutId: hash(`${startedAt}|${seedText}|${fingerprint.hash}`).slice(0, 20),
+    codeFingerprint: fingerprint.hash,
+    codeFingerprintFiles: fingerprint.files,
     startedAt,
     completedAt: new Date().toISOString(),
     reason,
@@ -576,10 +586,15 @@ function runSimulation({ policy = {}, dataDir, deps, reason = 'scheduled', now =
     coverage: Object.fromEntries([...new Set(results.map(x => x.archetype))].map(name => [name, results.filter(x => x.archetype === name).length])),
     failures: results.filter(x => x.hard.length).slice(0, 50),
     warnings: results.filter(x => x.warnings.length).slice(0, 50),
-    guardProbes
+    guardProbes,
+    metrics
   };
 
-  const history = [run, ...(Array.isArray(previous.history) ? previous.history : [])].slice(0, config.maxHistoryRuns);
+  const previewHistory = [run, ...(Array.isArray(previous.history) ? previous.history : [])];
+  run.stablePassStreak = learningLedger.quietStreak(previewHistory, fingerprint.hash);
+  run.stablePass3 = run.stablePassStreak >= 3;
+  run.effectiveIntervalMinutes = learningLedger.effectiveIntervalMinutes(config.intervalMinutes, previewHistory, fingerprint.hash);
+  const history = previewHistory.slice(0, config.maxHistoryRuns);
   const next = {
     version: 1,
     latest: run,
@@ -590,6 +605,12 @@ function runSimulation({ policy = {}, dataDir, deps, reason = 'scheduled', now =
   };
   atomicWrite(statePath(dataDir), JSON.stringify(next, null, 2));
   atomicWrite(reportPath(dataDir), reportText(run, merged.candidates));
+  learningLedger.appendDecisionLedger(dataDir, learningLedger.decisionEntry({
+    run,
+    previousRun: previous.latest || null,
+    candidates: merged.candidates,
+    fingerprint: fingerprint.hash
+  }));
   return run;
 }
 
@@ -601,12 +622,20 @@ function status(dataDir, policy = {}) {
   const config = readConfig(policy);
   const state = readState(dataDir);
   const latestRun = state.latest || null;
-  const due = !latestRun || Date.now() - Date.parse(latestRun.completedAt || latestRun.startedAt || 0) >= config.intervalMinutes * 60 * 1000;
+  const fingerprint = learningLedger.currentCodeFingerprint();
+  const codeChanged = Boolean(latestRun?.codeFingerprint) && latestRun.codeFingerprint !== fingerprint.hash;
+  const effectiveIntervalMinutes = learningLedger.effectiveIntervalMinutes(config.intervalMinutes, state.history, fingerprint.hash);
+  const elapsed = latestRun ? Date.now() - Date.parse(latestRun.completedAt || latestRun.startedAt || 0) : Infinity;
+  const due = !latestRun || codeChanged || elapsed >= effectiveIntervalMinutes * 60 * 1000;
   return {
     enabled: config.enabled,
     due,
+    codeChanged,
+    effectiveIntervalMinutes,
+    codeFingerprint: fingerprint.hash,
     latest: latestRun,
     openLearningCandidates: (state.learningCandidates || []).filter(x => x.status === 'open').length,
+    promotionReviewCandidates: (state.learningCandidates || []).filter(x => x.promotion?.ready === true).length,
     config
   };
 }

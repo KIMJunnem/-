@@ -78,9 +78,15 @@ try {
   assert.ok(run.teacherQueue.every(x => x.externalCallMade === false), '교수 큐를 만들어도 실제 외부 호출은 안 함');
   assert.ok(fs.existsSync(path.join(tmp, 'customer-simulation-state.json')));
   assert.ok(fs.existsSync(path.join(tmp, 'customer-simulation-latest.txt')));
+  assert.ok(fs.existsSync(path.join(tmp, 'customer-simulation-decisions.jsonl')), '결정 원장 JSONL 생성');
   const stored = sim.readState(tmp);
   assert.equal(stored.latest.seed, 'customer-sim-regression');
   assert.ok(Array.isArray(stored.learningCandidates));
+  assert.match(run.codeFingerprint, /^[a-f0-9]{64}$/);
+  assert.ok(run.metrics.passAt1 >= 0 && run.metrics.passAt1 <= 1);
+  assert.ok(run.effectiveIntervalMinutes >= 180);
+  assert.ok(stored.learningCandidates.every(x => Number(x.confidence || 0) >= 0.3 && Number(x.confidence || 0) <= 0.95));
+  assert.ok(stored.learningCandidates.every(x => x.promotion?.ready !== true), '합성 데이터만으로 자동 승격 금지');
   assert.equal(sim.status(tmp, { customerSimulation: { enabled: true, intervalMinutes: 180 } }).due, false);
 
   // 검증기가 고장난 경우를 합성해 실패가 Learning Candidate로 승격되는지 확인.
@@ -96,6 +102,7 @@ try {
   assert.ok(broken.hardFailureCount > 0, '고장난 안전 검증기를 탐지');
   const after = sim.readState(tmp);
   assert.ok(after.learningCandidates.some(x => /^guard_probe_/.test(x.code)), '새 실패를 학습 후보에 저장');
+  assert.ok(after.learningCandidates.filter(x => /^guard_probe_/.test(x.code)).every(x => x.evidenceKinds.includes('synthetic')));
   assert.ok(after.learningCandidates.every(x => /자동 반영하지 않음/.test(x.promotionRule)), '합성 실패는 운영 규칙에 자동 승격하지 않음');
 
   const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server', 'relay-server.js'), 'utf8');

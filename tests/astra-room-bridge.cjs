@@ -2,7 +2,7 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { createAstraRoomBridge, parseFields } = require('../server/astra-room-bridge');
+const { createAstraRoomBridge, parseFields, replySha256, deliveryBindingValid } = require('../server/astra-room-bridge');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'astra-room-bridge-'));
 const bridge = createAstraRoomBridge({
@@ -29,8 +29,24 @@ const completed = bridge.complete(first.event.eventId, `[MODE:CUSTOMER_REPLY]\n[
 assert.strictEqual(completed.event.response.decision, 'SEND');
 assert.strictEqual(completed.event.response.reply, '요청하신 작업 범위를 먼저 확인해도 될까요?');
 assert.strictEqual(completed.event.deliveryStatus, 'ready');
+assert.strictEqual(completed.event.deliveryBinding.replySha256, replySha256(completed.event.response.reply));
+assert.strictEqual(deliveryBindingValid(completed.event), true);
 assert.strictEqual(bridge.outbox({ conversationId: 'CHAT-1' }).length, 0, 'conversationId is read from the event payload');
 assert.strictEqual(bridge.outbox().length, 1);
+// 완료 뒤 저장된 응답이 바뀌면 outbox에서 빠지고 sent 처리도 거절된다.
+{
+  const stateFile = path.join(root, 'data.json');
+  const tampered = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+  const ev = tampered.events.find(item => item.eventId === first.event.eventId);
+  const original = ev.response.reply;
+  ev.response.reply = '변조된 답장';
+  fs.writeFileSync(stateFile, JSON.stringify(tampered, null, 2));
+  assert.strictEqual(bridge.outbox().length, 0, '해시가 달라진 답장은 발송 대기열에서 제외');
+  assert.throws(() => bridge.markDelivery(first.event.eventId, 'sent', { receipt: 'bad' }), /delivery_binding_mismatch/);
+  ev.response.reply = original;
+  fs.writeFileSync(stateFile, JSON.stringify(tampered, null, 2));
+  assert.strictEqual(bridge.outbox().length, 1);
+}
 assert.strictEqual(bridge.markDelivery(first.event.eventId, 'sent', { receipt: 'test' }).event.deliveryStatus, 'sent');
 assert.strictEqual(bridge.markDelivery(first.event.eventId, 'sent', { receipt: 'duplicate' }).duplicate, true);
 assert.strictEqual(bridge.complete(first.event.eventId, completed.event.response.raw).duplicate, true);
