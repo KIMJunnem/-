@@ -1,0 +1,42 @@
+name: Relay Desk full regression
+
+on:
+  push:
+    branches:
+      - fix/full-regression-final-20260927
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: test
+      OPENAI_API_KEY: ""
+      GEMINI_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
+      CLAUDE_API_KEY: ""
+      TYPESAFE_API_KEY: ""
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Normalize LF checkout
+        shell: pwsh
+        run: |
+          git config core.autocrlf false
+          git config core.eol lf
+          git reset --hard HEAD
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Install
+        run: npm ci --ignore-scripts
+      - name: Syntax check
+        run: node --check server/relay-server.js
+      - name: Full regression
+        run: node tests/run-all.cjs
