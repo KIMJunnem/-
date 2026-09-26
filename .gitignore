@@ -24,3 +24,9 @@ server/data/astra-chat-log.json
 server/data/astra-chat-log.json.tmp
 
 node_modules/
+
+# 자율 고객응대 시뮬레이션 운영 기록(합성 데이터/결정 원장)
+server/data/customer-simulation-state.json
+server/data/customer-simulation-state.json.tmp
+server/data/customer-simulation-latest.txt
+server/data/customer-simulation-decisions.jsonl
