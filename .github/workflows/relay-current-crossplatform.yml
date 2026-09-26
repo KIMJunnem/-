@@ -1,0 +1,31 @@
+name: relay-current-crossplatform
+
+on:
+  push:
+    branches:
+      - ci/windows-current-20260927
+  workflow_dispatch:
+
+jobs:
+  regression:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Full regression
+        run: node tests/run-all.cjs
+        env:
+          NODE_ENV: test
+          OPENAI_API_KEY: ""
+          GEMINI_API_KEY: ""
+          ANTHROPIC_API_KEY: ""
+          CLAUDE_API_KEY: ""
