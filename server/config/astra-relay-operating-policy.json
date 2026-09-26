@@ -218,7 +218,28 @@
     ],
     "changedAt": "2026-09-22T00:00:00+09:00",
     "reason": "준희 승인(9/22, T-3): 로컬 전사(faster-whisper small, CPU INT8, VAD 켬). 유료 API·외부 업로드 없음. 한 번에 1건, 낮은 우선순위(below_normal). 스레드는 최대 6개 허용 중 4개로 시작 — 3700X 물리 코어 8개 중 절반만 써서 숨고 봇(크롬)·서버 여유를 남김. T-5 실측 뒤 조정."
-  }  ,"futureRouting": {
+  },
+  "customerSimulation": {
+    "_note": "고객이 없을 때도 합성 고객으로 현재 응대 로직을 반복 검증한다. 외부/유료 모델 호출과 자동 코드 수정은 금지하고, 새 실패·사람다움 경고만 Learning Candidate로 축적한다.",
+    "enabled": true,
+    "intervalMinutes": 180,
+    "startupDelaySeconds": 20,
+    "casesPerRun": 80,
+    "maxHistoryRuns": 30,
+    "maxLearningCandidates": 200,
+    "templatesForHumanMessages": false,
+    "paidModelCalls": false,
+    "autoPatch": false,
+    "teacherReview": {
+      "_note": "Opus/Astra 또는 미래 지속형 에이전트가 연결되면 실패 사례만 교수 검토 큐로 넘길 자리. 지금은 큐만 만들고 호출하지 않는다.",
+      "enabled": false,
+      "mode": "failures_only",
+      "provider": "Claude",
+      "model": "claude-opus-5-5",
+      "maxCasesPerRun": 5
+    }
+  },
+  "futureRouting": {
     "_note": "DevDay 2026 대비 선행 배선. 제품/API가 공식 확인되기 전에는 shadow 모드라 실제 제공자 요청을 바꾸지 않는다. serviceTier·상시 에이전트·외부 정체성·이메일 액션은 내부 메타데이터만 기록하며, 외부 전송은 승인 게이트를 유지한다.",
     "enabled": true,
     "mode": "shadow",
