@@ -48,6 +48,14 @@ function futureRoutingPolicy() {
   }
 }
 
+function openaiAgentsApiPolicy() {
+  try {
+    return require('./openai-agents-api').normalizePolicy(readOperatingPolicy().openaiAgentsApi || {});
+  } catch (_) {
+    return require('./openai-agents-api').normalizePolicy({ enabled: true, mode: 'shadow', executePaidCalls: false });
+  }
+}
+
 // 유료 제작(숨고·크몽 제작물 작성과 교차검수) 모델 제공자.
 // 'hold'이면 제작 lane을 실행하지 않는다(API 호출 0, 게시물은 대기로 남음).
 // 허용값이 아닌 값이나 읽을 수 없는 정책도 hold로 처리한다(오류 대신 안전하게 멈춤).
@@ -120,4 +128,4 @@ function queueProviderAllowed(provider) {
   return raw[key] !== false;
 }
 
-module.exports = { automaticPaidCallsPaused, queueProviderAllowed, jevReviewPolicy, jevSimulationLimits, POLICY_FILE, PRODUCTION_PROVIDERS, readOperatingPolicy, paidOrderBudget, astraLaneAllowed, finalGradeMode, futureRoutingPolicy, productionProvider, productionState, attachmentReadEnabled };
+module.exports = { automaticPaidCallsPaused, queueProviderAllowed, jevReviewPolicy, jevSimulationLimits, POLICY_FILE, PRODUCTION_PROVIDERS, readOperatingPolicy, paidOrderBudget, astraLaneAllowed, finalGradeMode, futureRoutingPolicy, openaiAgentsApiPolicy, productionProvider, productionState, attachmentReadEnabled };
