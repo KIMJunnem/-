@@ -5,7 +5,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const source = fs.readFileSync(path.join(__dirname, '..', 'soomgo-bot-extension', 'content-v3.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '..', 'soomgo-bot-extension', 'content-v3.js'), 'utf8').replace(/\r\n/g, '\n');
 
 const start = source.indexOf("  const QUOTE_RESULT_OUTBOX_KEY = ");
 const end = source.indexOf('  async function returnToRequestList()');
