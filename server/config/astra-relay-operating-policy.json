@@ -218,5 +218,27 @@
     ],
     "changedAt": "2026-09-22T00:00:00+09:00",
     "reason": "준희 승인(9/22, T-3): 로컬 전사(faster-whisper small, CPU INT8, VAD 켬). 유료 API·외부 업로드 없음. 한 번에 1건, 낮은 우선순위(below_normal). 스레드는 최대 6개 허용 중 4개로 시작 — 3700X 물리 코어 8개 중 절반만 써서 숨고 봇(크롬)·서버 여유를 남김. T-5 실측 뒤 조정."
+  }  ,"futureRouting": {
+    "_note": "DevDay 2026 대비 선행 배선. 제품/API가 공식 확인되기 전에는 shadow 모드라 실제 제공자 요청을 바꾸지 않는다. serviceTier·상시 에이전트·외부 정체성·이메일 액션은 내부 메타데이터만 기록하며, 외부 전송은 승인 게이트를 유지한다.",
+    "enabled": true,
+    "mode": "shadow",
+    "serviceTier": {
+      "default": "standard",
+      "allowed": ["standard", "fast", "ultrafast"],
+      "autoPromoteUrgent": false,
+      "autoPromoteInteractive": false,
+      "ultrafastEnabled": false,
+      "providerPassthrough": {
+        "_note": "공식 API 필드/값이 확인되기 전에는 false 유지. true 전환 시에만 OpenAI 요청 본문에 매핑값을 넣는다.",
+        "enabled": false,
+        "field": "service_tier",
+        "mapping": {"standard": "standard", "fast": "fast", "ultrafast": "ultrafast"}
+      }
+    },
+    "agentCapabilities": {
+      "persistentAgent": {"enabled": false, "role": "router_only"},
+      "externalIdentity": {"enabled": false, "type": "none", "identifier": null},
+      "emailAction": {"enabled": false, "read": false, "draft": false, "send": false, "requireApproval": true}
+    }
   }
 }
