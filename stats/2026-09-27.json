@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-26T18:08:01.543Z",
+  "generatedAt": "2026-09-26T19:13:01.840Z",
   "kstDay": "2026-09-27",
   "funnel": {
     "requests": 463,
@@ -296,47 +296,36 @@
     },
     "videoMaterialsQuotes": 3,
     "repliesByDay": {
-      "2026-09-20": 50,
       "2026-09-21": 18,
       "2026-09-22": 16,
       "2026-09-24": 11,
       "2026-09-23": 10,
-      "2026-09-27": 5
+      "2026-09-27": 5,
+      "2026-09-20": 2
     },
     "replyTemplates": {
       "quote_read_followup": 17,
       "system_notice": 10,
-      "(없음)": 10,
       "quote_read_followup_relinked": 6,
       "emergency_astra_failed": 6,
       "auto_general": 4,
       "quote_read_followup_night": 3,
       "guard_customer_left": 3,
-      "auto_price_7": 3,
-      "chat_only_contact": 3,
       "quote_read_already_sent": 2,
-      "auto_general_9": 2,
-      "auto_table_image_20": 2,
-      "auto_tone_15": 2,
-      "auto_revision_policy_6": 2,
-      "manual_cancel_review": 2,
-      "low_signal": 2,
-      "manual_script": 2,
-      "post_hire_chat": 2,
-      "chat_only_video_scope": 2,
-      "auto_confidentiality_2": 2,
-      "auto_format_18": 2,
-      "flexible_price_variation": 2,
       "later_contact_thanks": 1,
       "auto_process": 1,
       "auto_contact": 1,
       "manual_urgent": 1,
       "auto_price": 1,
       "additional_fee_info": 1,
-      "auto_format": 1
+      "auto_format": 1,
+      "auto_availability": 1,
+      "guard_off_platform": 1,
+      "link_not_opened": 1,
+      "link_academic_integrity_decline": 1
     },
-    "replyAuto": 38,
-    "replyManual": 50,
+    "replyAuto": 26,
+    "replyManual": 18,
     "honorificHeld": 0,
     "paymentClaims": 0,
     "agreedDiscounts": 0,
@@ -355,7 +344,7 @@
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 0,
+        "minutesSinceHeartbeat": 2,
         "errorWord": false
       }
     },
