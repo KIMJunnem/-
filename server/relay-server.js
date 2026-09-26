@@ -6,7 +6,8 @@ const vm = require('vm');
 const { createWorkflowDocx } = require('./workflow-docx');
 const { createWorkflowXlsx } = require('./workflow-xlsx');
 const { selectDocumentTemplate } = require('./document-template-selector');
-const { automaticPaidCallsPaused, queueProviderAllowed, jevReviewPolicy, readOperatingPolicy, paidOrderBudget, astraLaneAllowed, finalGradeMode, productionProvider, productionState, attachmentReadEnabled, jevSimulationLimits } = require('./operating-policy');
+const { automaticPaidCallsPaused, queueProviderAllowed, jevReviewPolicy, readOperatingPolicy, paidOrderBudget, astraLaneAllowed, finalGradeMode, futureRoutingPolicy, productionProvider, productionState, attachmentReadEnabled, jevSimulationLimits } = require('./operating-policy');
+const { normalizeServiceTier, resolveRouteMetadata, applyProviderTier } = require('./model-router');
 const { createAstraRoomBridge } = require('./astra-room-bridge');
 const { createKmongAutomation } = require('./kmong-automation');
 const serviceRegistry = require('./service-registry');
@@ -1614,19 +1615,33 @@ function usageBudget(state, provider) {
   return { allowed, day: ledger.day, requests: Number(item.requests || 0), tokens: Number(item.tokens || 0), estimatedCostUsd: Number(item.estimatedCostUsd || 0), tokenCap: DAILY_TOKEN_CAP, costCap: DAILY_COST_CAP_USD };
 }
 
-function recordUsage(state, provider, usage, model = '') {
+function recordUsage(state, provider, usage, model = '', context = {}) {
   const ledger = usageLedgerSnapshot(state);
-  const current = ledger.providers[provider] || { requests: 0, tokens: 0, estimatedCostUsd: 0 };
+  const current = ledger.providers[provider] || { requests: 0, tokens: 0, estimatedCostUsd: 0, byServiceTier: {} };
   const tokens = usageTokenCount(provider, usage);
   const estimatedCostUsd = usageCostEstimate(provider, usage, model);
+  const serviceTier = normalizeServiceTier(context?.serviceTier || context?.routeMeta?.serviceTier || 'standard');
+  const currentByTier = current.byServiceTier && typeof current.byServiceTier === 'object' ? current.byServiceTier : {};
+  const tierCurrent = currentByTier[serviceTier] || { requests: 0, tokens: 0, estimatedCostUsd: 0 };
+  const byServiceTier = {
+    ...currentByTier,
+    [serviceTier]: {
+      requests: Number(tierCurrent.requests || 0) + 1,
+      tokens: Number(tierCurrent.tokens || 0) + tokens,
+      estimatedCostUsd: Number((Number(tierCurrent.estimatedCostUsd || 0) + estimatedCostUsd).toFixed(6)),
+      lastAt: new Date().toISOString()
+    }
+  };
   ledger.providers[provider] = {
     requests: Number(current.requests || 0) + 1,
     tokens: Number(current.tokens || 0) + tokens,
     estimatedCostUsd: Number((Number(current.estimatedCostUsd || 0) + estimatedCostUsd).toFixed(6)),
+    byServiceTier,
     lastAt: new Date().toISOString()
   };
   state.usageLedger = ledger;
   const cumulative = ledger.providers[provider];
+  const tierCumulative = cumulative.byServiceTier?.[serviceTier] || null;
   const recorded = usage && typeof usage === 'object' && Object.keys(usage).length > 0;
   const usd = recorded ? estimatedCostUsd : null;
   const krw = usd == null ? null : Math.round(usd * Number(process.env.RELAY_USD_KRW || 1370));
@@ -1634,10 +1649,14 @@ function recordUsage(state, provider, usage, model = '') {
     tokens: recorded ? tokens : null,
     estimatedCostUsd: usd,
     estimatedCostKrw: krw,
+    serviceTier,
     day: ledger.day,
     requests: cumulative.requests,
     cumulativeTokens: cumulative.tokens,
-    cumulativeEstimatedCostUsd: cumulative.estimatedCostUsd
+    cumulativeEstimatedCostUsd: cumulative.estimatedCostUsd,
+    tierRequests: tierCumulative?.requests || 0,
+    tierCumulativeTokens: tierCumulative?.tokens || 0,
+    tierCumulativeEstimatedCostUsd: tierCumulative?.estimatedCostUsd || 0
   };
 }
 
@@ -1708,7 +1727,8 @@ function providerSnapshot() {
         status: openAiSnapshot.available ? '연결됨' : 'OpenAI API 확인 필요'
       }
     },
-    usage
+    usage,
+    futureRouting: futureRoutingPolicy()
   };
 }
 
@@ -7581,6 +7601,10 @@ async function runOpenAI(prompt, modelOverride = '', options = {}) {
   const model = String(modelOverride || process.env.OPENAI_MODEL || 'gpt-5.6-luna').trim();
   const promptCacheKey = String(options.promptCacheKey || `relay-desk:${model}:v1`).slice(0, 64);
   const clientRequestId = String(options.clientRequestId || '').trim();
+  const baseRequestBody = { model, input: prompt, store: false, prompt_cache_key: promptCacheKey };
+  // DevDay 선행 배선: shadow 모드에서는 serviceTier를 내부 기록만 하고,
+  // 공식 API 필드/값을 확인해 providerPassthrough를 켠 뒤에만 요청 본문에 추가한다.
+  const requestBody = applyProviderTier(baseRequestBody, 'OpenAI', options.routeMeta || null, futureRoutingPolicy());
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
@@ -7588,14 +7612,14 @@ async function runOpenAI(prompt, modelOverride = '', options = {}) {
       'content-type': 'application/json',
       ...(clientRequestId ? { 'x-client-request-id': clientRequestId } : {})
     },
-    body: JSON.stringify({ model, input: prompt, store: false, prompt_cache_key: promptCacheKey }),
+    body: JSON.stringify(requestBody),
     signal: AbortSignal.timeout(Math.max(1000, Number(options.timeoutMs || PROVIDER_TIMEOUT_MS)))
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(`openai_${response.status}_${payload?.error?.code || 'request_failed'}`);
   const text = openAiText(payload).trim();
   if (!text) throw new Error('openai_empty_response');
-  return { provider: 'OpenAI', model, text, usage: payload.usage || null, providerResponseId: payload.id || null };
+  return { provider: 'OpenAI', model, text, usage: payload.usage || null, providerResponseId: payload.id || null, routeMeta: options.routeMeta || null };
 }
 
 function geminiText(payload) {
@@ -7620,7 +7644,7 @@ async function runGemini(prompt, options = {}) {
   }
   const text = geminiText(payload).trim();
   if (!text) throw new Error('gemini_empty_response');
-  return { provider: 'Gemini', model, text, usage: payload.usageMetadata || null, providerResponseId: payload.responseId || null };
+  return { provider: 'Gemini', model, text, usage: payload.usageMetadata || null, providerResponseId: payload.responseId || null, routeMeta: options.routeMeta || null };
 }
 
 function computeRelayAlerts(current) {
@@ -7757,7 +7781,7 @@ async function runClaude(prompt, options = {}) {
   }
   const text = (Array.isArray(payload.content) ? payload.content : []).filter(item => item?.type === 'text').map(item => item.text || '').join('\n').trim();
   if (!text) throw new Error('claude_empty_response');
-  return { provider: 'Claude', model, text, usage: payload.usage || null, providerResponseId: payload.id || null };
+  return { provider: 'Claude', model, text, usage: payload.usage || null, providerResponseId: payload.id || null, routeMeta: options.routeMeta || null };
 }
 
 // 고객응대실 합치기(server/customer-room-fallback.js): Astra가 1분 안에 안 받으면 Claude, 그것도 안 되면 정해진 문구.
@@ -7811,10 +7835,10 @@ function claudeQuoteDeps() {
   };
 }
 
-async function runProvider(provider, prompt) {
-  if (provider === 'OpenAI') return runOpenAI(prompt);
-  if (provider === 'Gemini') return runGemini(prompt);
-  if (provider === 'Claude') return runClaude(prompt);
+async function runProvider(provider, prompt, options = {}) {
+  if (provider === 'OpenAI') return runOpenAI(prompt, '', options);
+  if (provider === 'Gemini') return runGemini(prompt, options);
+  if (provider === 'Claude') return runClaude(prompt, options);
   throw new Error('provider_not_supported');
 }
 
@@ -7869,7 +7893,7 @@ function isUncertainRunError(error) {
   return /timeout|timed out|aborted|aborterror|empty_response|fetch failed|network|socket|econnreset|econnaborted|server_restarted/.test(message);
 }
 
-async function runWithFallback(provider, prompt) {
+async function runWithFallback(provider, prompt, options = {}) {
   const requestedProvider = provider;
   const rotation = ['OpenAI', 'Gemini', 'Claude'];
   const startIndex = Math.max(0, rotation.indexOf(provider));
@@ -7878,7 +7902,7 @@ async function runWithFallback(provider, prompt) {
   if (!initialProvider) throw new Error('queue_provider_not_allowed');
   const preflightFallback = initialProvider !== provider;
   try {
-    const result = await runProvider(initialProvider, prompt);
+    const result = await runProvider(initialProvider, prompt, options);
     markProviderSuccess(initialProvider);
     return {
       result,
@@ -7893,7 +7917,7 @@ async function runWithFallback(provider, prompt) {
     const alternatives = ordered.filter(name => name !== initialProvider && providerAvailable(name));
     for (const alternate of alternatives) {
       try {
-        const result = await runProvider(alternate, prompt);
+        const result = await runProvider(alternate, prompt, options);
         markProviderSuccess(alternate);
         return { result, requestedProvider, fallbackFrom: initialProvider, primaryError: primaryError.message };
       } catch (fallbackError) {
@@ -10678,8 +10702,17 @@ async function route(req, res) {
         }
       }
       const startedAt = new Date().toISOString();
+      const startingTask = (Array.isArray(current.tasks) ? current.tasks : []).find(item => item.id === post.taskId);
+      const routeMeta = resolveRouteMetadata({
+        post,
+        task: startingTask || {},
+        provider,
+        policy: futureRoutingPolicy()
+      });
       post.status = '실행 중';
       post.startedAt = startedAt;
+      post.routing = routeMeta;
+      post.serviceTier = routeMeta.serviceTier;
       post.providerClientRequestId = post.providerClientRequestId || crypto.randomUUID();
       post.providerRequestStatus = 'pending';
       const progressPosts = Array.isArray(current.progressPosts) ? current.progressPosts : [];
@@ -10690,6 +10723,8 @@ async function route(req, res) {
         title: `${post.taskId} 실행 경과`,
         provider,
         requestedProvider: provider,
+        serviceTier: routeMeta.serviceTier,
+        routing: routeMeta,
         cycle: Number(post.cycle || 1),
         phase: 'started',
         status: '실행 중',
@@ -10699,7 +10734,6 @@ async function route(req, res) {
         events: [{ phase: 'started', status: '실행 중', text: `${forcedAstraProduction ? SOOMGO_ASTRA_FINAL_MODEL : provider} 실행 시작`, at: startedAt }]
       };
       progressPosts.unshift(progressPost);
-      const startingTask = (Array.isArray(current.tasks) ? current.tasks : []).find(item => item.id === post.taskId);
       if (startingTask) {
         startingTask.status = 'active';
         startingTask.label = '실행 중';
@@ -10713,10 +10747,10 @@ async function route(req, res) {
         // Paid production and the final deliverable gate use the approved Astra
         // lane. Routine quote/chat/payment/delivery state checks never reach here.
         let execution = forcedAstraProduction || post.astraFinalReview === true
-          ? { result: await runOpenAI(executionPrompt, post.openAIModel || SOOMGO_ASTRA_FINAL_MODEL, { clientRequestId: post.providerClientRequestId }), requestedProvider: 'OpenAI', fallbackFrom: null, primaryError: null }
+          ? { result: await runOpenAI(executionPrompt, post.openAIModel || SOOMGO_ASTRA_FINAL_MODEL, { clientRequestId: post.providerClientRequestId, routeMeta }), requestedProvider: 'OpenAI', fallbackFrom: null, primaryError: null }
           : forcedClaudeProduction
-            ? { result: await runClaude(executionPrompt), requestedProvider: 'Claude', fallbackFrom: null, primaryError: null }
-            : await runWithFallback(provider, executionPrompt);
+            ? { result: await runClaude(executionPrompt, { routeMeta }), requestedProvider: 'Claude', fallbackFrom: null, primaryError: null }
+            : await runWithFallback(provider, executionPrompt, { routeMeta });
         let result = execution.result;
         if (post.lane === 'soomgo_fulfillment') {
           const initialValidation = validSoomgoDeliverable(result.text, startingTask || {});
@@ -10725,10 +10759,10 @@ async function route(req, res) {
             const repairPrompt = `${String(executionPrompt || '').slice(0, 22000)}\n\n[실제 산출물 형식 복구 지시]\n직전 응답은 ${initialValidation.reason}로 검수 실패했다. 검수 보고서나 대화를 쓰지 말고 고객이 요청한 파일의 전체 본문을 새로 작성하라. 반드시 [[DELIVERABLE_START]]와 [[DELIVERABLE_END]] 사이에 완성 결과물만 출력하고, 그 외 텍스트는 쓰지 마라.\n\n실패 응답(검수 자료로만 참고):\n${String(result.text || '').slice(0, 7000)}`;
             post.repairProviderClientRequestId = post.repairProviderClientRequestId || crypto.randomUUID();
             const repaired = forcedAstraProduction || post.astraFinalReview === true
-              ? { result: await runOpenAI(repairPrompt, post.openAIModel || SOOMGO_ASTRA_FINAL_MODEL, { clientRequestId: post.repairProviderClientRequestId }), requestedProvider: 'OpenAI', fallbackFrom: null, primaryError: null }
+              ? { result: await runOpenAI(repairPrompt, post.openAIModel || SOOMGO_ASTRA_FINAL_MODEL, { clientRequestId: post.repairProviderClientRequestId, routeMeta }), requestedProvider: 'OpenAI', fallbackFrom: null, primaryError: null }
               : forcedClaudeProduction
-                ? { result: await runClaude(repairPrompt), requestedProvider: 'Claude', fallbackFrom: null, primaryError: null }
-                : await runWithFallback(repairProvider, repairPrompt);
+                ? { result: await runClaude(repairPrompt, { routeMeta }), requestedProvider: 'Claude', fallbackFrom: null, primaryError: null }
+                : await runWithFallback(repairProvider, repairPrompt, { routeMeta });
             const repairedValidation = validSoomgoDeliverable(repaired.result.text, startingTask || {});
             if (!repairedValidation.ok) throw new Error(`soomgo_deliverable_validation_failed:${repairedValidation.reason}`);
             execution = repaired;
@@ -10792,6 +10826,8 @@ async function route(req, res) {
           primaryError: execution.primaryError,
           executionMode: post.mode || 'analysis',
           lane: post.lane || startingTask?.lane || 'idea_development',
+          serviceTier: routeMeta.serviceTier,
+          routing: routeMeta,
           insightPending: true,
           decisionAuthority: false,
           decisionOwner: post.decisionOwner || startingTask?.decisionOwner || 'Astra (추후 연결)',
@@ -10801,11 +10837,12 @@ async function route(req, res) {
           createdAt: new Date().toISOString()
         };
         const latest = readState();
-        const usageSummary = recordUsage(latest, executedProvider, result.usage || {}, result.model);
+        const usageSummary = recordUsage(latest, executedProvider, result.usage || {}, result.model, { routeMeta });
         resultPost.usageSummary = usageSummary;
         resultPost.productionCost = {
           provider: executedProvider,
           model: result.model || null,
+          serviceTier: routeMeta.serviceTier,
           estimatedCostUsd: usageSummary.estimatedCostUsd,
           estimatedCostKrw: usageSummary.estimatedCostKrw,
           tokens: usageSummary.tokens
