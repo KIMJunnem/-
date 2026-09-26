@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-26T09:33:01.539Z",
+  "generatedAt": "2026-09-26T10:38:01.676Z",
   "kstDay": "2026-09-26",
   "funnel": {
     "requests": 430,
@@ -289,8 +289,7 @@
       "2026-09-21": 18,
       "2026-09-22": 16,
       "2026-09-24": 11,
-      "2026-09-23": 10,
-      "2026-09-19": 1
+      "2026-09-23": 10
     },
     "replyTemplates": {
       "quote_read_followup": 17,
@@ -315,17 +314,17 @@
       "auto_confidentiality_2": 2,
       "auto_format_18": 2,
       "flexible_price_variation": 2,
-      "emergency_astra_review": 2,
       "later_contact_thanks": 1,
       "auto_process": 1,
       "auto_contact": 1,
       "manual_urgent": 1,
       "auto_price": 1,
       "additional_fee_info": 1,
-      "auto_format": 1
+      "auto_format": 1,
+      "auto_availability": 1
     },
     "replyAuto": 38,
-    "replyManual": 52,
+    "replyManual": 51,
     "honorificHeld": 0,
     "paymentClaims": 0,
     "agreedDiscounts": 0,
@@ -339,7 +338,7 @@
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 723,
+        "minutesSinceHeartbeat": 788,
         "errorWord": false
       },
       "chat": {
