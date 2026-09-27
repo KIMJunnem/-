@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-27T03:53:01.720Z",
+  "generatedAt": "2026-09-27T04:58:01.762Z",
   "kstDay": "2026-09-27",
   "funnel": {
-    "requests": 474,
-    "quotes": 260,
+    "requests": 478,
+    "quotes": 261,
     "customerReplies": 15,
     "humanConversations": 25,
     "byQuoteVersion": [
@@ -21,9 +21,9 @@
       },
       {
         "version": "video_edit auto-v2-B",
-        "sent": 27,
+        "sent": 28,
         "replied": 1,
-        "replyRate": 3.7
+        "replyRate": 3.6
       },
       {
         "version": "video_edit auto-v1",
@@ -127,8 +127,8 @@
     "delivered": 0
   },
   "conversionRates": {
-    "requestToQuote": 54.9,
-    "quoteToReply": 5.8,
+    "requestToQuote": 54.6,
+    "quoteToReply": 5.7,
     "replyToHire": 0,
     "hireToPaymentConfirmed": 0,
     "paymentToDelivery": 0
@@ -138,8 +138,8 @@
   "serviceMix": [
     {
       "service": "영상 편집",
-      "requests": 171,
-      "quotes": 76,
+      "requests": 173,
+      "quotes": 77,
       "replies": 2,
       "replyRate": 2.6
     },
@@ -152,7 +152,7 @@
     },
     {
       "service": "문서/글 작성",
-      "requests": 81,
+      "requests": 83,
       "quotes": 52,
       "replies": 4,
       "replyRate": 7.7
@@ -280,24 +280,25 @@
   "extra": {
     "windowDays": 7,
     "leadsByDay": {
-      "2026-09-27": 44,
+      "2026-09-27": 48,
       "2026-09-24": 35,
       "2026-09-22": 33,
       "2026-09-25": 28,
       "2026-09-21": 27,
       "2026-09-23": 14,
-      "2026-09-20": 3,
-      "2026-09-26": 2
+      "2026-09-26": 2,
+      "2026-09-20": 2
     },
     "videoAutoDecision": {
-      "ok": 77,
+      "ok": 78,
       "(없음)": 5,
       "daily_cap": 2,
+      "excluded_work": 1,
       "visit_or_shoot": 1
     },
     "videoMaterialsQuotes": 3,
     "repliesByDay": {
-      "2026-09-27": 19,
+      "2026-09-27": 21,
       "2026-09-21": 18,
       "2026-09-22": 16,
       "2026-09-24": 11,
@@ -306,11 +307,11 @@
     },
     "replyTemplates": {
       "quote_read_followup": 17,
+      "quote_read_followup_night": 10,
       "system_notice": 10,
-      "quote_read_followup_night": 9,
+      "quote_read_followup_off": 6,
       "quote_read_followup_relinked": 6,
       "emergency_astra_failed": 6,
-      "quote_read_followup_off": 5,
       "guard_customer_left": 4,
       "auto_general": 4,
       "quote_read_already_sent": 2,
@@ -335,7 +336,7 @@
     "agreedDiscounts": 0,
     "jevGate": {},
     "videoRequestTypes": {
-      "other": 68,
+      "other": 70,
       "wedding": 6,
       "event": 5,
       "youtube": 3,
@@ -348,7 +349,7 @@
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 1,
+        "minutesSinceHeartbeat": 2,
         "errorWord": false
       }
     },
