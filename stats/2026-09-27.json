@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-27T04:58:01.762Z",
+  "generatedAt": "2026-09-27T06:03:01.841Z",
   "kstDay": "2026-09-27",
   "funnel": {
-    "requests": 478,
-    "quotes": 261,
+    "requests": 482,
+    "quotes": 262,
     "customerReplies": 15,
     "humanConversations": 25,
     "byQuoteVersion": [
@@ -15,9 +15,9 @@
       },
       {
         "version": "video_edit auto-v2",
-        "sent": 39,
+        "sent": 40,
         "replied": 1,
-        "replyRate": 2.6
+        "replyRate": 2.5
       },
       {
         "version": "video_edit auto-v2-B",
@@ -127,7 +127,7 @@
     "delivered": 0
   },
   "conversionRates": {
-    "requestToQuote": 54.6,
+    "requestToQuote": 54.4,
     "quoteToReply": 5.7,
     "replyToHire": 0,
     "hireToPaymentConfirmed": 0,
@@ -138,8 +138,8 @@
   "serviceMix": [
     {
       "service": "영상 편집",
-      "requests": 173,
-      "quotes": 77,
+      "requests": 177,
+      "quotes": 78,
       "replies": 2,
       "replyRate": 2.6
     },
@@ -280,7 +280,7 @@
   "extra": {
     "windowDays": 7,
     "leadsByDay": {
-      "2026-09-27": 48,
+      "2026-09-27": 52,
       "2026-09-24": 35,
       "2026-09-22": 33,
       "2026-09-25": 28,
@@ -290,9 +290,10 @@
       "2026-09-20": 2
     },
     "videoAutoDecision": {
-      "ok": 78,
+      "ok": 81,
       "(없음)": 5,
       "daily_cap": 2,
+      "length_open_ended": 1,
       "excluded_work": 1,
       "visit_or_shoot": 1
     },
@@ -336,7 +337,7 @@
     "agreedDiscounts": 0,
     "jevGate": {},
     "videoRequestTypes": {
-      "other": 70,
+      "other": 74,
       "wedding": 6,
       "event": 5,
       "youtube": 3,
@@ -345,11 +346,11 @@
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 0,
+        "minutesSinceHeartbeat": 1,
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 2,
+        "minutesSinceHeartbeat": 1,
         "errorWord": false
       }
     },
