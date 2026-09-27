@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-27T16:53:01.532Z",
+  "generatedAt": "2026-09-27T17:58:01.636Z",
   "kstDay": "2026-09-28",
   "funnel": {
     "requests": 516,
@@ -284,7 +284,7 @@
       "2026-09-24": 35,
       "2026-09-22": 33,
       "2026-09-25": 28,
-      "2026-09-21": 25,
+      "2026-09-21": 23,
       "2026-09-23": 14,
       "2026-09-26": 2
     },
@@ -300,8 +300,8 @@
     "videoMaterialsQuotes": 3,
     "repliesByDay": {
       "2026-09-27": 36,
-      "2026-09-21": 18,
       "2026-09-22": 16,
+      "2026-09-21": 16,
       "2026-09-24": 11,
       "2026-09-23": 10
     },
@@ -312,8 +312,8 @@
       "supervisor_other": 7,
       "auto_general": 6,
       "quote_read_followup_off": 6,
-      "quote_read_followup_relinked": 6,
-      "emergency_astra_failed": 6,
+      "quote_read_followup_relinked": 5,
+      "emergency_astra_failed": 5,
       "guard_customer_left": 4,
       "supervisor_ai_question": 3,
       "auto_availability": 2,
@@ -330,8 +330,8 @@
       "link_not_opened": 1,
       "link_academic_integrity_decline": 1
     },
-    "replyAuto": 26,
-    "replyManual": 24,
+    "replyAuto": 25,
+    "replyManual": 23,
     "honorificHeld": 0,
     "paymentClaims": 0,
     "agreedDiscounts": 0,
@@ -346,11 +346,11 @@
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 79,
+        "minutesSinceHeartbeat": 144,
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 574,
+        "minutesSinceHeartbeat": 639,
         "errorWord": false
       }
     },
