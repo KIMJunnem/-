@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-09-27T02:48:01.284Z",
+  "generatedAt": "2026-09-27T03:53:01.720Z",
   "kstDay": "2026-09-27",
   "funnel": {
-    "requests": 463,
-    "quotes": 252,
-    "customerReplies": 14,
-    "humanConversations": 24,
+    "requests": 474,
+    "quotes": 260,
+    "customerReplies": 15,
+    "humanConversations": 25,
     "byQuoteVersion": [
       {
         "version": "미분류 v?",
@@ -15,15 +15,15 @@
       },
       {
         "version": "video_edit auto-v2",
-        "sent": 35,
-        "replied": 0,
-        "replyRate": 0
+        "sent": 39,
+        "replied": 1,
+        "replyRate": 2.6
       },
       {
         "version": "video_edit auto-v2-B",
-        "sent": 23,
+        "sent": 27,
         "replied": 1,
-        "replyRate": 4.3
+        "replyRate": 3.7
       },
       {
         "version": "video_edit auto-v1",
@@ -127,8 +127,8 @@
     "delivered": 0
   },
   "conversionRates": {
-    "requestToQuote": 54.4,
-    "quoteToReply": 5.6,
+    "requestToQuote": 54.9,
+    "quoteToReply": 5.8,
     "replyToHire": 0,
     "hireToPaymentConfirmed": 0,
     "paymentToDelivery": 0
@@ -138,10 +138,10 @@
   "serviceMix": [
     {
       "service": "영상 편집",
-      "requests": 162,
-      "quotes": 68,
-      "replies": 1,
-      "replyRate": 1.5
+      "requests": 171,
+      "quotes": 76,
+      "replies": 2,
+      "replyRate": 2.6
     },
     {
       "service": "이력서/자소서 컨설팅",
@@ -159,7 +159,7 @@
     },
     {
       "service": "PPT 제작",
-      "requests": 22,
+      "requests": 23,
       "quotes": 16,
       "replies": 3,
       "replyRate": 18.8
@@ -187,7 +187,7 @@
     },
     {
       "service": "교정/교열",
-      "requests": 8,
+      "requests": 9,
       "quotes": 3,
       "replies": 0,
       "replyRate": 0
@@ -280,25 +280,26 @@
   "extra": {
     "windowDays": 7,
     "leadsByDay": {
+      "2026-09-27": 44,
       "2026-09-24": 35,
-      "2026-09-27": 33,
       "2026-09-22": 33,
       "2026-09-25": 28,
       "2026-09-21": 27,
       "2026-09-23": 14,
-      "2026-09-20": 4,
+      "2026-09-20": 3,
       "2026-09-26": 2
     },
     "videoAutoDecision": {
-      "ok": 69,
+      "ok": 77,
       "(없음)": 5,
-      "daily_cap": 2
+      "daily_cap": 2,
+      "visit_or_shoot": 1
     },
     "videoMaterialsQuotes": 3,
     "repliesByDay": {
+      "2026-09-27": 19,
       "2026-09-21": 18,
       "2026-09-22": 16,
-      "2026-09-27": 13,
       "2026-09-24": 11,
       "2026-09-23": 10,
       "2026-09-20": 2
@@ -309,9 +310,11 @@
       "quote_read_followup_night": 9,
       "quote_read_followup_relinked": 6,
       "emergency_astra_failed": 6,
+      "quote_read_followup_off": 5,
       "guard_customer_left": 4,
       "auto_general": 4,
       "quote_read_already_sent": 2,
+      "supervisor_ai_question": 1,
       "auto_experience": 1,
       "later_contact_thanks": 1,
       "auto_process": 1,
@@ -332,16 +335,16 @@
     "agreedDiscounts": 0,
     "jevGate": {},
     "videoRequestTypes": {
-      "other": 60,
+      "other": 68,
       "wedding": 6,
-      "event": 4,
+      "event": 5,
       "youtube": 3,
       "baby": 2,
       "lecture": 2
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 1,
+        "minutesSinceHeartbeat": 0,
         "errorWord": false
       },
       "chat": {
