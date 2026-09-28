@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-28T01:33:01.341Z",
+  "generatedAt": "2026-09-28T02:38:01.429Z",
   "kstDay": "2026-09-28",
   "funnel": {
-    "requests": 534,
+    "requests": 546,
     "quotes": 268,
     "customerReplies": 17,
     "humanConversations": 27,
@@ -127,7 +127,7 @@
     "delivered": 0
   },
   "conversionRates": {
-    "requestToQuote": 50.2,
+    "requestToQuote": 49.1,
     "quoteToReply": 6.3,
     "replyToHire": 0,
     "hireToPaymentConfirmed": 0,
@@ -138,7 +138,7 @@
   "serviceMix": [
     {
       "service": "영상 편집",
-      "requests": 224,
+      "requests": 234,
       "quotes": 84,
       "replies": 4,
       "replyRate": 4.8
@@ -152,7 +152,7 @@
     },
     {
       "service": "문서/글 작성",
-      "requests": 85,
+      "requests": 86,
       "quotes": 52,
       "replies": 4,
       "replyRate": 7.7
@@ -179,16 +179,16 @@
       "replyRate": 0
     },
     {
-      "service": "교정/교열",
-      "requests": 11,
-      "quotes": 3,
+      "service": "자막 제작",
+      "requests": 12,
+      "quotes": 9,
       "replies": 0,
       "replyRate": 0
     },
     {
-      "service": "자막 제작",
+      "service": "교정/교열",
       "requests": 11,
-      "quotes": 9,
+      "quotes": 3,
       "replies": 0,
       "replyRate": 0
     },
@@ -283,15 +283,15 @@
       "2026-09-27": 86,
       "2026-09-24": 35,
       "2026-09-22": 33,
+      "2026-09-28": 30,
       "2026-09-25": 28,
       "2026-09-21": 21,
-      "2026-09-28": 18,
       "2026-09-23": 14,
       "2026-09-26": 2
     },
     "videoAutoDecision": {
       "ok": 87,
-      "switch_off": 41,
+      "switch_off": 51,
       "(없음)": 5,
       "daily_cap": 2,
       "length_open_ended": 1,
@@ -338,8 +338,8 @@
     "agreedDiscounts": 0,
     "jevGate": {},
     "videoRequestTypes": {
-      "other": 110,
-      "wedding": 13,
+      "other": 119,
+      "wedding": 14,
       "event": 7,
       "baby": 4,
       "youtube": 3,
@@ -351,7 +351,7 @@
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 1094,
+        "minutesSinceHeartbeat": 1159,
         "errorWord": false
       }
     },
