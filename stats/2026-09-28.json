@@ -1,22 +1,295 @@
 {
-  "generatedAt": "2026-09-28T13:28:01.643Z",
+  "generatedAt": "2026-09-28T14:33:00.901Z",
   "kstDay": "2026-09-28",
-  "funnel": null,
-  "note": "서버가 꺼져 있어 깔때기 숫자 없음",
+  "funnel": {
+    "requests": 565,
+    "quotes": 268,
+    "customerReplies": 17,
+    "humanConversations": 27,
+    "byQuoteVersion": [
+      {
+        "version": "미분류 v?",
+        "sent": 136,
+        "replied": 8,
+        "replyRate": 5.9
+      },
+      {
+        "version": "video_edit auto-v2",
+        "sent": 42,
+        "replied": 2,
+        "replyRate": 4.8
+      },
+      {
+        "version": "video_edit auto-v2-B",
+        "sent": 32,
+        "replied": 2,
+        "replyRate": 6.3
+      },
+      {
+        "version": "video_edit auto-v1",
+        "sent": 10,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v8",
+        "sent": 9,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v1",
+        "sent": 7,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v7",
+        "sent": 6,
+        "replied": 1,
+        "replyRate": 16.7
+      },
+      {
+        "version": "presentation v4",
+        "sent": 5,
+        "replied": 1,
+        "replyRate": 20
+      },
+      {
+        "version": "presentation v6",
+        "sent": 3,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v6",
+        "sent": 3,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "presentation v2",
+        "sent": 3,
+        "replied": 2,
+        "replyRate": 66.7
+      },
+      {
+        "version": "presentation v1",
+        "sent": 3,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "subtitle v8",
+        "sent": 2,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v5",
+        "sent": 2,
+        "replied": 1,
+        "replyRate": 50
+      },
+      {
+        "version": "document_writing v?",
+        "sent": 2,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v8-school",
+        "sent": 1,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "presentation v5",
+        "sent": 1,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "subtitle v5",
+        "sent": 1,
+        "replied": 0,
+        "replyRate": 0
+      }
+    ],
+    "videoEditCapExtras": {
+      "total": 0,
+      "sent": 0,
+      "bySource": {}
+    },
+    "hires": 0,
+    "paymentRequested": 0,
+    "paymentConfirmed": 0,
+    "delivered": 0
+  },
+  "conversionRates": {
+    "requestToQuote": 47.4,
+    "quoteToReply": 6.3,
+    "replyToHire": 0,
+    "hireToPaymentConfirmed": 0,
+    "paymentToDelivery": 0
+  },
+  "estimatedBookedRevenue": 0,
+  "averageConfirmedOrderValue": 0,
+  "serviceMix": [
+    {
+      "service": "영상 편집",
+      "requests": 252,
+      "quotes": 84,
+      "replies": 4,
+      "replyRate": 4.8
+    },
+    {
+      "service": "이력서/자소서 컨설팅",
+      "requests": 115,
+      "quotes": 69,
+      "replies": 3,
+      "replyRate": 4.3
+    },
+    {
+      "service": "문서/글 작성",
+      "requests": 87,
+      "quotes": 52,
+      "replies": 4,
+      "replyRate": 7.7
+    },
+    {
+      "service": "PPT 제작",
+      "requests": 23,
+      "quotes": 16,
+      "replies": 3,
+      "replyRate": 18.8
+    },
+    {
+      "service": "숨고플러스",
+      "requests": 14,
+      "quotes": 14,
+      "replies": 2,
+      "replyRate": 14.3
+    },
+    {
+      "service": "통계분석",
+      "requests": 13,
+      "quotes": 10,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "자막 제작",
+      "requests": 12,
+      "quotes": 9,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "교정/교열",
+      "requests": 11,
+      "quotes": 3,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "미분류",
+      "requests": 5,
+      "quotes": 1,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "보고서",
+      "requests": 4,
+      "quotes": 1,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "속기(타이핑)",
+      "requests": 4,
+      "quotes": 2,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "고수와 상담 후 결정할게요.",
+      "requests": 4,
+      "quotes": 2,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "데이터 가공 및 라벨링",
+      "requests": 4,
+      "quotes": 3,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "교정교열 + 윤문",
+      "requests": 4,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "개인 영상",
+      "requests": 2,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "문서 작성",
+      "requests": 2,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "대본/시나리오",
+      "requests": 2,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "연설/강연",
+      "requests": 1,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "기술문서",
+      "requests": 1,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "기타: 논의",
+      "requests": 1,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    }
+  ],
   "extra": {
     "windowDays": 7,
     "leadsByDay": {
       "2026-09-27": 86,
-      "2026-09-28": 36,
+      "2026-09-28": 49,
       "2026-09-24": 35,
       "2026-09-22": 33,
       "2026-09-25": 28,
       "2026-09-23": 14,
-      "2026-09-21": 3,
       "2026-09-26": 2
     },
     "videoAutoDecision": {
-      "ok": 87,
+      "ok": 100,
       "switch_off": 56,
       "(없음)": 5,
       "daily_cap": 2,
@@ -29,11 +302,10 @@
       "2026-09-27": 36,
       "2026-09-22": 16,
       "2026-09-24": 11,
-      "2026-09-23": 10,
-      "2026-09-21": 1
+      "2026-09-23": 10
     },
     "replyTemplates": {
-      "quote_read_followup": 15,
+      "quote_read_followup": 14,
       "system_notice": 11,
       "quote_read_followup_night": 10,
       "supervisor_other": 7,
@@ -53,27 +325,28 @@
       "additional_fee_info": 1,
       "auto_format": 1
     },
-    "replyAuto": 19,
+    "replyAuto": 18,
     "replyManual": 14,
     "honorificHeld": 0,
     "paymentClaims": 0,
     "agreedDiscounts": 0,
     "jevGate": {},
     "videoRequestTypes": {
-      "other": 123,
-      "wedding": 15,
+      "other": 131,
+      "wedding": 16,
       "event": 7,
-      "baby": 4,
+      "baby": 5,
+      "lecture": 3,
       "youtube": 3,
-      "lecture": 2
+      "promo": 2
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 611,
+        "minutesSinceHeartbeat": 0,
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 421,
+        "minutesSinceHeartbeat": 486,
         "errorWord": true
       }
     },
