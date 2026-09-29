@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-29T05:43:01.133Z",
+  "generatedAt": "2026-09-29T06:48:01.601Z",
   "kstDay": "2026-09-29",
   "funnel": {
-    "requests": 653,
+    "requests": 659,
     "quotes": 289,
     "customerReplies": 17,
     "humanConversations": 27,
@@ -127,7 +127,7 @@
     "delivered": 0
   },
   "conversionRates": {
-    "requestToQuote": 44.3,
+    "requestToQuote": 43.9,
     "quoteToReply": 5.9,
     "replyToHire": 0,
     "hireToPaymentConfirmed": 0,
@@ -138,7 +138,7 @@
   "serviceMix": [
     {
       "service": "영상 편집",
-      "requests": 334,
+      "requests": 339,
       "quotes": 104,
       "replies": 4,
       "replyRate": 3.8
@@ -152,7 +152,7 @@
     },
     {
       "service": "문서/글 작성",
-      "requests": 90,
+      "requests": 91,
       "quotes": 52,
       "replies": 4,
       "replyRate": 7.7
@@ -281,18 +281,18 @@
     "windowDays": 7,
     "leadsByDay": {
       "2026-09-27": 86,
+      "2026-09-29": 73,
       "2026-09-28": 70,
-      "2026-09-29": 67,
       "2026-09-24": 35,
       "2026-09-25": 28,
       "2026-09-23": 14,
-      "2026-09-22": 11,
+      "2026-09-22": 10,
       "2026-09-26": 2
     },
     "videoAutoDecision": {
       "ok": 129,
+      "daily_cap": 56,
       "switch_off": 56,
-      "daily_cap": 51,
       "(없음)": 5,
       "excluded_work": 3,
       "visit_or_shoot": 2,
@@ -302,7 +302,7 @@
     "videoMaterialsQuotes": 3,
     "repliesByDay": {
       "2026-09-27": 36,
-      "2026-09-29": 30,
+      "2026-09-29": 31,
       "2026-09-24": 11,
       "2026-09-23": 10,
       "2026-09-22": 7,
@@ -310,7 +310,7 @@
     },
     "replyTemplates": {
       "system_notice": 37,
-      "quote_read_followup": 15,
+      "quote_read_followup": 16,
       "quote_read_followup_night": 11,
       "quote_read_followup_off": 9,
       "supervisor_other": 7,
@@ -334,7 +334,7 @@
     "agreedDiscounts": 0,
     "jevGate": {},
     "videoRequestTypes": {
-      "other": 188,
+      "other": 193,
       "wedding": 26,
       "event": 12,
       "youtube": 6,
