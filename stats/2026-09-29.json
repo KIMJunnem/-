@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-29T01:23:01.702Z",
+  "generatedAt": "2026-09-29T02:28:01.225Z",
   "kstDay": "2026-09-29",
   "funnel": {
     "requests": 586,
@@ -284,7 +284,7 @@
       "2026-09-28": 70,
       "2026-09-24": 35,
       "2026-09-25": 28,
-      "2026-09-22": 21,
+      "2026-09-22": 18,
       "2026-09-23": 14,
       "2026-09-26": 2
     },
@@ -301,20 +301,20 @@
     "repliesByDay": {
       "2026-09-27": 36,
       "2026-09-29": 18,
-      "2026-09-22": 13,
       "2026-09-24": 11,
       "2026-09-23": 10,
+      "2026-09-22": 8,
       "2026-09-28": 6
     },
     "replyTemplates": {
       "system_notice": 30,
-      "quote_read_followup": 13,
+      "quote_read_followup": 12,
       "quote_read_followup_night": 10,
       "quote_read_followup_off": 9,
       "supervisor_other": 7,
       "guard_customer_left": 5,
-      "auto_general": 4,
       "supervisor_ai_question": 3,
+      "auto_general": 2,
       "attachment_judge_alert": 2,
       "quote_read_followup_relinked": 2,
       "auto_availability": 1,
@@ -323,12 +323,10 @@
       "auto_process": 1,
       "auto_contact": 1,
       "manual_urgent": 1,
-      "auto_price": 1,
-      "additional_fee_info": 1,
-      "auto_format": 1
+      "auto_price": 1
     },
-    "replyAuto": 17,
-    "replyManual": 13,
+    "replyAuto": 15,
+    "replyManual": 10,
     "honorificHeld": 0,
     "paymentClaims": 0,
     "agreedDiscounts": 0,
@@ -344,7 +342,7 @@
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 637,
+        "minutesSinceHeartbeat": 702,
         "errorWord": false
       },
       "chat": {
