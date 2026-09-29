@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-29T10:03:02.315Z",
+  "generatedAt": "2026-09-29T11:08:01.616Z",
   "kstDay": "2026-09-29",
   "funnel": {
-    "requests": 686,
-    "quotes": 292,
+    "requests": 695,
+    "quotes": 298,
     "customerReplies": 18,
     "humanConversations": 28,
     "byQuoteVersion": [
@@ -15,15 +15,15 @@
       },
       {
         "version": "video_edit auto-v2",
-        "sent": 54,
+        "sent": 55,
         "replied": 2,
-        "replyRate": 3.7
+        "replyRate": 3.6
       },
       {
         "version": "video_edit auto-v2-B",
-        "sent": 43,
+        "sent": 47,
         "replied": 3,
-        "replyRate": 7
+        "replyRate": 6.4
       },
       {
         "version": "video_edit auto-v1",
@@ -57,7 +57,7 @@
       },
       {
         "version": "subtitle v8",
-        "sent": 3,
+        "sent": 4,
         "replied": 0,
         "replyRate": 0
       },
@@ -117,10 +117,10 @@
       }
     ],
     "videoEditCapExtras": {
-      "total": 3,
-      "sent": 3,
+      "total": 9,
+      "sent": 8,
       "bySource": {
-        "quote_judge": 2,
+        "quote_judge": 8,
         "score": 1
       }
     },
@@ -130,8 +130,8 @@
     "delivered": 0
   },
   "conversionRates": {
-    "requestToQuote": 42.6,
-    "quoteToReply": 6.2,
+    "requestToQuote": 42.9,
+    "quoteToReply": 6,
     "replyToHire": 0,
     "hireToPaymentConfirmed": 0,
     "paymentToDelivery": 0
@@ -141,10 +141,10 @@
   "serviceMix": [
     {
       "service": "영상 편집",
-      "requests": 365,
-      "quotes": 107,
+      "requests": 371,
+      "quotes": 112,
       "replies": 5,
-      "replyRate": 4.7
+      "replyRate": 4.5
     },
     {
       "service": "이력서/자소서 컨설팅",
@@ -155,7 +155,7 @@
     },
     {
       "service": "문서/글 작성",
-      "requests": 92,
+      "requests": 93,
       "quotes": 52,
       "replies": 4,
       "replyRate": 7.7
@@ -168,25 +168,25 @@
       "replyRate": 18.8
     },
     {
+      "service": "교정/교열",
+      "requests": 14,
+      "quotes": 3,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "자막 제작",
+      "requests": 14,
+      "quotes": 11,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
       "service": "숨고플러스",
       "requests": 14,
       "quotes": 14,
       "replies": 2,
       "replyRate": 14.3
-    },
-    {
-      "service": "자막 제작",
-      "requests": 13,
-      "quotes": 10,
-      "replies": 0,
-      "replyRate": 0
-    },
-    {
-      "service": "교정/교열",
-      "requests": 13,
-      "quotes": 3,
-      "replies": 0,
-      "replyRate": 0
     },
     {
       "service": "통계분석",
@@ -283,21 +283,21 @@
   "extra": {
     "windowDays": 7,
     "leadsByDay": {
-      "2026-09-29": 100,
+      "2026-09-29": 109,
       "2026-09-27": 86,
       "2026-09-28": 70,
       "2026-09-24": 35,
       "2026-09-25": 28,
       "2026-09-23": 14,
-      "2026-09-22": 8,
+      "2026-09-22": 7,
       "2026-09-26": 2
     },
     "videoAutoDecision": {
       "ok": 129,
       "daily_cap": 79,
       "switch_off": 56,
+      "daily_cap_extra": 9,
       "(없음)": 5,
-      "daily_cap_extra": 3,
       "excluded_work": 3,
       "visit_or_shoot": 2,
       "shorts_min_bundle": 1,
@@ -305,7 +305,7 @@
     },
     "videoMaterialsQuotes": 3,
     "repliesByDay": {
-      "2026-09-29": 39,
+      "2026-09-29": 42,
       "2026-09-27": 36,
       "2026-09-24": 11,
       "2026-09-23": 10,
@@ -314,11 +314,11 @@
     },
     "replyTemplates": {
       "system_notice": 40,
-      "quote_read_followup": 18,
-      "quote_read_followup_night": 11,
+      "quote_read_followup": 19,
+      "quote_read_followup_night": 12,
       "supervisor_other": 10,
       "quote_read_followup_off": 9,
-      "guard_customer_left": 5,
+      "guard_customer_left": 6,
       "supervisor_ai_question": 3,
       "auto_general": 2,
       "attachment_judge_alert": 2,
@@ -337,22 +337,22 @@
     "agreedDiscounts": 0,
     "jevGate": {},
     "videoRequestTypes": {
-      "other": 214,
+      "other": 219,
       "wedding": 28,
       "event": 14,
+      "baby": 7,
       "youtube": 6,
-      "baby": 6,
       "shorts": 5,
       "lecture": 4,
       "promo": 3
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 2,
+        "minutesSinceHeartbeat": 0,
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 1,
+        "minutesSinceHeartbeat": 0,
         "errorWord": false
       }
     },
