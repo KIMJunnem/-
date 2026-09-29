@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-29T00:18:01.532Z",
+  "generatedAt": "2026-09-29T01:23:01.702Z",
   "kstDay": "2026-09-29",
   "funnel": {
     "requests": 586,
@@ -300,7 +300,7 @@
     "videoMaterialsQuotes": 3,
     "repliesByDay": {
       "2026-09-27": 36,
-      "2026-09-29": 17,
+      "2026-09-29": 18,
       "2026-09-22": 13,
       "2026-09-24": 11,
       "2026-09-23": 10,
@@ -312,7 +312,7 @@
       "quote_read_followup_night": 10,
       "quote_read_followup_off": 9,
       "supervisor_other": 7,
-      "guard_customer_left": 4,
+      "guard_customer_left": 5,
       "auto_general": 4,
       "supervisor_ai_question": 3,
       "attachment_judge_alert": 2,
@@ -344,7 +344,7 @@
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 572,
+        "minutesSinceHeartbeat": 637,
         "errorWord": false
       },
       "chat": {
