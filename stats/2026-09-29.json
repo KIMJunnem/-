@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-09-29T12:13:02.034Z",
+  "generatedAt": "2026-09-29T13:18:00.829Z",
   "kstDay": "2026-09-29",
   "funnel": {
     "requests": 698,
     "quotes": 300,
-    "customerReplies": 19,
-    "humanConversations": 29,
+    "customerReplies": 20,
+    "humanConversations": 31,
     "byQuoteVersion": [
       {
         "version": "미분류 v?",
@@ -22,8 +22,8 @@
       {
         "version": "video_edit auto-v2-B",
         "sent": 48,
-        "replied": 4,
-        "replyRate": 8.3
+        "replied": 5,
+        "replyRate": 10.4
       },
       {
         "version": "video_edit auto-v1",
@@ -131,7 +131,7 @@
   },
   "conversionRates": {
     "requestToQuote": 43,
-    "quoteToReply": 6.3,
+    "quoteToReply": 6.7,
     "replyToHire": 0,
     "hireToPaymentConfirmed": 0,
     "paymentToDelivery": 0
@@ -143,8 +143,8 @@
       "service": "영상 편집",
       "requests": 374,
       "quotes": 114,
-      "replies": 6,
-      "replyRate": 5.3
+      "replies": 7,
+      "replyRate": 6.1
     },
     {
       "service": "이력서/자소서 컨설팅",
@@ -305,7 +305,7 @@
     },
     "videoMaterialsQuotes": 3,
     "repliesByDay": {
-      "2026-09-29": 45,
+      "2026-09-29": 49,
       "2026-09-27": 36,
       "2026-09-24": 11,
       "2026-09-23": 10,
@@ -315,7 +315,7 @@
     "replyTemplates": {
       "system_notice": 40,
       "quote_read_followup": 17,
-      "supervisor_other": 12,
+      "supervisor_other": 15,
       "quote_read_followup_night": 12,
       "quote_read_followup_off": 9,
       "guard_customer_left": 6,
@@ -323,6 +323,7 @@
       "later_contact_thanks": 2,
       "auto_general": 2,
       "attachment_judge_alert": 2,
+      "supervisor_unsupported": 1,
       "auto_availability": 1,
       "auto_experience": 1,
       "quote_read_followup_relinked": 1,
@@ -352,7 +353,7 @@
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 0,
+        "minutesSinceHeartbeat": 35,
         "errorWord": false
       }
     },
