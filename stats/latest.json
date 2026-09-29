@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-29T13:18:00.829Z",
+  "generatedAt": "2026-09-29T14:23:00.982Z",
   "kstDay": "2026-09-29",
   "funnel": {
     "requests": 698,
@@ -289,8 +289,8 @@
       "2026-09-24": 35,
       "2026-09-25": 28,
       "2026-09-23": 14,
-      "2026-09-22": 4,
-      "2026-09-26": 2
+      "2026-09-26": 2,
+      "2026-09-22": 2
     },
     "videoAutoDecision": {
       "ok": 129,
@@ -353,7 +353,7 @@
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 35,
+        "minutesSinceHeartbeat": 100,
         "errorWord": false
       }
     },
