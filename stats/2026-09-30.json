@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T02:18:01.045Z",
+  "generatedAt": "2026-09-30T03:23:01.102Z",
   "kstDay": "2026-09-30",
   "funnel": {
     "requests": 698,
@@ -288,7 +288,7 @@
       "2026-09-28": 70,
       "2026-09-24": 35,
       "2026-09-25": 28,
-      "2026-09-23": 11,
+      "2026-09-23": 10,
       "2026-09-26": 2
     },
     "videoAutoDecision": {
@@ -307,13 +307,13 @@
       "2026-09-29": 49,
       "2026-09-27": 36,
       "2026-09-24": 11,
-      "2026-09-23": 7,
-      "2026-09-28": 6
+      "2026-09-28": 6,
+      "2026-09-23": 6
     },
     "replyTemplates": {
       "system_notice": 39,
       "supervisor_other": 15,
-      "quote_read_followup": 15,
+      "quote_read_followup": 14,
       "quote_read_followup_night": 12,
       "quote_read_followup_off": 9,
       "guard_customer_left": 4,
@@ -328,7 +328,7 @@
       "auto_process": 1,
       "auto_contact": 1
     },
-    "replyAuto": 10,
+    "replyAuto": 9,
     "replyManual": 9,
     "honorificHeld": 0,
     "paymentClaims": 0,
@@ -350,7 +350,7 @@
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 815,
+        "minutesSinceHeartbeat": 880,
         "errorWord": false
       }
     },
