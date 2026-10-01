@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T06:23:01.151Z",
+  "generatedAt": "2026-10-01T07:28:01.440Z",
   "kstDay": "2026-10-01",
   "funnel": {
     "requests": 698,
@@ -286,8 +286,8 @@
       "2026-09-29": 112,
       "2026-09-27": 86,
       "2026-09-28": 70,
-      "2026-09-24": 29,
       "2026-09-25": 28,
+      "2026-09-24": 25,
       "2026-09-26": 2
     },
     "videoAutoDecision": {
@@ -295,8 +295,8 @@
       "daily_cap": 79,
       "switch_off": 56,
       "daily_cap_extra": 12,
-      "(없음)": 5,
       "excluded_work": 3,
+      "(없음)": 3,
       "visit_or_shoot": 2,
       "shorts_min_bundle": 1,
       "length_open_ended": 1
@@ -305,14 +305,14 @@
     "repliesByDay": {
       "2026-09-29": 49,
       "2026-09-27": 36,
-      "2026-09-24": 11,
-      "2026-09-28": 6
+      "2026-09-28": 6,
+      "2026-09-24": 6
     },
     "replyTemplates": {
-      "system_notice": 36,
+      "system_notice": 35,
       "supervisor_other": 15,
-      "quote_read_followup": 13,
       "quote_read_followup_night": 12,
+      "quote_read_followup": 10,
       "quote_read_followup_off": 9,
       "guard_customer_left": 4,
       "supervisor_ai_question": 3,
@@ -321,10 +321,9 @@
       "attachment_judge_alert": 2,
       "supervisor_unsupported": 1,
       "auto_availability": 1,
-      "auto_experience": 1,
-      "quote_read_followup_relinked": 1
+      "auto_experience": 1
     },
-    "replyAuto": 8,
+    "replyAuto": 4,
     "replyManual": 7,
     "honorificHeld": 0,
     "paymentClaims": 0,
@@ -342,11 +341,11 @@
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 1132,
+        "minutesSinceHeartbeat": 1197,
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 2500,
+        "minutesSinceHeartbeat": 2565,
         "errorWord": false
       }
     },
