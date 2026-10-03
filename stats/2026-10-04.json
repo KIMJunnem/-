@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T15:48:01.088Z",
+  "generatedAt": "2026-10-03T16:53:01.402Z",
   "kstDay": "2026-10-04",
   "funnel": {
     "requests": 698,
@@ -284,12 +284,12 @@
     "windowDays": 7,
     "leadsByDay": {
       "2026-09-29": 112,
-      "2026-09-27": 86,
-      "2026-09-28": 70
+      "2026-09-28": 70,
+      "2026-09-27": 53
     },
     "videoAutoDecision": {
-      "ok": 88,
       "daily_cap": 77,
+      "ok": 60,
       "switch_off": 56,
       "daily_cap_extra": 12,
       "excluded_work": 3,
@@ -297,7 +297,7 @@
       "shorts_min_bundle": 1,
       "length_open_ended": 1
     },
-    "videoMaterialsQuotes": 2,
+    "videoMaterialsQuotes": 0,
     "repliesByDay": {
       "2026-09-29": 49,
       "2026-09-27": 36,
