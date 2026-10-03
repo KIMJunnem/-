@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T22:18:01.645Z",
+  "generatedAt": "2026-10-03T23:23:01.076Z",
   "kstDay": "2026-10-04",
   "funnel": {
     "requests": 698,
@@ -300,26 +300,25 @@
     "videoMaterialsQuotes": 0,
     "repliesByDay": {
       "2026-09-29": 49,
-      "2026-09-27": 30,
+      "2026-09-27": 27,
       "2026-09-28": 6
     },
     "replyTemplates": {
       "system_notice": 31,
       "supervisor_other": 15,
       "quote_read_followup_off": 9,
-      "quote_read_followup_night": 8,
       "quote_read_followup": 7,
-      "guard_customer_left": 4,
+      "quote_read_followup_night": 7,
+      "guard_customer_left": 3,
       "supervisor_ai_question": 3,
       "auto_general": 2,
       "attachment_judge_alert": 2,
       "supervisor_unsupported": 1,
       "later_contact_thanks": 1,
-      "auto_availability": 1,
-      "auto_experience": 1
+      "auto_availability": 1
     },
     "replyAuto": 0,
-    "replyManual": 7,
+    "replyManual": 6,
     "honorificHeld": 0,
     "paymentClaims": 0,
     "agreedDiscounts": 0,
