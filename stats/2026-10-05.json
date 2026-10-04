@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T22:08:01.121Z",
+  "generatedAt": "2026-10-04T23:13:01.223Z",
   "kstDay": "2026-10-05",
   "funnel": {
     "requests": 698,
@@ -284,12 +284,12 @@
     "windowDays": 7,
     "leadsByDay": {
       "2026-09-29": 112,
-      "2026-09-28": 70
+      "2026-09-28": 52
     },
     "videoAutoDecision": {
       "daily_cap": 77,
       "ok": 42,
-      "switch_off": 31,
+      "switch_off": 15,
       "daily_cap_extra": 12,
       "excluded_work": 2,
       "shorts_min_bundle": 1,
