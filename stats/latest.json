@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T13:28:01.262Z",
+  "generatedAt": "2026-10-04T14:33:06.332Z",
   "kstDay": "2026-10-04",
   "funnel": {
     "requests": 698,
@@ -284,13 +284,12 @@
     "windowDays": 7,
     "leadsByDay": {
       "2026-09-29": 112,
-      "2026-09-28": 70,
-      "2026-09-27": 28
+      "2026-09-28": 70
     },
     "videoAutoDecision": {
       "daily_cap": 77,
-      "switch_off": 56,
       "ok": 42,
+      "switch_off": 31,
       "daily_cap_extra": 12,
       "excluded_work": 2,
       "shorts_min_bundle": 1,
@@ -333,7 +332,7 @@
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 1,
+        "minutesSinceHeartbeat": 0,
         "errorWord": false
       }
     },
