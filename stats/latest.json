@@ -1,8 +1,285 @@
 {
-  "generatedAt": "2026-10-06T19:46:05.758Z",
+  "generatedAt": "2026-10-06T20:48:02.780Z",
   "kstDay": "2026-10-07",
-  "funnel": null,
-  "note": "서버가 꺼져 있어 깔때기 숫자 없음",
+  "funnel": {
+    "requests": 698,
+    "quotes": 300,
+    "customerReplies": 20,
+    "humanConversations": 31,
+    "byQuoteVersion": [
+      {
+        "version": "미분류 v?",
+        "sent": 136,
+        "replied": 8,
+        "replyRate": 5.9
+      },
+      {
+        "version": "video_edit auto-v2",
+        "sent": 56,
+        "replied": 2,
+        "replyRate": 3.6
+      },
+      {
+        "version": "video_edit auto-v2-B",
+        "sent": 48,
+        "replied": 5,
+        "replyRate": 10.4
+      },
+      {
+        "version": "video_edit auto-v1",
+        "sent": 10,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v8",
+        "sent": 9,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v1",
+        "sent": 7,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v7",
+        "sent": 6,
+        "replied": 1,
+        "replyRate": 16.7
+      },
+      {
+        "version": "presentation v4",
+        "sent": 5,
+        "replied": 1,
+        "replyRate": 20
+      },
+      {
+        "version": "subtitle v8",
+        "sent": 4,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "presentation v6",
+        "sent": 3,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v6",
+        "sent": 3,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "presentation v2",
+        "sent": 3,
+        "replied": 2,
+        "replyRate": 66.7
+      },
+      {
+        "version": "presentation v1",
+        "sent": 3,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v5",
+        "sent": 2,
+        "replied": 1,
+        "replyRate": 50
+      },
+      {
+        "version": "document_writing v?",
+        "sent": 2,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "document_writing v8-school",
+        "sent": 1,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "presentation v5",
+        "sent": 1,
+        "replied": 0,
+        "replyRate": 0
+      },
+      {
+        "version": "subtitle v5",
+        "sent": 1,
+        "replied": 0,
+        "replyRate": 0
+      }
+    ],
+    "videoEditCapExtras": {
+      "total": 12,
+      "sent": 10,
+      "bySource": {
+        "quote_judge": 11,
+        "score": 1
+      }
+    },
+    "hires": 0,
+    "paymentRequested": 0,
+    "paymentConfirmed": 0,
+    "delivered": 0
+  },
+  "conversionRates": {
+    "requestToQuote": 43,
+    "quoteToReply": 6.7,
+    "replyToHire": 0,
+    "hireToPaymentConfirmed": 0,
+    "paymentToDelivery": 0
+  },
+  "estimatedBookedRevenue": 0,
+  "averageConfirmedOrderValue": 0,
+  "serviceMix": [
+    {
+      "service": "영상 편집",
+      "requests": 374,
+      "quotes": 114,
+      "replies": 7,
+      "replyRate": 6.1
+    },
+    {
+      "service": "이력서/자소서 컨설팅",
+      "requests": 115,
+      "quotes": 69,
+      "replies": 3,
+      "replyRate": 4.3
+    },
+    {
+      "service": "문서/글 작성",
+      "requests": 93,
+      "quotes": 52,
+      "replies": 4,
+      "replyRate": 7.7
+    },
+    {
+      "service": "PPT 제작",
+      "requests": 23,
+      "quotes": 16,
+      "replies": 3,
+      "replyRate": 18.8
+    },
+    {
+      "service": "교정/교열",
+      "requests": 14,
+      "quotes": 3,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "자막 제작",
+      "requests": 14,
+      "quotes": 11,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "숨고플러스",
+      "requests": 14,
+      "quotes": 14,
+      "replies": 2,
+      "replyRate": 14.3
+    },
+    {
+      "service": "통계분석",
+      "requests": 13,
+      "quotes": 10,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "미분류",
+      "requests": 5,
+      "quotes": 1,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "보고서",
+      "requests": 4,
+      "quotes": 1,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "속기(타이핑)",
+      "requests": 4,
+      "quotes": 2,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "고수와 상담 후 결정할게요.",
+      "requests": 4,
+      "quotes": 2,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "데이터 가공 및 라벨링",
+      "requests": 4,
+      "quotes": 3,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "교정교열 + 윤문",
+      "requests": 4,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "개인 영상",
+      "requests": 2,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "문서 작성",
+      "requests": 2,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "대본/시나리오",
+      "requests": 2,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "연설/강연",
+      "requests": 1,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "기술문서",
+      "requests": 1,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    },
+    {
+      "service": "기타: 논의",
+      "requests": 1,
+      "quotes": 0,
+      "replies": 0,
+      "replyRate": 0
+    }
+  ],
   "extra": {
     "windowDays": 7,
     "leadsByDay": {},
@@ -28,11 +305,11 @@
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 58,
+        "minutesSinceHeartbeat": 0,
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 58,
+        "minutesSinceHeartbeat": 0,
         "errorWord": false
       }
     },
