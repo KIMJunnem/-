@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-06T03:23:03.030Z",
+  "generatedAt": "2026-10-06T04:28:01.651Z",
   "kstDay": "2026-10-06",
   "funnel": {
     "requests": 698,
@@ -283,23 +283,20 @@
   "extra": {
     "windowDays": 7,
     "leadsByDay": {
-      "2026-09-29": 112
+      "2026-09-29": 57
     },
     "videoAutoDecision": {
-      "daily_cap": 64,
-      "ok": 22,
+      "daily_cap": 38,
       "daily_cap_extra": 12,
-      "shorts_min_bundle": 1,
-      "excluded_work": 1,
-      "visit_or_shoot": 1
+      "shorts_min_bundle": 1
     },
     "videoMaterialsQuotes": 0,
     "repliesByDay": {
-      "2026-09-29": 24
+      "2026-09-29": 23
     },
     "replyTemplates": {
       "supervisor_other": 8,
-      "quote_read_followup": 7,
+      "quote_read_followup": 6,
       "system_notice": 4,
       "quote_read_followup_night": 2,
       "supervisor_unsupported": 1,
@@ -324,11 +321,11 @@
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 0,
+        "minutesSinceHeartbeat": 1,
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 1,
+        "minutesSinceHeartbeat": 0,
         "errorWord": false
       }
     },
