@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-06T10:58:07.296Z",
+  "generatedAt": "2026-10-06T12:03:01.783Z",
   "kstDay": "2026-10-06",
   "funnel": {
     "requests": 698,
@@ -290,10 +290,10 @@
     },
     "videoMaterialsQuotes": 0,
     "repliesByDay": {
-      "2026-09-29": 7
+      "2026-09-29": 6
     },
     "replyTemplates": {
-      "supervisor_other": 5,
+      "supervisor_other": 4,
       "supervisor_unsupported": 1,
       "later_contact_thanks": 1
     },
@@ -315,7 +315,7 @@
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 0,
+        "minutesSinceHeartbeat": 1,
         "errorWord": false
       },
       "chat": {
