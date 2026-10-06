@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-06T07:43:01.150Z",
+  "generatedAt": "2026-10-06T08:48:01.367Z",
   "kstDay": "2026-10-06",
   "funnel": {
     "requests": 698,
@@ -283,11 +283,11 @@
   "extra": {
     "windowDays": 7,
     "leadsByDay": {
-      "2026-09-29": 25
+      "2026-09-29": 18
     },
     "videoAutoDecision": {
       "daily_cap_extra": 11,
-      "daily_cap": 11
+      "daily_cap": 4
     },
     "videoMaterialsQuotes": 0,
     "repliesByDay": {
