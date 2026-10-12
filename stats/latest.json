@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T00:23:03.460Z",
+  "generatedAt": "2026-10-12T01:28:03.117Z",
   "kstDay": "2026-10-12",
   "funnel": {
     "requests": 698,
@@ -309,7 +309,7 @@
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 1157,
+        "minutesSinceHeartbeat": 1222,
         "errorWord": false
       }
     },
