@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T06:48:05.472Z",
+  "generatedAt": "2026-10-29T07:49:14.342Z",
   "kstDay": "2026-10-29",
   "funnel": {
     "requests": 698,
@@ -294,19 +294,19 @@
     "agreedDiscounts": 0,
     "jevGate": {},
     "videoRequestTypes": {
-      "other": 29,
+      "other": 17,
       "event": 2,
-      "wedding": 2,
       "baby": 1,
+      "wedding": 1,
       "shorts": 1
     },
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 14109,
+        "minutesSinceHeartbeat": 14170,
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 23990,
+        "minutesSinceHeartbeat": 24051,
         "errorWord": false
       }
     },
