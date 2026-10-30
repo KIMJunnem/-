@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T09:53:06.219Z",
+  "generatedAt": "2026-10-30T10:58:12.466Z",
   "kstDay": "2026-10-30",
   "funnel": {
     "requests": 698,
@@ -296,11 +296,11 @@
     "videoRequestTypes": {},
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 15734,
+        "minutesSinceHeartbeat": 15799,
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 25615,
+        "minutesSinceHeartbeat": 25680,
         "errorWord": false
       }
     },
