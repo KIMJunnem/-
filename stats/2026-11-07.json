@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2026-11-06T16:18:11.843Z",
+  "kstDay": "2026-11-07",
+  "funnel": null,
+  "note": "서버가 꺼져 있어 깔때기 숫자 없음",
+  "extra": {
+    "windowDays": 7,
+    "leadsByDay": {},
+    "videoAutoDecision": {},
+    "videoMaterialsQuotes": 0,
+    "repliesByDay": {},
+    "replyTemplates": {},
+    "replyAuto": 0,
+    "replyManual": 0,
+    "honorificHeld": 0,
+    "paymentClaims": 0,
+    "agreedDiscounts": 0,
+    "jevGate": {},
+    "videoRequestTypes": {},
+    "botHealth": {
+      "request": {
+        "minutesSinceHeartbeat": 26199,
+        "errorWord": false
+      },
+      "chat": {
+        "minutesSinceHeartbeat": 36080,
+        "errorWord": false
+      }
+    },
+    "workflows": {
+      "byStage": {},
+      "oldestStuckMinutes": 0
+    }
+  }
+}

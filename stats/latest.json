@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-06T14:47:21.145Z",
-  "kstDay": "2026-11-06",
+  "generatedAt": "2026-11-06T16:18:11.843Z",
+  "kstDay": "2026-11-07",
   "funnel": null,
   "note": "서버가 꺼져 있어 깔때기 숫자 없음",
   "extra": {
@@ -19,11 +19,11 @@
     "videoRequestTypes": {},
     "botHealth": {
       "request": {
-        "minutesSinceHeartbeat": 26108,
+        "minutesSinceHeartbeat": 26199,
         "errorWord": false
       },
       "chat": {
-        "minutesSinceHeartbeat": 35989,
+        "minutesSinceHeartbeat": 36080,
         "errorWord": false
       }
     },
